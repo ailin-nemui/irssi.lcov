@@ -1,0 +1,377 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/irc/fe-irc-messages.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/irc</a> - fe-irc-messages.c<span style="font-size: 80%;"> (source / <a href="fe-irc-messages.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntry">118</td>
+            <td class="headerCovTableEntryLo">18.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntryLo">18.2 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  fe-irc-messages.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;levels.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;channels.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;ignore.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;irc-servers.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;irc-channels.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;irc-queries.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;../core/module-formats.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;module-formats.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;printtext.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;fe-messages.h&quot;
+<span class="lineNum">      36 </span>            : 
+<a name="37"><span class="lineNum">      37 </span>            : #include &quot;fe-queries.h&quot;</a>
+<span class="lineNum">      38 </span>            : #include &quot;window-items.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;fe-irc-channels.h&quot;
+<a name="40"><span class="lineNum">      40 </span>            : #include &quot;fe-irc-server.h&quot;</a>
+<a name="41"><span class="lineNum">      41 </span>            : </a>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 : static void sig_message_own_public(SERVER_REC *server, const char *msg,</span>
+<span class="lineNum">      43 </span>            :                                    const char *target, const char *origtarget)
+<span class="lineNum">      44 </span>            : {
+<a name="45"><span class="lineNum">      45 </span>            :         const char *oldtarget;</a>
+<span class="lineNum">      46 </span>            :         char *nickmode;
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER(server))</span>
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :         oldtarget = target;</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :         target = fe_channel_skip_prefix(IRC_SERVER(server), target);</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :         if (target != oldtarget) {</span>
+<a name="53"><span class="lineNum">      53 </span>            :                 /* Hybrid 6 / Bahamut feature, send msg to all</a>
+<span class="lineNum">      54 </span>            :                    ops / ops+voices in channel */
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :                 nickmode = channel_get_nickmode(channel_find(server, target),</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :                                                 server-&gt;nick);</span>
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :                 printformat_module(&quot;fe-common/core&quot;, server, target,</span>
+<span class="lineNum">      59 </span>            :                                    MSGLEVEL_PUBLIC | MSGLEVEL_NOHILIGHT |
+<span class="lineNum">      60 </span>            :                                    MSGLEVEL_NO_ACT,
+<a name="61"><span class="lineNum">      61 </span>            :                                    TXT_OWN_MSG_CHANNEL,</a>
+<span class="lineNum">      62 </span>            :                                    server-&gt;nick, oldtarget, msg, nickmode);
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :                 g_free(nickmode);</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 signal_stop();</span>
+<a name="65"><span class="lineNum">      65 </span>            :         }</a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span>            : }
+<a name="68"><span class="lineNum">      68 </span>            : </a>
+<a name="69"><span class="lineNum">      69 </span>            : /* received msg to all ops in channel */</a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 : static void sig_message_irc_op_public(SERVER_REC *server, const char *msg,</span>
+<span class="lineNum">      71 </span>            :                                       const char *nick, const char *address,
+<span class="lineNum">      72 </span>            :                                       const char *target)
+<a name="73"><span class="lineNum">      73 </span>            : {</a>
+<span class="lineNum">      74 </span>            :         char *nickmode, *optarget, *prefix;
+<span class="lineNum">      75 </span>            :         const char *cleantarget;
+<span class="lineNum">      76 </span>            : 
+<a name="77"><span class="lineNum">      77 </span>            :         /* only skip here so the difference can be stored in prefix */</a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         cleantarget = fe_channel_skip_prefix(IRC_SERVER(server), target);</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         prefix = g_strndup(target, cleantarget - target);</span>
+<span class="lineNum">      80 </span>            : 
+<a name="81"><span class="lineNum">      81 </span>            :         /* and clean the rest here */</a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         cleantarget = get_visible_target(IRC_SERVER(server), cleantarget);</span>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         nickmode = channel_get_nickmode(channel_find(server, cleantarget),</span>
+<a name="85"><span class="lineNum">      85 </span>            :                                         nick);</a>
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :         optarget = g_strconcat(prefix, cleantarget, NULL);</span>
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         printformat_module(&quot;fe-common/core&quot;, server, cleantarget,</span></a>
+<span class="lineNum">      90 </span>            :                            MSGLEVEL_PUBLIC,
+<span class="lineNum">      91 </span>            :                            TXT_PUBMSG_CHANNEL,
+<span class="lineNum">      92 </span>            :                            nick, optarget, msg, nickmode);
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :         g_free(nickmode);</span></a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :         g_free(optarget);</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         g_free(prefix);</span>
+<a name="96"><span class="lineNum">      96 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 : static void sig_message_own_wall(SERVER_REC *server, const char *msg,</span>
+<span class="lineNum">      99 </span>            :                                  const char *target)
+<span class="lineNum">     100 </span>            : {
+<a name="101"><span class="lineNum">     101 </span>            :         char *nickmode, *optarget;</a>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :         nickmode = channel_get_nickmode(channel_find(server, target),</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                                         server-&gt;nick);</span>
+<a name="105"><span class="lineNum">     105 </span>            : </a>
+<span class="lineNum">     106 </span>            :         /* this is always @, skip_prefix is not needed here */
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         optarget = g_strconcat(&quot;@&quot;, target, NULL);</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         printformat_module(&quot;fe-common/core&quot;, server, target,</span>
+<a name="109"><span class="lineNum">     109 </span>            :                            MSGLEVEL_PUBLIC | MSGLEVEL_NOHILIGHT |</a>
+<span class="lineNum">     110 </span>            :                            MSGLEVEL_NO_ACT,
+<span class="lineNum">     111 </span>            :                            TXT_OWN_MSG_CHANNEL,
+<span class="lineNum">     112 </span>            :                            server-&gt;nick, optarget, msg, nickmode);
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :         g_free(nickmode);</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :         g_free(optarget);</span>
+<a name="115"><span class="lineNum">     115 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     116 </span>            : 
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 : static void sig_message_own_action(IRC_SERVER_REC *server, const char *msg,</span></a>
+<span class="lineNum">     118 </span>            :                                    const char *target)
+<span class="lineNum">     119 </span>            : {
+<span class="lineNum">     120 </span>            :         void *item;
+<a name="121"><span class="lineNum">     121 </span>            :         const char *oldtarget;</a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :         char *freemsg = NULL;</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         oldtarget = target;</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :         target = fe_channel_skip_prefix(IRC_SERVER(server), target);</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :         if (server_ischannel(SERVER(server), target))</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                 item = irc_channel_find(server, target);</span>
+<span class="lineNum">     128 </span>            :         else
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 item = irc_query_find(server, target);</span></a>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :         if (settings_get_bool(&quot;emphasis&quot;))</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                 msg = freemsg = expand_emphasis(item, msg);</span>
+<a name="133"><span class="lineNum">     133 </span>            : </a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :         printformat(server, target,</span>
+<span class="lineNum">     135 </span>            :                     MSGLEVEL_ACTIONS | MSGLEVEL_NOHILIGHT | MSGLEVEL_NO_ACT |
+<span class="lineNum">     136 </span>            :                     (server_ischannel(SERVER(server), target) ? MSGLEVEL_PUBLIC : MSGLEVEL_MSGS),
+<a name="137"><span class="lineNum">     137 </span>            :                     item != NULL &amp;&amp; oldtarget == target ? IRCTXT_OWN_ACTION : IRCTXT_OWN_ACTION_TARGET,</a>
+<span class="lineNum">     138 </span>            :                     server-&gt;nick, msg, oldtarget);
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :         g_free_not_null(freemsg);</span>
+<a name="140"><span class="lineNum">     140 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="141"><span class="lineNum">     141 </span>            : </a>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 : static void sig_message_irc_action(IRC_SERVER_REC *server, const char *msg,</span>
+<span class="lineNum">     143 </span>            :                                    const char *nick, const char *address,
+<span class="lineNum">     144 </span>            :                                    const char *target)
+<a name="145"><span class="lineNum">     145 </span>            : {</a>
+<span class="lineNum">     146 </span>            :         void *item;
+<span class="lineNum">     147 </span>            :         const char *oldtarget;
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :         char *freemsg = NULL;</span>
+<a name="149"><span class="lineNum">     149 </span>            :         int level;</a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :         int own = FALSE;</span>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :         oldtarget = target;</span>
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">          0 :         target = fe_channel_skip_prefix(IRC_SERVER(server), target);</span></a>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :         level = MSGLEVEL_ACTIONS |</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :                 (server_ischannel(SERVER(server), target) ? MSGLEVEL_PUBLIC : MSGLEVEL_MSGS);</span>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         if (ignore_check(SERVER(server), nick, address, target, msg, level))</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :         if (ignore_check(SERVER(server), nick, address, target, msg,</span></a>
+<span class="lineNum">     162 </span>            :                          level | MSGLEVEL_NO_ACT))
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                 level |= MSGLEVEL_NO_ACT;</span>
+<span class="lineNum">     164 </span>            : 
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :         if (server_ischannel(SERVER(server), target)) {</span></a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                 item = irc_channel_find(server, target);</span>
+<span class="lineNum">     167 </span>            :         } else {
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                 own = (!g_strcmp0(nick, server-&gt;nick));</span>
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :                 item = privmsg_get_query(SERVER(server), own ? target : nick, FALSE, level);</span></a>
+<span class="lineNum">     170 </span>            :         }
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :         if (settings_get_bool(&quot;emphasis&quot;))</span>
+<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 :                 msg = freemsg = expand_emphasis(item, msg);</span></a>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :         if (server_ischannel(SERVER(server), target)) {</span>
+<span class="lineNum">     176 </span>            :                 /* channel action */
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 :                 if (window_item_is_active(item) &amp;&amp; target == oldtarget) {</span></a>
+<span class="lineNum">     178 </span>            :                         /* message to active channel in window */
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                         printformat(server, target, level,</span>
+<span class="lineNum">     180 </span>            :                                     IRCTXT_ACTION_PUBLIC, nick, msg);
+<a name="181"><span class="lineNum">     181 </span>            :                 } else {</a>
+<span class="lineNum">     182 </span>            :                         /* message to not existing/active channel, or to @/+ */
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                         printformat(server, target, level,</span>
+<span class="lineNum">     184 </span>            :                                     IRCTXT_ACTION_PUBLIC_CHANNEL,
+<a name="185"><span class="lineNum">     185 </span>            :                                     nick, oldtarget, msg);</a>
+<span class="lineNum">     186 </span>            :                 }
+<span class="lineNum">     187 </span>            :         } else {
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 if (own) {</span>
+<a name="189"><span class="lineNum">     189 </span>            :                         /* own action bounced */</a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                         printformat(server, target,</span>
+<span class="lineNum">     191 </span>            :                                     MSGLEVEL_ACTIONS | MSGLEVEL_MSGS,
+<span class="lineNum">     192 </span>            :                                     item != NULL &amp;&amp; oldtarget == target ? IRCTXT_OWN_ACTION : IRCTXT_OWN_ACTION_TARGET,
+<a name="193"><span class="lineNum">     193 </span>            :                                     server-&gt;nick, msg, oldtarget);</a>
+<span class="lineNum">     194 </span>            :                 } else {
+<span class="lineNum">     195 </span>            :                         /* private action */
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                         printformat(server, nick, MSGLEVEL_ACTIONS | MSGLEVEL_MSGS,</span>
+<a name="197"><span class="lineNum">     197 </span>            :                                     item == NULL ? IRCTXT_ACTION_PRIVATE :</a>
+<span class="lineNum">     198 </span>            :                                     IRCTXT_ACTION_PRIVATE_QUERY,
+<span class="lineNum">     199 </span>            :                                     nick, address == NULL ? &quot;&quot; : address, msg);
+<span class="lineNum">     200 </span>            :                 }
+<a name="201"><span class="lineNum">     201 </span>            :         }</a>
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :         g_free_not_null(freemsg);</span>
+<a name="204"><span class="lineNum">     204 </span>            : }</a>
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 : static void sig_message_own_notice(IRC_SERVER_REC *server, const char *msg,</span>
+<span class="lineNum">     207 </span>            :                                    const char *target)
+<span class="lineNum">     208 </span>            : {
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :         printformat(server, fe_channel_skip_prefix(server, target), MSGLEVEL_NOTICES |</span></a>
+<span class="lineNum">     210 </span>            :                     MSGLEVEL_NOHILIGHT | MSGLEVEL_NO_ACT,
+<span class="lineNum">     211 </span>            :                     IRCTXT_OWN_NOTICE, target, msg);
+<a name="212"><span class="lineNum">     212 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="213"><span class="lineNum">     213 </span>            : </a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 : static void sig_message_irc_notice(SERVER_REC *server, const char *msg,</span>
+<span class="lineNum">     215 </span>            :                                    const char *nick, const char *address,
+<span class="lineNum">     216 </span>            :                                    const char *target)
+<a name="217"><span class="lineNum">     217 </span>            : {</a>
+<span class="lineNum">     218 </span>            :         const char *oldtarget;
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         int level = MSGLEVEL_NOTICES;</span>
+<span class="lineNum">     220 </span>            : 
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :         oldtarget = target;</span></a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         target = fe_channel_skip_prefix(IRC_SERVER(server), target);</span>
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :         if (address == NULL || *address == '\0') {</span>
+<a name="225"><span class="lineNum">     225 </span>            :                 /* notice from server */</a>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :                 if (!ignore_check(server, nick, &quot;&quot;,</span>
+<span class="lineNum">     227 </span>            :                                   target, msg, MSGLEVEL_SNOTES)) {
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                         printformat(server, target, MSGLEVEL_SNOTES,</span>
+<a name="229"><span class="lineNum">     229 </span>            :                                     IRCTXT_NOTICE_SERVER, nick, msg);</a>
+<span class="lineNum">     230 </span>            :                 }
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     232 </span>            :         }
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         if (ignore_check(server, nick, address,</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                          server_ischannel(SERVER(server), target) ? target : NULL,</span>
+<span class="lineNum">     236 </span>            :                          msg, level))
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :         if (ignore_check(server, nick, address,</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                          server_ischannel(SERVER(server), target) ? target : NULL,</span>
+<a name="241"><span class="lineNum">     241 </span>            :                          msg, level | MSGLEVEL_NO_ACT))</a>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :                 level |= MSGLEVEL_NO_ACT;</span>
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         if (server_ischannel(SERVER(server), target)) {</span>
+<a name="245"><span class="lineNum">     245 </span>            :                 /* notice in some channel */</a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                 printformat(server, target, level,</span>
+<span class="lineNum">     247 </span>            :                             IRCTXT_NOTICE_PUBLIC, nick, oldtarget, msg);
+<span class="lineNum">     248 </span>            :         } else {
+<a name="249"><span class="lineNum">     249 </span>            :                 /* private notice */</a>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                 privmsg_get_query(SERVER(server), nick, FALSE,</span>
+<span class="lineNum">     251 </span>            :                                   MSGLEVEL_NOTICES);
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                 printformat(server, nick, level,</span>
+<a name="253"><span class="lineNum">     253 </span>            :                             IRCTXT_NOTICE_PRIVATE, nick, address, msg);</a>
+<span class="lineNum">     254 </span>            :         }
+<a name="255"><span class="lineNum">     255 </span>            : }</a>
+<span class="lineNum">     256 </span>            : 
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 : static void sig_message_own_ctcp(IRC_SERVER_REC *server, const char *cmd,</span></a>
+<span class="lineNum">     258 </span>            :                                  const char *data, const char *target)
+<span class="lineNum">     259 </span>            : {
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :         printformat(server, fe_channel_skip_prefix(server, target), MSGLEVEL_CTCPS |</span>
+<a name="261"><span class="lineNum">     261 </span>            :                     MSGLEVEL_NOHILIGHT | MSGLEVEL_NO_ACT,</a>
+<span class="lineNum">     262 </span>            :                     IRCTXT_OWN_CTCP, target, cmd, data);
+<a name="263"><span class="lineNum">     263 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 : static void sig_message_irc_ctcp(IRC_SERVER_REC *server, const char *cmd,</span></a>
+<span class="lineNum">     266 </span>            :                                  const char *data, const char *nick,
+<span class="lineNum">     267 </span>            :                                  const char *addr, const char *target)
+<span class="lineNum">     268 </span>            : {
+<a name="269"><span class="lineNum">     269 </span>            :         const char *oldtarget;</a>
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         oldtarget = target;</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :         target = fe_channel_skip_prefix(server, target);</span>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :         printformat(server, server_ischannel(SERVER(server), target) ? target : nick, MSGLEVEL_CTCPS,</span></a>
+<span class="lineNum">     274 </span>            :                     IRCTXT_CTCP_REQUESTED, nick, addr, cmd, data, oldtarget);
+<a name="275"><span class="lineNum">     275 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     276 </span>            : 
+<a name="277"><span class="lineNum">     277 </span><span class="lineCov">          1 : void fe_irc_messages_init(void)</span></a>
+<span class="lineNum">     278 </span>            : {
+<span class="lineNum">     279 </span><span class="lineCov">          1 :         signal_add_last(&quot;message own_public&quot;, (SIGNAL_FUNC) sig_message_own_public);</span>
+<span class="lineNum">     280 </span><span class="lineCov">          1 :         signal_add_last(&quot;message irc op_public&quot;, (SIGNAL_FUNC) sig_message_irc_op_public);</span>
+<a name="281"><span class="lineNum">     281 </span><span class="lineCov">          1 :         signal_add_last(&quot;message irc own_wall&quot;, (SIGNAL_FUNC) sig_message_own_wall);</span></a>
+<span class="lineNum">     282 </span><span class="lineCov">          1 :         signal_add_last(&quot;message irc own_action&quot;, (SIGNAL_FUNC) sig_message_own_action);</span>
+<span class="lineNum">     283 </span><span class="lineCov">          1 :         signal_add_last(&quot;message irc action&quot;, (SIGNAL_FUNC) sig_message_irc_action);</span>
+<span class="lineNum">     284 </span><span class="lineCov">          1 :         signal_add_last(&quot;message irc own_notice&quot;, (SIGNAL_FUNC) sig_message_own_notice);</span>
+<a name="285"><span class="lineNum">     285 </span><span class="lineCov">          1 :         signal_add_last(&quot;message irc notice&quot;, (SIGNAL_FUNC) sig_message_irc_notice);</span></a>
+<span class="lineNum">     286 </span><span class="lineCov">          1 :         signal_add_last(&quot;message irc own_ctcp&quot;, (SIGNAL_FUNC) sig_message_own_ctcp);</span>
+<span class="lineNum">     287 </span><span class="lineCov">          1 :         signal_add_last(&quot;message irc ctcp&quot;, (SIGNAL_FUNC) sig_message_irc_ctcp);</span>
+<a name="288"><span class="lineNum">     288 </span><span class="lineCov">          1 : }</span></a>
+<a name="289"><span class="lineNum">     289 </span>            : </a>
+<span class="lineNum">     290 </span><span class="lineCov">          1 : void fe_irc_messages_deinit(void)</span>
+<span class="lineNum">     291 </span>            : {
+<span class="lineNum">     292 </span><span class="lineCov">          1 :         signal_remove(&quot;message own_public&quot;, (SIGNAL_FUNC) sig_message_own_public);</span>
+<a name="293"><span class="lineNum">     293 </span><span class="lineCov">          1 :         signal_remove(&quot;message irc op_public&quot;, (SIGNAL_FUNC) sig_message_irc_op_public);</span></a>
+<span class="lineNum">     294 </span><span class="lineCov">          1 :         signal_remove(&quot;message irc own_wall&quot;, (SIGNAL_FUNC) sig_message_own_wall);</span>
+<span class="lineNum">     295 </span><span class="lineCov">          1 :         signal_remove(&quot;message irc own_action&quot;, (SIGNAL_FUNC) sig_message_own_action);</span>
+<span class="lineNum">     296 </span><span class="lineCov">          1 :         signal_remove(&quot;message irc action&quot;, (SIGNAL_FUNC) sig_message_irc_action);</span>
+<a name="297"><span class="lineNum">     297 </span><span class="lineCov">          1 :         signal_remove(&quot;message irc own_notice&quot;, (SIGNAL_FUNC) sig_message_own_notice);</span></a>
+<span class="lineNum">     298 </span><span class="lineCov">          1 :         signal_remove(&quot;message irc notice&quot;, (SIGNAL_FUNC) sig_message_irc_notice);</span>
+<span class="lineNum">     299 </span><span class="lineCov">          1 :         signal_remove(&quot;message irc own_ctcp&quot;, (SIGNAL_FUNC) sig_message_own_ctcp);</span>
+<span class="lineNum">     300 </span><span class="lineCov">          1 :         signal_remove(&quot;message irc ctcp&quot;, (SIGNAL_FUNC) sig_message_irc_ctcp);</span>
+<a name="301"><span class="lineNum">     301 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

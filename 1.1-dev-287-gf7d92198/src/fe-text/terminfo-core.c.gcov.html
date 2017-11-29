@@ -1,0 +1,809 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-text/terminfo-core.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-text</a> - terminfo-core.c<span style="font-size: 80%;"> (source / <a href="terminfo-core.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">190</td>
+            <td class="headerCovTableEntry">365</td>
+            <td class="headerCovTableEntryLo">52.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">25</td>
+            <td class="headerCovTableEntry">45</td>
+            <td class="headerCovTableEntryLo">55.6 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">       2 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">       3 </span>            : #include &quot;terminfo-core.h&quot;
+<span class="lineNum">       4 </span>            : 
+<a name="5"><span class="lineNum">       5 </span>            : #ifndef _POSIX_VDISABLE</a>
+<span class="lineNum">       6 </span>            : #  define _POSIX_VDISABLE 0
+<span class="lineNum">       7 </span>            : #endif
+<a name="8"><span class="lineNum">       8 </span>            : </a>
+<a name="9"><span class="lineNum">       9 </span>            : #define tput(s) tputs(s, 0, term_putchar)</a>
+<span class="lineNum">      10 </span><span class="lineCov">       1573 : inline static int term_putchar(int c)</span>
+<span class="lineNum">      11 </span>            : {
+<span class="lineNum">      12 </span><span class="lineCov">       1573 :         return fputc(c, current_term-&gt;out);</span>
+<a name="13"><span class="lineNum">      13 </span>            : }</a>
+<span class="lineNum">      14 </span>            : 
+<span class="lineNum">      15 </span>            : /* Don't bother including curses.h because of these -
+<span class="lineNum">      16 </span>            :    they might not even be defined there */
+<a name="17"><span class="lineNum">      17 </span>            : char *tparm();</a>
+<span class="lineNum">      18 </span>            : int tputs();
+<span class="lineNum">      19 </span>            : 
+<span class="lineNum">      20 </span>            : int setupterm();
+<a name="21"><span class="lineNum">      21 </span>            : char *tigetstr();</a>
+<span class="lineNum">      22 </span>            : int tigetnum();
+<span class="lineNum">      23 </span>            : int tigetflag();
+<span class="lineNum">      24 </span>            : #define term_getstr(x, buffer) tigetstr(x.ti_name)
+<a name="25"><span class="lineNum">      25 </span>            : #define term_getnum(x) tigetnum(x.ti_name);</a>
+<span class="lineNum">      26 </span>            : #define term_getflag(x) tigetflag(x.ti_name);
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #define CAP_TYPE_FLAG   0
+<a name="29"><span class="lineNum">      29 </span>            : #define CAP_TYPE_INT    1</a>
+<span class="lineNum">      30 </span>            : #define CAP_TYPE_STR    2
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : typedef struct {
+<a name="33"><span class="lineNum">      33 </span>            :         const char *ti_name; /* terminfo name */</a>
+<span class="lineNum">      34 </span>            :         const char *tc_name; /* termcap name */
+<span class="lineNum">      35 </span>            :         int type;
+<span class="lineNum">      36 </span>            :         unsigned int offset;
+<a name="37"><span class="lineNum">      37 </span>            : } TERMINFO_REC;</a>
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : TERM_REC *current_term;
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span>            : /* Define only what we might need */</a>
+<span class="lineNum">      42 </span>            : static TERMINFO_REC tcaps[] = {
+<span class="lineNum">      43 </span>            :         /* Terminal size */
+<span class="lineNum">      44 </span>            :         { &quot;cols&quot;,   &quot;co&quot;,  CAP_TYPE_INT,  G_STRUCT_OFFSET(TERM_REC, width) },
+<a name="45"><span class="lineNum">      45 </span>            :         { &quot;lines&quot;,  &quot;li&quot;,  CAP_TYPE_INT,  G_STRUCT_OFFSET(TERM_REC, height) },</a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            :         /* Cursor movement */
+<span class="lineNum">      48 </span>            :         { &quot;smcup&quot;,  &quot;ti&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_smcup) },
+<a name="49"><span class="lineNum">      49 </span>            :         { &quot;rmcup&quot;,  &quot;te&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_rmcup) },</a>
+<span class="lineNum">      50 </span>            :         { &quot;cup&quot;,    &quot;cm&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_cup) },
+<span class="lineNum">      51 </span>            :         { &quot;hpa&quot;,    &quot;ch&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_hpa) },
+<span class="lineNum">      52 </span>            :         { &quot;vpa&quot;,    &quot;vh&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_vpa) },
+<a name="53"><span class="lineNum">      53 </span>            :         { &quot;cub1&quot;,   &quot;le&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_cub1) },</a>
+<span class="lineNum">      54 </span>            :         { &quot;cuf1&quot;,   &quot;nd&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_cuf1) },
+<span class="lineNum">      55 </span>            :         { &quot;civis&quot;,  &quot;vi&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_civis) },
+<span class="lineNum">      56 </span>            :         { &quot;cnorm&quot;,  &quot;ve&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_cnorm) },
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<span class="lineNum">      58 </span>            :         /* Scrolling */
+<span class="lineNum">      59 </span>            :         { &quot;csr&quot;,    &quot;cs&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_csr) },
+<span class="lineNum">      60 </span>            :         { &quot;wind&quot;,   &quot;wi&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_wind) },
+<a name="61"><span class="lineNum">      61 </span>            :         { &quot;ri&quot;,     &quot;sr&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_ri) },</a>
+<span class="lineNum">      62 </span>            :         { &quot;rin&quot;,    &quot;SR&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_rin) },
+<span class="lineNum">      63 </span>            :         { &quot;ind&quot;,    &quot;sf&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_ind) },
+<span class="lineNum">      64 </span>            :         { &quot;indn&quot;,   &quot;SF&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_indn) },
+<a name="65"><span class="lineNum">      65 </span>            :         { &quot;il&quot;,     &quot;AL&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_il) },</a>
+<span class="lineNum">      66 </span>            :         { &quot;il1&quot;,    &quot;al&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_il1) },
+<span class="lineNum">      67 </span>            :         { &quot;dl&quot;,     &quot;DL&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_dl) },
+<span class="lineNum">      68 </span>            :         { &quot;dl1&quot;,    &quot;dl&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_dl1) },
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span>            :         /* Clearing screen */
+<span class="lineNum">      71 </span>            :         { &quot;clear&quot;,  &quot;cl&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_clear) },
+<span class="lineNum">      72 </span>            :         { &quot;ed&quot;,     &quot;cd&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_ed) },
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span>            :         /* Clearing to end of line */
+<span class="lineNum">      75 </span>            :         { &quot;el&quot;,     &quot;ce&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_el) },
+<span class="lineNum">      76 </span>            : 
+<a name="77"><span class="lineNum">      77 </span>            :         /* Repeating character */</a>
+<span class="lineNum">      78 </span>            :         { &quot;rep&quot;,    &quot;rp&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_rep) },
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            :         /* Colors */
+<a name="81"><span class="lineNum">      81 </span>            :         { &quot;colors&quot;, &quot;Co&quot;,   CAP_TYPE_INT,   G_STRUCT_OFFSET(TERM_REC, TI_colors) },</a>
+<span class="lineNum">      82 </span>            :         { &quot;sgr0&quot;,   &quot;me&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_sgr0) },
+<span class="lineNum">      83 </span>            :         { &quot;smul&quot;,   &quot;us&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_smul) },
+<span class="lineNum">      84 </span>            :         { &quot;rmul&quot;,   &quot;ue&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_rmul) },
+<a name="85"><span class="lineNum">      85 </span>            :         { &quot;smso&quot;,   &quot;so&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_smso) },</a>
+<span class="lineNum">      86 </span>            :         { &quot;rmso&quot;,   &quot;se&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_rmso) },
+<span class="lineNum">      87 </span>            :         { &quot;sitm&quot;,   &quot;ZH&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_sitm) },
+<span class="lineNum">      88 </span>            :         { &quot;ritm&quot;,   &quot;ZR&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_ritm) },
+<a name="89"><span class="lineNum">      89 </span>            :         { &quot;bold&quot;,   &quot;md&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_bold) },</a>
+<span class="lineNum">      90 </span>            :         { &quot;blink&quot;,  &quot;mb&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_blink) },
+<span class="lineNum">      91 </span>            :         { &quot;rev&quot;,    &quot;mr&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_rev) },
+<span class="lineNum">      92 </span>            :         { &quot;setaf&quot;,  &quot;AF&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_setaf) },
+<a name="93"><span class="lineNum">      93 </span>            :         { &quot;setab&quot;,  &quot;AB&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_setab) },</a>
+<span class="lineNum">      94 </span>            :         { &quot;setf&quot;,   &quot;Sf&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_setf) },
+<span class="lineNum">      95 </span>            :         { &quot;setb&quot;,   &quot;Sb&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_setb) },
+<span class="lineNum">      96 </span>            : 
+<a name="97"><span class="lineNum">      97 </span>            :         /* Beep */</a>
+<span class="lineNum">      98 </span>            :         { &quot;bel&quot;,    &quot;bl&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_bel) },
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            :         /* Keyboard-transmit mode */
+<a name="101"><span class="lineNum">     101 </span>            :         { &quot;smkx&quot;,   &quot;ks&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_smkx) },</a>
+<span class="lineNum">     102 </span>            :         { &quot;rmkx&quot;,   &quot;ke&quot;,  CAP_TYPE_STR,  G_STRUCT_OFFSET(TERM_REC, TI_rmkx) },
+<span class="lineNum">     103 </span>            : };
+<a name="104"><span class="lineNum">     104 </span>            : </a>
+<a name="105"><span class="lineNum">     105 </span>            : /* Move cursor (cursor_address / cup) */</a>
+<span class="lineNum">     106 </span><span class="lineCov">          6 : static void _move_cup(TERM_REC *term, int x, int y)</span>
+<span class="lineNum">     107 </span>            : {
+<span class="lineNum">     108 </span><span class="lineCov">          6 :         tput(tparm(term-&gt;TI_cup, y, x));</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineCov">          6 : }</span></a>
+<a name="110"><span class="lineNum">     110 </span>            : </a>
+<span class="lineNum">     111 </span>            : /* Move cursor (column_address+row_address / hpa+vpa) */
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 : static void _move_pa(TERM_REC *term, int x, int y)</span>
+<a name="113"><span class="lineNum">     113 </span>            : {</a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :         tput(tparm(term-&gt;TI_hpa, x));</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :         tput(tparm(term-&gt;TI_vpa, y));</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 : }</span>
+<a name="117"><span class="lineNum">     117 </span>            : </a>
+<span class="lineNum">     118 </span>            : /* Move cursor from a known position */
+<span class="lineNum">     119 </span><span class="lineCov">         85 : static void _move_relative(TERM_REC *term, int oldx, int oldy, int x, int y)</span>
+<span class="lineNum">     120 </span>            : {
+<a name="121"><span class="lineNum">     121 </span><span class="lineCov">         85 :         if (oldx == 0 &amp;&amp; x == 0 &amp;&amp; y == oldy+1) {</span></a>
+<span class="lineNum">     122 </span>            :                 /* move to beginning of next line -
+<span class="lineNum">     123 </span>            :                    hope this works everywhere */
+<span class="lineNum">     124 </span><span class="lineCov">         49 :                 tput(&quot;\r\n&quot;);</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineCov">         49 :                 return;</span></a>
+<span class="lineNum">     126 </span>            :         }
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineCov">         36 :         if (oldx &gt; 0 &amp;&amp; y == oldy) {</span>
+<a name="129"><span class="lineNum">     129 </span>            :                 /* move cursor left/right */</a>
+<span class="lineNum">     130 </span><span class="lineCov">          6 :                 if (x == oldx-1 &amp;&amp; term-&gt;TI_cub1) {</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                         tput(tparm(term-&gt;TI_cub1));</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                         return;</span>
+<a name="133"><span class="lineNum">     133 </span>            :                 }</a>
+<span class="lineNum">     134 </span><span class="lineCov">          6 :                 if (x == oldx+1 &amp;&amp; y == oldy &amp;&amp; term-&gt;TI_cuf1) {</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                         tput(tparm(term-&gt;TI_cuf1));</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                         return;</span>
+<a name="137"><span class="lineNum">     137 </span>            :                 }</a>
+<span class="lineNum">     138 </span>            :         }
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span>            :         /* fallback to absolute positioning */
+<a name="141"><span class="lineNum">     141 </span><span class="lineCov">         36 :         if (term-&gt;TI_cup) {</span></a>
+<span class="lineNum">     142 </span><span class="lineCov">         36 :                 tput(tparm(term-&gt;TI_cup, y, x));</span>
+<span class="lineNum">     143 </span><span class="lineCov">         36 :                 return;</span>
+<span class="lineNum">     144 </span>            :         }
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         if (oldy != y)</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                 tput(tparm(term-&gt;TI_vpa, y));</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :         if (oldx != x)</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :                 tput(tparm(term-&gt;TI_hpa, x));</span></a>
+<span class="lineNum">     150 </span>            : }
+<a name="151"><span class="lineNum">     151 </span>            : </a>
+<span class="lineNum">     152 </span>            : /* Set cursor visible/invisible */
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">         20 : static void _set_cursor_visible(TERM_REC *term, int set)</span></a>
+<span class="lineNum">     154 </span>            : {
+<span class="lineNum">     155 </span><span class="lineCov">         20 :         tput(tparm(set ? term-&gt;TI_cnorm : term-&gt;TI_civis));</span>
+<span class="lineNum">     156 </span><span class="lineCov">         20 : }</span>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span>            : #define scroll_region_setup(term, y1, y2) \
+<span class="lineNum">     159 </span>            :         if ((term)-&gt;TI_csr != NULL) \
+<span class="lineNum">     160 </span>            :                 tput(tparm((term)-&gt;TI_csr, y1, y2)); \
+<a name="161"><span class="lineNum">     161 </span>            :         else if ((term)-&gt;TI_wind != NULL) \</a>
+<span class="lineNum">     162 </span>            :                 tput(tparm((term)-&gt;TI_wind, y1, y2, 0, (term)-&gt;width-1));
+<a name="163"><span class="lineNum">     163 </span>            : </a>
+<span class="lineNum">     164 </span>            : /* Scroll (change_scroll_region+parm_rindex+parm_index / csr+rin+indn) */
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 : static void _scroll_region(TERM_REC *term, int y1, int y2, int count)</span></a>
+<span class="lineNum">     166 </span>            : {
+<span class="lineNum">     167 </span>            :         /* setup the scrolling region to wanted area */
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         scroll_region_setup(term, y1, y2);</span>
+<a name="169"><span class="lineNum">     169 </span>            : </a>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :         term-&gt;move(term, 0, y1);</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :         if (count &gt; 0) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y2);</span>
+<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 :                 tput(tparm(term-&gt;TI_indn, count, count));</span></a>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :         } else if (count &lt; 0) {</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y1);</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :                 tput(tparm(term-&gt;TI_rin, -count, -count));</span>
+<a name="177"><span class="lineNum">     177 </span>            :         }</a>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span>            :         /* reset the scrolling region to full screen */
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         scroll_region_setup(term, 0, term-&gt;height-1);</span>
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="182"><span class="lineNum">     182 </span>            : </a>
+<span class="lineNum">     183 </span>            : /* Scroll (change_scroll_region+scroll_reverse+scroll_forward / csr+ri+ind) */
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 : static void _scroll_region_1(TERM_REC *term, int y1, int y2, int count)</span>
+<a name="185"><span class="lineNum">     185 </span>            : {</a>
+<span class="lineNum">     186 </span>            :         int i;
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span>            :         /* setup the scrolling region to wanted area */
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :         scroll_region_setup(term, y1, y2);</span></a>
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :         if (count &gt; 0) {</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y2);</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; count; i++)</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                         tput(tparm(term-&gt;TI_ind));</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :         } else if (count &lt; 0) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y1);</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :                 for (i = count; i &lt; 0; i++)</span></a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                         tput(tparm(term-&gt;TI_ri));</span>
+<span class="lineNum">     199 </span>            :         }
+<span class="lineNum">     200 </span>            : 
+<a name="201"><span class="lineNum">     201 </span>            :         /* reset the scrolling region to full screen */</a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :         scroll_region_setup(term, 0, term-&gt;height-1);</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 : }</span>
+<a name="204"><span class="lineNum">     204 </span>            : </a>
+<a name="205"><span class="lineNum">     205 </span>            : /* Scroll (parm_insert_line+parm_delete_line / il+dl) */</a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 : static void _scroll_line(TERM_REC *term, int y1, int y2, int count)</span>
+<span class="lineNum">     207 </span>            : {
+<span class="lineNum">     208 </span>            :         /* setup the scrolling region to wanted area -
+<a name="209"><span class="lineNum">     209 </span>            :            this might not necessarily work with il/dl, but at least it</a>
+<span class="lineNum">     210 </span>            :            looks better if it does */
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :         scroll_region_setup(term, y1, y2);</span>
+<span class="lineNum">     212 </span>            : 
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :         if (count &gt; 0) {</span></a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y1);</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                 tput(tparm(term-&gt;TI_dl, count, count));</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y2-count+1);</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :                 tput(tparm(term-&gt;TI_il, count, count));</span></a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :         } else if (count &lt; 0) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y2+count+1);</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                 tput(tparm(term-&gt;TI_dl, -count, -count));</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y1);</span></a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                 tput(tparm(term-&gt;TI_il, -count, -count));</span>
+<span class="lineNum">     223 </span>            :         }
+<span class="lineNum">     224 </span>            : 
+<a name="225"><span class="lineNum">     225 </span>            :         /* reset the scrolling region to full screen */</a>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :         scroll_region_setup(term, 0, term-&gt;height-1);</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 : }</span>
+<a name="228"><span class="lineNum">     228 </span>            : </a>
+<a name="229"><span class="lineNum">     229 </span>            : /* Scroll (insert_line+delete_line / il1+dl1) */</a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 : static void _scroll_line_1(TERM_REC *term, int y1, int y2, int count)</span>
+<span class="lineNum">     231 </span>            : {
+<span class="lineNum">     232 </span>            :         int i;
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         if (count &gt; 0) {</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y1);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; count; i++)</span>
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 :                         tput(tparm(term-&gt;TI_dl1));</span></a>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y2-count+1);</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; count; i++)</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                         tput(tparm(term-&gt;TI_il1));</span>
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :         } else if (count &lt; 0) {</span></a>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y2+count+1);</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :                 for (i = count; i &lt; 0; i++)</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                         tput(tparm(term-&gt;TI_dl1));</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :                 term-&gt;move(term, 0, y1);</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                 for (i = count; i &lt; 0; i++)</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                         tput(tparm(term-&gt;TI_il1));</span>
+<span class="lineNum">     248 </span>            :         }
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="250"><span class="lineNum">     250 </span>            : </a>
+<span class="lineNum">     251 </span>            : /* Clear screen (clear_screen / clear) */
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 : static void _clear_screen(TERM_REC *term)</span>
+<a name="253"><span class="lineNum">     253 </span>            : {</a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :         tput(tparm(term-&gt;TI_clear));</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 : }</span>
+<a name="256"><span class="lineNum">     256 </span>            : </a>
+<a name="257"><span class="lineNum">     257 </span>            : /* Clear screen (clr_eos / ed) */</a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 : static void _clear_eos(TERM_REC *term)</span>
+<span class="lineNum">     259 </span>            : {
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :         term-&gt;move(term, 0, 0);</span>
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :         tput(tparm(term-&gt;TI_ed));</span></a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 : }</span>
+<a name="263"><span class="lineNum">     263 </span>            : </a>
+<span class="lineNum">     264 </span>            : /* Clear screen (parm_delete_line / dl) */
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 : static void _clear_del(TERM_REC *term)</span></a>
+<span class="lineNum">     266 </span>            : {
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         term-&gt;move(term, 0, 0);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         tput(tparm(term-&gt;TI_dl, term-&gt;height, term-&gt;height));</span>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="270"><span class="lineNum">     270 </span>            : </a>
+<span class="lineNum">     271 </span>            : /* Clear screen (delete_line / dl1) */
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 : static void _clear_del_1(TERM_REC *term)</span>
+<a name="273"><span class="lineNum">     273 </span>            : {</a>
+<span class="lineNum">     274 </span>            :         int i;
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :         term-&gt;move(term, 0, 0);</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; term-&gt;height; i++)</span></a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                 tput(tparm(term-&gt;TI_dl1));</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 : }</span>
+<a name="280"><span class="lineNum">     280 </span>            : </a>
+<a name="281"><span class="lineNum">     281 </span>            : /* Clear to end of line (clr_eol / el) */</a>
+<span class="lineNum">     282 </span><span class="lineCov">         78 : static void _clrtoeol(TERM_REC *term)</span>
+<span class="lineNum">     283 </span>            : {
+<span class="lineNum">     284 </span><span class="lineCov">         78 :         tput(tparm(term-&gt;TI_el));</span>
+<a name="285"><span class="lineNum">     285 </span><span class="lineCov">         78 : }</span></a>
+<a name="286"><span class="lineNum">     286 </span>            : </a>
+<span class="lineNum">     287 </span>            : /* Repeat character (rep / rp) */
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 : static void _repeat(TERM_REC *term, char chr, int count)</span>
+<a name="289"><span class="lineNum">     289 </span>            : {</a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :         tput(tparm(term-&gt;TI_rep, chr, count));</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 : }</span>
+<a name="292"><span class="lineNum">     292 </span>            : </a>
+<a name="293"><span class="lineNum">     293 </span>            : /* Repeat character (manual) */</a>
+<span class="lineNum">     294 </span><span class="lineCov">          5 : static void _repeat_manual(TERM_REC *term, char chr, int count)</span>
+<span class="lineNum">     295 </span>            : {
+<span class="lineNum">     296 </span><span class="lineCov">       1205 :         while (count &gt; 0) {</span>
+<a name="297"><span class="lineNum">     297 </span><span class="lineCov">       1195 :                 putc(chr, term-&gt;out);</span></a>
+<span class="lineNum">     298 </span><span class="lineCov">       1195 :                 count--;</span>
+<span class="lineNum">     299 </span>            :         }
+<span class="lineNum">     300 </span><span class="lineCov">          5 : }</span>
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<span class="lineNum">     302 </span>            : /* Reset all terminal attributes */
+<span class="lineNum">     303 </span><span class="lineCov">         27 : static void _set_normal(TERM_REC *term)</span>
+<span class="lineNum">     304 </span>            : {
+<a name="305"><span class="lineNum">     305 </span><span class="lineCov">         27 :         tput(tparm(term-&gt;TI_normal));</span></a>
+<a name="306"><span class="lineNum">     306 </span><span class="lineCov">         27 : }</span></a>
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 : static void _set_blink(TERM_REC *term)</span>
+<a name="309"><span class="lineNum">     309 </span>            : {</a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :         tput(tparm(term-&gt;TI_blink));</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 : }</span>
+<a name="312"><span class="lineNum">     312 </span>            : </a>
+<a name="313"><span class="lineNum">     313 </span>            : /* Reverse on */</a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 : static void _set_reverse(TERM_REC *term)</span>
+<span class="lineNum">     315 </span>            : {
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         tput(tparm(term-&gt;TI_rev));</span>
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="318"><span class="lineNum">     318 </span>            : </a>
+<span class="lineNum">     319 </span>            : /* Bold on */
+<span class="lineNum">     320 </span><span class="lineCov">          5 : static void _set_bold(TERM_REC *term)</span>
+<a name="321"><span class="lineNum">     321 </span>            : {</a>
+<span class="lineNum">     322 </span><span class="lineCov">          5 :         tput(tparm(term-&gt;TI_bold));</span>
+<span class="lineNum">     323 </span><span class="lineCov">          5 : }</span>
+<a name="324"><span class="lineNum">     324 </span>            : </a>
+<a name="325"><span class="lineNum">     325 </span>            : /* Underline on/off */</a>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 : static void _set_uline(TERM_REC *term, int set)</span>
+<span class="lineNum">     327 </span>            : {
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :         tput(tparm(set ? term-&gt;TI_smul : term-&gt;TI_rmul));</span>
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="330"><span class="lineNum">     330 </span>            : </a>
+<span class="lineNum">     331 </span>            : /* Standout on/off */
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 : static void _set_standout(TERM_REC *term, int set)</span>
+<a name="333"><span class="lineNum">     333 </span>            : {</a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :         tput(tparm(set ? term-&gt;TI_smso : term-&gt;TI_rmso));</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 : }</span>
+<a name="336"><span class="lineNum">     336 </span>            : </a>
+<a name="337"><span class="lineNum">     337 </span>            : /* Italic on/off */</a>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 : static void _set_italic(TERM_REC *term, int set)</span>
+<span class="lineNum">     339 </span>            : {
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         tput(tparm(set ? term-&gt;TI_sitm : term-&gt;TI_ritm));</span>
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="342"><span class="lineNum">     342 </span>            : </a>
+<span class="lineNum">     343 </span>            : /* Standout on (fallback for reverse) */
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 : static void _set_standout_on(TERM_REC *term)</span>
+<a name="345"><span class="lineNum">     345 </span>            : {</a>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :         _set_standout(term, TRUE);</span>
+<a name="347"><span class="lineNum">     347 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     348 </span>            : 
+<a name="349"><span class="lineNum">     349 </span><span class="lineCov">         45 : inline static int color256(const TERM_REC *term, const int color) {</span></a>
+<span class="lineNum">     350 </span><span class="lineCov">         45 :         if (color &lt; term-&gt;TI_colors)</span>
+<span class="lineNum">     351 </span><span class="lineCov">         45 :                 return color;</span>
+<span class="lineNum">     352 </span>            : 
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :         if (color &lt; 16)</span></a>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                 return color % term-&gt;TI_colors;</span>
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :         if (color &lt; 256)</span>
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 :                 return term_color256map[color] % term-&gt;TI_colors;</span></a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :         return color % term-&gt;TI_colors;</span>
+<span class="lineNum">     360 </span>            : }
+<a name="361"><span class="lineNum">     361 </span>            : </a>
+<span class="lineNum">     362 </span>            : /* Change foreground color */
+<span class="lineNum">     363 </span><span class="lineCov">         42 : static void _set_fg(TERM_REC *term, int color)</span>
+<span class="lineNum">     364 </span>            : {
+<a name="365"><span class="lineNum">     365 </span><span class="lineCov">         42 :         tput(tparm(term-&gt;TI_fg[color256(term, color)]));</span></a>
+<span class="lineNum">     366 </span><span class="lineCov">         42 : }</span>
+<a name="367"><span class="lineNum">     367 </span>            : </a>
+<span class="lineNum">     368 </span>            : /* Change background color */
+<a name="369"><span class="lineNum">     369 </span><span class="lineCov">          3 : static void _set_bg(TERM_REC *term, int color)</span></a>
+<span class="lineNum">     370 </span>            : {
+<span class="lineNum">     371 </span><span class="lineCov">          3 :         tput(tparm(term-&gt;TI_bg[color256(term, color)]));</span>
+<span class="lineNum">     372 </span><span class="lineCov">          3 : }</span>
+<a name="373"><span class="lineNum">     373 </span>            : </a>
+<span class="lineNum">     374 </span>            : /* Beep */
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 : static void _beep(TERM_REC *term)</span>
+<span class="lineNum">     376 </span>            : {
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 :         tput(tparm(term-&gt;TI_bel));</span></a>
+<a name="378"><span class="lineNum">     378 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 : static void _ignore(TERM_REC *term)</span>
+<a name="381"><span class="lineNum">     381 </span>            : {</a>
+<a name="382"><span class="lineNum">     382 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 : static void _ignore_parm(TERM_REC *term, int param)</span>
+<a name="385"><span class="lineNum">     385 </span>            : {</a>
+<a name="386"><span class="lineNum">     386 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 : static void terminfo_set_appkey_mode(TERM_REC *term, int set)</span>
+<a name="389"><span class="lineNum">     389 </span>            : {</a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         if (term-&gt;TI_smkx &amp;&amp; term-&gt;TI_rmkx)</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 tput(tparm(set ? term-&gt;TI_smkx : term-&gt;TI_rmkx));</span>
+<a name="392"><span class="lineNum">     392 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="393"><span class="lineNum">     393 </span>            : </a>
+<span class="lineNum">     394 </span><span class="lineCov">          2 : static void term_dec_set_bracketed_paste_mode(int enable)</span>
+<span class="lineNum">     395 </span>            : {
+<span class="lineNum">     396 </span><span class="lineCov">          2 :         if (enable)</span>
+<a name="397"><span class="lineNum">     397 </span><span class="lineCov">          1 :                 tputs(&quot;\e[?2004h&quot;, 0, term_putchar);</span></a>
+<span class="lineNum">     398 </span>            :         else
+<span class="lineNum">     399 </span><span class="lineCov">          1 :                 tputs(&quot;\e[?2004l&quot;, 0, term_putchar);</span>
+<a name="400"><span class="lineNum">     400 </span><span class="lineCov">          2 : }</span></a>
+<a name="401"><span class="lineNum">     401 </span>            : </a>
+<span class="lineNum">     402 </span><span class="lineCov">          1 : static void term_fill_capabilities(TERM_REC *term)</span>
+<span class="lineNum">     403 </span>            : {
+<span class="lineNum">     404 </span>            :         int i, ival;
+<a name="405"><span class="lineNum">     405 </span>            :         char *sval;</a>
+<span class="lineNum">     406 </span>            :         void *ptr;
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span><span class="lineCov">         44 :         for (i = 0; i &lt; sizeof(tcaps)/sizeof(tcaps[0]); i++) {</span>
+<a name="409"><span class="lineNum">     409 </span><span class="lineCov">         43 :                 ptr = G_STRUCT_MEMBER_P(term, tcaps[i].offset);</span></a>
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span><span class="lineCov">         43 :                 switch (tcaps[i].type) {</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :                 case CAP_TYPE_FLAG:</span>
+<a name="413"><span class="lineNum">     413 </span><span class="lineNoCov">          0 :                         ival = term_getflag(tcaps[i]);</span></a>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                         *(int *)ptr = ival;</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     416 </span><span class="lineCov">          3 :                 case CAP_TYPE_INT:</span>
+<a name="417"><span class="lineNum">     417 </span><span class="lineCov">          3 :                         ival = term_getnum(tcaps[i]);</span></a>
+<span class="lineNum">     418 </span><span class="lineCov">          3 :                         *(int *)ptr = ival;</span>
+<span class="lineNum">     419 </span><span class="lineCov">          3 :                         break;</span>
+<span class="lineNum">     420 </span><span class="lineCov">         40 :                 case CAP_TYPE_STR:</span>
+<a name="421"><span class="lineNum">     421 </span><span class="lineCov">         40 :                         sval = term_getstr(tcaps[i], tptr);</span></a>
+<span class="lineNum">     422 </span><span class="lineCov">         40 :                         if (sval == (char *) -1)</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :                                 *(char **)ptr = NULL;</span>
+<span class="lineNum">     424 </span>            :                         else
+<a name="425"><span class="lineNum">     425 </span><span class="lineCov">         40 :                                 *(char **)ptr = sval;</span></a>
+<span class="lineNum">     426 </span><span class="lineCov">         40 :                         break;</span>
+<span class="lineNum">     427 </span>            :                 }
+<span class="lineNum">     428 </span>            :         }
+<a name="429"><span class="lineNum">     429 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span><span class="lineCov">          2 : static void terminfo_colors_deinit(TERM_REC *term)</span>
+<span class="lineNum">     432 </span>            : {
+<a name="433"><span class="lineNum">     433 </span>            :         int i;</a>
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span><span class="lineCov">          2 :         if (terminfo_is_colors_set(term)) {</span>
+<span class="lineNum">     436 </span><span class="lineCov">        257 :                 for (i = 0; i &lt; term-&gt;TI_colors; i++) {</span>
+<a name="437"><span class="lineNum">     437 </span><span class="lineCov">        256 :                         g_free(term-&gt;TI_fg[i]);</span></a>
+<span class="lineNum">     438 </span><span class="lineCov">        256 :                         g_free(term-&gt;TI_bg[i]);</span>
+<span class="lineNum">     439 </span>            :                 }
+<span class="lineNum">     440 </span>            : 
+<a name="441"><span class="lineNum">     441 </span><span class="lineCov">          1 :                 g_free_and_null(term-&gt;TI_fg);</span></a>
+<span class="lineNum">     442 </span><span class="lineCov">          1 :                 g_free_and_null(term-&gt;TI_bg);</span>
+<span class="lineNum">     443 </span>            :         }
+<span class="lineNum">     444 </span><span class="lineCov">          2 : }</span>
+<a name="445"><span class="lineNum">     445 </span>            : </a>
+<a name="446"><span class="lineNum">     446 </span>            : /* Setup colors - if force is set, use ANSI-style colors if</a>
+<span class="lineNum">     447 </span>            :    terminal capabilities don't contain color codes */
+<span class="lineNum">     448 </span><span class="lineCov">          1 : void terminfo_setup_colors(TERM_REC *term, int force)</span>
+<a name="449"><span class="lineNum">     449 </span>            : {</a>
+<span class="lineNum">     450 </span>            :         static const char ansitab[16] = {
+<span class="lineNum">     451 </span>            :                 0, 4, 2, 6, 1, 5, 3, 7,
+<span class="lineNum">     452 </span>            :                 8, 12, 10, 14, 9, 13, 11, 15
+<a name="453"><span class="lineNum">     453 </span>            :         };</a>
+<span class="lineNum">     454 </span>            :         unsigned int i, color;
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span><span class="lineCov">          1 :         terminfo_colors_deinit(term);</span>
+<a name="457"><span class="lineNum">     457 </span>            : </a>
+<span class="lineNum">     458 </span><span class="lineCov">          1 :         if (force &amp;&amp; term-&gt;TI_setf == NULL &amp;&amp; term-&gt;TI_setaf == NULL)</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :                 term-&gt;TI_colors = 8;</span>
+<span class="lineNum">     460 </span>            : 
+<a name="461"><span class="lineNum">     461 </span><span class="lineCov">          2 :         if ((term-&gt;TI_setf || term-&gt;TI_setaf || force) &amp;&amp;</span></a>
+<span class="lineNum">     462 </span><span class="lineCov">          1 :              term-&gt;TI_colors &gt; 0) {</span>
+<span class="lineNum">     463 </span><span class="lineCov">          1 :                 term-&gt;TI_fg = g_new0(char *, term-&gt;TI_colors);</span>
+<span class="lineNum">     464 </span><span class="lineCov">          1 :                 term-&gt;TI_bg = g_new0(char *, term-&gt;TI_colors);</span>
+<a name="465"><span class="lineNum">     465 </span><span class="lineCov">          1 :                 term-&gt;set_fg = _set_fg;</span></a>
+<span class="lineNum">     466 </span><span class="lineCov">          1 :                 term-&gt;set_bg = _set_bg;</span>
+<span class="lineNum">     467 </span>            :         } else {
+<span class="lineNum">     468 </span>            :                 /* no colors */
+<a name="469"><span class="lineNum">     469 </span><span class="lineNoCov">          0 :                 term-&gt;TI_colors = 0;</span></a>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :                 term-&gt;set_fg = term-&gt;set_bg = _ignore_parm;</span>
+<span class="lineNum">     471 </span>            :         }
+<span class="lineNum">     472 </span>            : 
+<a name="473"><span class="lineNum">     473 </span><span class="lineCov">          1 :         if (term-&gt;TI_setaf) {</span></a>
+<span class="lineNum">     474 </span><span class="lineCov">        257 :                 for (i = 0; i &lt; term-&gt;TI_colors; i++) {</span>
+<span class="lineNum">     475 </span><span class="lineCov">        256 :                         color = i &lt; 16 ? ansitab[i] : i;</span>
+<span class="lineNum">     476 </span><span class="lineCov">        256 :                         term-&gt;TI_fg[i] = g_strdup(tparm(term-&gt;TI_setaf, color, 0));</span>
+<a name="477"><span class="lineNum">     477 </span>            :                 }</a>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :         } else if (term-&gt;TI_setf) {</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; term-&gt;TI_colors; i++)</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :                         term-&gt;TI_fg[i] = g_strdup(tparm(term-&gt;TI_setf, i, 0));</span>
+<a name="481"><span class="lineNum">     481 </span><span class="lineNoCov">          0 :         } else if (force) {</span></a>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; 8; i++)</span>
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :                         term-&gt;TI_fg[i] = g_strdup_printf(&quot;\033[%dm&quot;, 30+ansitab[i]);</span>
+<span class="lineNum">     484 </span>            :         }
+<a name="485"><span class="lineNum">     485 </span>            : </a>
+<span class="lineNum">     486 </span><span class="lineCov">          1 :         if (term-&gt;TI_setab) {</span>
+<span class="lineNum">     487 </span><span class="lineCov">        257 :                 for (i = 0; i &lt; term-&gt;TI_colors; i++) {</span>
+<span class="lineNum">     488 </span><span class="lineCov">        256 :                         color = i &lt; 16 ? ansitab[i] : i;</span>
+<a name="489"><span class="lineNum">     489 </span><span class="lineCov">        256 :                         term-&gt;TI_bg[i] = g_strdup(tparm(term-&gt;TI_setab, color, 0));</span></a>
+<span class="lineNum">     490 </span>            :                 }
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :         } else if (term-&gt;TI_setb) {</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; term-&gt;TI_colors; i++)</span>
+<a name="493"><span class="lineNum">     493 </span><span class="lineNoCov">          0 :                         term-&gt;TI_bg[i] = g_strdup(tparm(term-&gt;TI_setb, i, 0));</span></a>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :         } else if (force) {</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; 8; i++)</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :                         term-&gt;TI_bg[i] = g_strdup_printf(&quot;\033[%dm&quot;, 40+ansitab[i]);</span>
+<a name="497"><span class="lineNum">     497 </span>            :         }</a>
+<a name="498"><span class="lineNum">     498 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineCov">          1 : static void terminfo_input_init0(TERM_REC *term)</span>
+<a name="501"><span class="lineNum">     501 </span>            : {</a>
+<span class="lineNum">     502 </span><span class="lineCov">          1 :         tcgetattr(fileno(term-&gt;in), &amp;term-&gt;old_tio);</span>
+<span class="lineNum">     503 </span><span class="lineCov">          1 :         memcpy(&amp;term-&gt;tio, &amp;term-&gt;old_tio, sizeof(term-&gt;tio));</span>
+<span class="lineNum">     504 </span>            : 
+<a name="505"><span class="lineNum">     505 </span><span class="lineCov">          1 :         term-&gt;tio.c_lflag &amp;= ~(ICANON | ECHO); /* CBREAK, no ECHO */</span></a>
+<span class="lineNum">     506 </span>            :         /* Disable the ICRNL flag to disambiguate ^J and Enter, also disable the
+<span class="lineNum">     507 </span>            :          * software flow control to leave ^Q and ^S ready to be bound */
+<span class="lineNum">     508 </span><span class="lineCov">          1 :         term-&gt;tio.c_iflag &amp;= ~(ICRNL | IXON | IXOFF); </span>
+<a name="509"><span class="lineNum">     509 </span><span class="lineCov">          1 :         term-&gt;tio.c_cc[VMIN] = 1; /* read() is satisfied after 1 char */</span></a>
+<span class="lineNum">     510 </span><span class="lineCov">          1 :         term-&gt;tio.c_cc[VTIME] = 0; /* No timer */</span>
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span>            :         /* Disable INTR, QUIT, VDSUSP and SUSP keys */
+<a name="513"><span class="lineNum">     513 </span><span class="lineCov">          1 :         term-&gt;tio.c_cc[VINTR] = _POSIX_VDISABLE;</span></a>
+<span class="lineNum">     514 </span><span class="lineCov">          1 :         term-&gt;tio.c_cc[VQUIT] = _POSIX_VDISABLE;</span>
+<span class="lineNum">     515 </span>            : #ifdef VDSUSP
+<span class="lineNum">     516 </span>            :         term-&gt;tio.c_cc[VDSUSP] = _POSIX_VDISABLE;
+<a name="517"><span class="lineNum">     517 </span>            : #endif</a>
+<span class="lineNum">     518 </span>            : #ifdef VSUSP
+<span class="lineNum">     519 </span><span class="lineCov">          1 :         term-&gt;tio.c_cc[VSUSP] = _POSIX_VDISABLE;</span>
+<span class="lineNum">     520 </span>            : #endif
+<a name="521"><span class="lineNum">     521 </span>            : </a>
+<a name="522"><span class="lineNum">     522 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     523 </span>            : 
+<span class="lineNum">     524 </span><span class="lineCov">          1 : static void terminfo_input_init(TERM_REC *term)</span>
+<a name="525"><span class="lineNum">     525 </span>            : {</a>
+<span class="lineNum">     526 </span><span class="lineCov">          1 :         tcsetattr(fileno(term-&gt;in), TCSADRAIN, &amp;term-&gt;tio);</span>
+<a name="527"><span class="lineNum">     527 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     528 </span>            : 
+<a name="529"><span class="lineNum">     529 </span><span class="lineCov">          1 : static void terminfo_input_deinit(TERM_REC *term)</span></a>
+<span class="lineNum">     530 </span>            : {
+<span class="lineNum">     531 </span><span class="lineCov">          1 :         tcsetattr(fileno(term-&gt;in), TCSADRAIN, &amp;term-&gt;old_tio);</span>
+<a name="532"><span class="lineNum">     532 </span><span class="lineCov">          1 : }</span></a>
+<a name="533"><span class="lineNum">     533 </span>            : </a>
+<span class="lineNum">     534 </span><span class="lineCov">          1 : void terminfo_cont(TERM_REC *term)</span>
+<span class="lineNum">     535 </span>            : {
+<span class="lineNum">     536 </span><span class="lineCov">          1 :         if (term-&gt;TI_smcup)</span>
+<a name="537"><span class="lineNum">     537 </span><span class="lineCov">          1 :                 tput(tparm(term-&gt;TI_smcup));</span></a>
+<span class="lineNum">     538 </span>            : 
+<span class="lineNum">     539 </span><span class="lineCov">          1 :         if (term-&gt;appkey_enabled)</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :                 terminfo_set_appkey_mode(term, TRUE);</span>
+<a name="541"><span class="lineNum">     541 </span>            : </a>
+<span class="lineNum">     542 </span><span class="lineCov">          1 :         if (term-&gt;bracketed_paste_enabled)</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :                 term_dec_set_bracketed_paste_mode(TRUE);</span>
+<span class="lineNum">     544 </span>            : 
+<a name="545"><span class="lineNum">     545 </span><span class="lineCov">          1 :         terminfo_input_init(term);</span></a>
+<a name="546"><span class="lineNum">     546 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     547 </span>            : 
+<span class="lineNum">     548 </span><span class="lineCov">          1 : void terminfo_stop(TERM_REC *term)</span>
+<a name="549"><span class="lineNum">     549 </span>            : {</a>
+<span class="lineNum">     550 </span>            :         /* reset colors */
+<span class="lineNum">     551 </span><span class="lineCov">          1 :         terminfo_set_normal();</span>
+<span class="lineNum">     552 </span>            :         /* move cursor to bottom of the screen */
+<a name="553"><span class="lineNum">     553 </span><span class="lineCov">          1 :         terminfo_move(0, term-&gt;height-1);</span></a>
+<span class="lineNum">     554 </span>            : 
+<span class="lineNum">     555 </span><span class="lineCov">          1 :         if (term-&gt;bracketed_paste_enabled)</span>
+<span class="lineNum">     556 </span><span class="lineCov">          1 :                 term_dec_set_bracketed_paste_mode(FALSE);</span>
+<a name="557"><span class="lineNum">     557 </span>            : </a>
+<span class="lineNum">     558 </span>            :         /* stop cup-mode */
+<span class="lineNum">     559 </span><span class="lineCov">          1 :         if (term-&gt;TI_rmcup)</span>
+<span class="lineNum">     560 </span><span class="lineCov">          1 :                 tput(tparm(term-&gt;TI_rmcup));</span>
+<a name="561"><span class="lineNum">     561 </span>            : </a>
+<span class="lineNum">     562 </span><span class="lineCov">          1 :         if (term-&gt;appkey_enabled)</span>
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :                 terminfo_set_appkey_mode(term, FALSE);</span>
+<span class="lineNum">     564 </span>            : 
+<a name="565"><span class="lineNum">     565 </span>            :         /* reset input settings */</a>
+<span class="lineNum">     566 </span><span class="lineCov">          1 :         terminfo_input_deinit(term);</span>
+<span class="lineNum">     567 </span><span class="lineCov">          1 :         fflush(term-&gt;out);</span>
+<a name="568"><span class="lineNum">     568 </span><span class="lineCov">          1 : }</span></a>
+<a name="569"><span class="lineNum">     569 </span>            : </a>
+<span class="lineNum">     570 </span><span class="lineCov">          1 : static int term_setup(TERM_REC *term)</span>
+<span class="lineNum">     571 </span>            : {
+<span class="lineNum">     572 </span>            :         GString *str;
+<a name="573"><span class="lineNum">     573 </span>            :         int err;</a>
+<span class="lineNum">     574 </span>            :         char *term_env;
+<span class="lineNum">     575 </span>            : 
+<span class="lineNum">     576 </span><span class="lineCov">          1 :         term_env = getenv(&quot;TERM&quot;);</span>
+<a name="577"><span class="lineNum">     577 </span><span class="lineCov">          1 :         if (term_env == NULL) {</span></a>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :                 fprintf(stderr, &quot;TERM environment not set\n&quot;);</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     580 </span>            :         }
+<a name="581"><span class="lineNum">     581 </span>            : </a>
+<span class="lineNum">     582 </span><span class="lineCov">          1 :         if (setupterm(term_env, 1, &amp;err) != 0) {</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 :                 fprintf(stderr, &quot;setupterm() failed for TERM=%s: %d\n&quot;, term_env, err);</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<a name="585"><span class="lineNum">     585 </span>            :         }</a>
+<span class="lineNum">     586 </span>            : 
+<span class="lineNum">     587 </span><span class="lineCov">          1 :         term_fill_capabilities(term);</span>
+<span class="lineNum">     588 </span>            : 
+<a name="589"><span class="lineNum">     589 </span>            :         /* Cursor movement */</a>
+<span class="lineNum">     590 </span><span class="lineCov">          1 :         if (term-&gt;TI_cup)</span>
+<span class="lineNum">     591 </span><span class="lineCov">          1 :                 term-&gt;move = _move_cup;</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :         else if (term-&gt;TI_hpa &amp;&amp; term-&gt;TI_vpa)</span>
+<a name="593"><span class="lineNum">     593 </span><span class="lineNoCov">          0 :                 term-&gt;move = _move_pa;</span></a>
+<span class="lineNum">     594 </span>            :         else {
+<span class="lineNum">     595 </span><span class="lineNoCov">          0 :                 fprintf(stderr, &quot;Terminal doesn't support cursor movement\n&quot;);</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<a name="597"><span class="lineNum">     597 </span>            :         }</a>
+<span class="lineNum">     598 </span><span class="lineCov">          1 :         term-&gt;move_relative = _move_relative;</span>
+<span class="lineNum">     599 </span><span class="lineCov">          3 :         term-&gt;set_cursor_visible = term-&gt;TI_civis &amp;&amp; term-&gt;TI_cnorm ?</span>
+<span class="lineNum">     600 </span><span class="lineCov">          2 :                 _set_cursor_visible : _ignore_parm;</span>
+<a name="601"><span class="lineNum">     601 </span>            : </a>
+<span class="lineNum">     602 </span>            :         /* Scrolling */
+<span class="lineNum">     603 </span><span class="lineCov">          1 :         if ((term-&gt;TI_csr || term-&gt;TI_wind) &amp;&amp; term-&gt;TI_rin &amp;&amp; term-&gt;TI_indn)</span>
+<span class="lineNum">     604 </span><span class="lineCov">          1 :                 term-&gt;scroll = _scroll_region;</span>
+<a name="605"><span class="lineNum">     605 </span><span class="lineNoCov">          0 :         else if (term-&gt;TI_il &amp;&amp; term-&gt;TI_dl)</span></a>
+<span class="lineNum">     606 </span><span class="lineNoCov">          0 :                 term-&gt;scroll = _scroll_line;</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :         else if ((term-&gt;TI_csr || term-&gt;TI_wind) &amp;&amp; term-&gt;TI_ri &amp;&amp; term-&gt;TI_ind)</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :                 term-&gt;scroll = _scroll_region_1;</span>
+<a name="609"><span class="lineNum">     609 </span><span class="lineNoCov">          0 :         else if (term-&gt;scroll == NULL &amp;&amp; (term-&gt;TI_il1 &amp;&amp; term-&gt;TI_dl1))</span></a>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :                 term-&gt;scroll = _scroll_line_1;</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :         else if (term-&gt;scroll == NULL) {</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">          0 :                 fprintf(stderr, &quot;Terminal doesn't support scrolling\n&quot;);</span>
+<a name="613"><span class="lineNum">     613 </span><span class="lineNoCov">          0 :                 return 0;</span></a>
+<span class="lineNum">     614 </span>            :         }
+<span class="lineNum">     615 </span>            : 
+<span class="lineNum">     616 </span>            :         /* Clearing screen */
+<a name="617"><span class="lineNum">     617 </span><span class="lineCov">          1 :         if (term-&gt;TI_clear)</span></a>
+<span class="lineNum">     618 </span><span class="lineCov">          1 :                 term-&gt;clear = _clear_screen;</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :         else if (term-&gt;TI_ed)</span>
+<span class="lineNum">     620 </span><span class="lineNoCov">          0 :                 term-&gt;clear = _clear_eos;</span>
+<a name="621"><span class="lineNum">     621 </span><span class="lineNoCov">          0 :         else if (term-&gt;TI_dl)</span></a>
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :                 term-&gt;clear = _clear_del;</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">          0 :         else if (term-&gt;TI_dl1)</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 :                 term-&gt;clear = _clear_del_1;</span>
+<a name="625"><span class="lineNum">     625 </span>            :         else {</a>
+<span class="lineNum">     626 </span>            :                 /* we could do this by line inserts as well, but don't
+<span class="lineNum">     627 </span>            :                    bother - if some terminal has insert line it most probably
+<span class="lineNum">     628 </span>            :                    has delete line as well, if not a regular clear screen */
+<a name="629"><span class="lineNum">     629 </span><span class="lineNoCov">          0 :                 fprintf(stderr, &quot;Terminal doesn't support clearing screen\n&quot;);</span></a>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     631 </span>            :         }
+<span class="lineNum">     632 </span>            : 
+<a name="633"><span class="lineNum">     633 </span>            :         /* Clearing to end of line */</a>
+<span class="lineNum">     634 </span><span class="lineCov">          1 :         if (term-&gt;TI_el)</span>
+<span class="lineNum">     635 </span><span class="lineCov">          1 :                 term-&gt;clrtoeol = _clrtoeol;</span>
+<span class="lineNum">     636 </span>            :         else {
+<a name="637"><span class="lineNum">     637 </span><span class="lineNoCov">          0 :                 fprintf(stderr, &quot;Terminal doesn't support clearing to end of line\n&quot;);</span></a>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     639 </span>            :         }
+<span class="lineNum">     640 </span>            : 
+<a name="641"><span class="lineNum">     641 </span>            :         /* Repeating character */</a>
+<span class="lineNum">     642 </span><span class="lineCov">          1 :         if (term-&gt;TI_rep)</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">          0 :                 term-&gt;repeat = _repeat;</span>
+<span class="lineNum">     644 </span>            :         else
+<a name="645"><span class="lineNum">     645 </span><span class="lineCov">          1 :                 term-&gt;repeat = _repeat_manual;</span></a>
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span>            :         /* Bold, underline, standout, reverse, italics */
+<span class="lineNum">     648 </span><span class="lineCov">          1 :         term-&gt;set_blink = term-&gt;TI_blink ? _set_blink : _ignore;</span>
+<a name="649"><span class="lineNum">     649 </span><span class="lineCov">          1 :         term-&gt;set_bold = term-&gt;TI_bold ? _set_bold : _ignore;</span></a>
+<span class="lineNum">     650 </span><span class="lineCov">          1 :         term-&gt;set_reverse = term-&gt;TI_rev ? _set_reverse :</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :                 term-&gt;TI_smso ? _set_standout_on : _ignore;</span>
+<span class="lineNum">     652 </span><span class="lineCov">          3 :         term-&gt;set_uline = term-&gt;TI_smul &amp;&amp; term-&gt;TI_rmul ?</span>
+<a name="653"><span class="lineNum">     653 </span><span class="lineCov">          2 :                 _set_uline : _ignore_parm;</span></a>
+<span class="lineNum">     654 </span><span class="lineCov">          3 :         term-&gt;set_standout = term-&gt;TI_smso &amp;&amp; term-&gt;TI_rmso ?</span>
+<span class="lineNum">     655 </span><span class="lineCov">          2 :                 _set_standout : _ignore_parm;</span>
+<span class="lineNum">     656 </span><span class="lineCov">          3 :         term-&gt;set_italic = term-&gt;TI_sitm &amp;&amp; term-&gt;TI_ritm ?</span>
+<a name="657"><span class="lineNum">     657 </span><span class="lineCov">          2 :                 _set_italic : _ignore_parm;</span></a>
+<span class="lineNum">     658 </span>            : 
+<span class="lineNum">     659 </span>            :         /* Create a string to set all attributes off */
+<span class="lineNum">     660 </span><span class="lineCov">          1 :         str = g_string_new(NULL);</span>
+<a name="661"><span class="lineNum">     661 </span><span class="lineCov">          1 :         if (term-&gt;TI_sgr0)</span></a>
+<span class="lineNum">     662 </span><span class="lineCov">          1 :                 g_string_append(str, term-&gt;TI_sgr0);</span>
+<span class="lineNum">     663 </span><span class="lineCov">          1 :         if (term-&gt;TI_rmul &amp;&amp; (term-&gt;TI_sgr0 == NULL || g_strcmp0(term-&gt;TI_rmul, term-&gt;TI_sgr0) != 0))</span>
+<span class="lineNum">     664 </span><span class="lineCov">          1 :                 g_string_append(str, term-&gt;TI_rmul);</span>
+<a name="665"><span class="lineNum">     665 </span><span class="lineCov">          1 :         if (term-&gt;TI_rmso &amp;&amp; (term-&gt;TI_sgr0 == NULL || g_strcmp0(term-&gt;TI_rmso, term-&gt;TI_sgr0) != 0))</span></a>
+<span class="lineNum">     666 </span><span class="lineCov">          1 :                 g_string_append(str, term-&gt;TI_rmso);</span>
+<span class="lineNum">     667 </span><span class="lineCov">          1 :         if (term-&gt;TI_ritm &amp;&amp; (term-&gt;TI_sgr0 == NULL || g_strcmp0(term-&gt;TI_ritm, term-&gt;TI_sgr0) != 0))</span>
+<span class="lineNum">     668 </span><span class="lineCov">          1 :                 g_string_append(str, term-&gt;TI_ritm);</span>
+<a name="669"><span class="lineNum">     669 </span><span class="lineCov">          1 :         term-&gt;TI_normal = str-&gt;str;</span></a>
+<span class="lineNum">     670 </span><span class="lineCov">          1 :         g_string_free(str, FALSE);</span>
+<span class="lineNum">     671 </span><span class="lineCov">          1 :         term-&gt;set_normal = _set_normal;</span>
+<span class="lineNum">     672 </span>            : 
+<a name="673"><span class="lineNum">     673 </span><span class="lineCov">          1 :         term-&gt;beep = term-&gt;TI_bel ? _beep : _ignore;</span></a>
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span><span class="lineCov">          1 :         terminfo_setup_colors(term, FALSE);</span>
+<span class="lineNum">     676 </span><span class="lineCov">          1 :         terminfo_input_init0(term);</span>
+<a name="677"><span class="lineNum">     677 </span><span class="lineCov">          1 :         terminfo_cont(term);</span></a>
+<span class="lineNum">     678 </span><span class="lineCov">          1 :         return 1;</span>
+<a name="679"><span class="lineNum">     679 </span>            : }</a>
+<span class="lineNum">     680 </span>            : 
+<a name="681"><span class="lineNum">     681 </span><span class="lineCov">          1 : void term_set_appkey_mode(int enable)</span></a>
+<span class="lineNum">     682 </span>            : {
+<span class="lineNum">     683 </span><span class="lineCov">          1 :         if (current_term-&gt;appkey_enabled == enable)</span>
+<span class="lineNum">     684 </span><span class="lineCov">          1 :                 return;</span>
+<a name="685"><span class="lineNum">     685 </span>            : </a>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :         current_term-&gt;appkey_enabled = enable;</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :         terminfo_set_appkey_mode(current_term, enable);</span>
+<a name="688"><span class="lineNum">     688 </span>            : }</a>
+<a name="689"><span class="lineNum">     689 </span>            : </a>
+<span class="lineNum">     690 </span><span class="lineCov">          1 : void term_set_bracketed_paste_mode(int enable)</span>
+<span class="lineNum">     691 </span>            : {
+<span class="lineNum">     692 </span><span class="lineCov">          1 :         if (current_term-&gt;bracketed_paste_enabled == enable)</span>
+<a name="693"><span class="lineNum">     693 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     694 </span>            : 
+<span class="lineNum">     695 </span><span class="lineCov">          1 :         current_term-&gt;bracketed_paste_enabled = enable;</span>
+<span class="lineNum">     696 </span><span class="lineCov">          1 :         term_dec_set_bracketed_paste_mode(enable);</span>
+<a name="697"><span class="lineNum">     697 </span>            : }</a>
+<span class="lineNum">     698 </span>            : 
+<span class="lineNum">     699 </span><span class="lineCov">          1 : TERM_REC *terminfo_core_init(FILE *in, FILE *out)</span>
+<span class="lineNum">     700 </span>            : {
+<a name="701"><span class="lineNum">     701 </span>            :         TERM_REC *old_term, *term;</a>
+<span class="lineNum">     702 </span>            : 
+<span class="lineNum">     703 </span><span class="lineCov">          1 :         old_term = current_term;</span>
+<span class="lineNum">     704 </span><span class="lineCov">          1 :         current_term = term = g_new0(TERM_REC, 1);</span>
+<a name="705"><span class="lineNum">     705 </span>            : </a>
+<span class="lineNum">     706 </span><span class="lineCov">          1 :         term-&gt;in = in;</span>
+<span class="lineNum">     707 </span><span class="lineCov">          1 :         term-&gt;out = out;</span>
+<span class="lineNum">     708 </span>            : 
+<a name="709"><span class="lineNum">     709 </span><span class="lineCov">          1 :         if (!term_setup(term)) {</span></a>
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :                 g_free(term);</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :                 term = NULL;</span>
+<span class="lineNum">     712 </span>            :         }
+<a name="713"><span class="lineNum">     713 </span>            : </a>
+<span class="lineNum">     714 </span><span class="lineCov">          1 :         current_term = old_term;</span>
+<span class="lineNum">     715 </span><span class="lineCov">          1 :         return term;</span>
+<a name="716"><span class="lineNum">     716 </span>            : }</a>
+<a name="717"><span class="lineNum">     717 </span>            : </a>
+<span class="lineNum">     718 </span><span class="lineCov">          1 : void terminfo_core_deinit(TERM_REC *term)</span>
+<span class="lineNum">     719 </span>            : {
+<span class="lineNum">     720 </span>            :         TERM_REC *old_term;
+<a name="721"><span class="lineNum">     721 </span>            : </a>
+<span class="lineNum">     722 </span><span class="lineCov">          1 :         old_term = current_term;</span>
+<span class="lineNum">     723 </span><span class="lineCov">          1 :         current_term = term;</span>
+<span class="lineNum">     724 </span><span class="lineCov">          1 :         term-&gt;set_normal(term);</span>
+<a name="725"><span class="lineNum">     725 </span><span class="lineCov">          1 :         current_term = old_term;</span></a>
+<span class="lineNum">     726 </span>            : 
+<span class="lineNum">     727 </span><span class="lineCov">          1 :         terminfo_stop(term);</span>
+<span class="lineNum">     728 </span>            : 
+<a name="729"><span class="lineNum">     729 </span><span class="lineCov">          1 :         g_free(term-&gt;TI_normal);</span></a>
+<span class="lineNum">     730 </span><span class="lineCov">          1 :         terminfo_colors_deinit(term);</span>
+<span class="lineNum">     731 </span>            : 
+<span class="lineNum">     732 </span><span class="lineCov">          1 :         g_free(term);</span>
+<a name="733"><span class="lineNum">     733 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

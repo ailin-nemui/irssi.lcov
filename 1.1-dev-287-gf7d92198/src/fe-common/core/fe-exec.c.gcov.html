@@ -1,0 +1,757 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/core/fe-exec.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/core</a> - fe-exec.c<span style="font-size: 80%;"> (source / <a href="fe-exec.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntry">342</td>
+            <td class="headerCovTableEntryLo">5.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntryLo">13.6 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  fe-exec.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2000-2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;modules.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;commands.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;pidwait.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;line-split.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;network.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;net-sendbuffer.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;misc.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;levels.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;servers.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;channels.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;queries.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;printtext.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : #include &quot;fe-exec.h&quot;</a>
+<span class="lineNum">      38 </span>            : #include &quot;fe-windows.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;window-items.h&quot;
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span>            : #include &lt;signal.h&gt;</a>
+<span class="lineNum">      42 </span>            : #include &lt;stdlib.h&gt;
+<span class="lineNum">      43 </span>            : #include &lt;sys/wait.h&gt;
+<span class="lineNum">      44 </span>            : #include &lt;unistd.h&gt;
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span>            : GSList *processes;
+<a name="47"><span class="lineNum">      47 </span>            : static int signal_exec_input;</a>
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 : static void exec_wi_destroy(EXEC_WI_REC *rec)</span></a>
+<span class="lineNum">      50 </span>            : {
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :         g_return_if_fail(rec != NULL);</span>
+<span class="lineNum">      52 </span>            : 
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :         if (rec-&gt;destroying) return;</span></a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :         rec-&gt;destroying = TRUE;</span>
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :         rec-&gt;process-&gt;target_item = NULL;</span>
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :         if (window_item_window((WI_ITEM_REC *) rec) != NULL)</span></a>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :                 window_item_destroy((WI_ITEM_REC *) rec);</span>
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :         MODULE_DATA_DEINIT(rec);</span>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :         g_free(rec-&gt;visible_name);</span></a>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :         g_free(rec);</span>
+<a name="63"><span class="lineNum">      63 </span>            : }</a>
+<span class="lineNum">      64 </span>            : 
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 : static const char *exec_get_target(WI_ITEM_REC *item)</span></a>
+<span class="lineNum">      66 </span>            : {
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :         return ((EXEC_WI_REC *) item)-&gt;visible_name;</span>
+<a name="68"><span class="lineNum">      68 </span>            : }</a>
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 : static EXEC_WI_REC *exec_wi_create(WINDOW_REC *window, PROCESS_REC *rec)</span>
+<span class="lineNum">      71 </span>            : {
+<span class="lineNum">      72 </span>            :         EXEC_WI_REC *item;
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(window != NULL, NULL);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(rec != NULL, NULL);</span>
+<span class="lineNum">      76 </span>            : 
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :         item = g_new0(EXEC_WI_REC, 1);</span></a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         item-&gt;type = module_get_uniq_id_str(&quot;WINDOW ITEM TYPE&quot;, &quot;EXEC&quot;);</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         item-&gt;destroy = (void (*) (WI_ITEM_REC *)) exec_wi_destroy;</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :         item-&gt;get_target = exec_get_target;</span>
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :         item-&gt;visible_name = rec-&gt;name != NULL ? g_strdup(rec-&gt;name) :</span></a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :                 g_strdup_printf(&quot;%%%d&quot;, rec-&gt;id);</span>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         item-&gt;createtime = time(NULL);</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :         item-&gt;process = rec;</span></a>
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :         MODULE_DATA_INIT(item);</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         window_item_add(window, (WI_ITEM_REC *) item, FALSE);</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         return item;</span></a>
+<a name="90"><span class="lineNum">      90 </span>            : }</a>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 : static int process_get_new_id(void)</span>
+<a name="93"><span class="lineNum">      93 </span>            : {</a>
+<span class="lineNum">      94 </span>            :         PROCESS_REC *rec;
+<span class="lineNum">      95 </span>            :         GSList *tmp;
+<span class="lineNum">      96 </span>            :         int id;
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         id = 0;</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         tmp = processes;</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :         while (tmp != NULL) {</span>
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :                 rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :                 if (id != rec-&gt;id) {</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                         tmp = tmp-&gt;next;</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :                         continue;</span></a>
+<span class="lineNum">     106 </span>            :                 }
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 id++;</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 tmp = processes;</span></a>
+<span class="lineNum">     110 </span>            :         }
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :         return id;</span>
+<a name="113"><span class="lineNum">     113 </span>            : }</a>
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 : static PROCESS_REC *process_find_pid(int pid)</span>
+<span class="lineNum">     116 </span>            : {
+<a name="117"><span class="lineNum">     117 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(pid &gt; 0, NULL);</span>
+<span class="lineNum">     120 </span>            : 
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :         for (tmp = processes; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                 PROCESS_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                 if (rec-&gt;pid == pid)</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                         return rec;</span></a>
+<span class="lineNum">     126 </span>            :         }
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="129"><span class="lineNum">     129 </span>            : }</a>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 : static PROCESS_REC *process_find_id(int id, int verbose)</span>
+<span class="lineNum">     132 </span>            : {
+<a name="133"><span class="lineNum">     133 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(id != -1, NULL);</span>
+<span class="lineNum">     136 </span>            : 
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :         for (tmp = processes; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 PROCESS_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 if (rec-&gt;id == id)</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :                         return rec;</span></a>
+<span class="lineNum">     142 </span>            :         }
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :         if (verbose) {</span>
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 :                 printtext(NULL, NULL, MSGLEVEL_CLIENTERROR,</span></a>
+<span class="lineNum">     146 </span>            :                           &quot;Unknown process id: %d&quot;, id);
+<span class="lineNum">     147 </span>            :         }
+<span class="lineNum">     148 </span>            : 
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :         return NULL;</span></a>
+<a name="150"><span class="lineNum">     150 </span>            : }</a>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 : static PROCESS_REC *process_find(const char *name, int verbose)</span>
+<a name="153"><span class="lineNum">     153 </span>            : {</a>
+<span class="lineNum">     154 </span>            :         GSList *tmp;
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(name != NULL, NULL);</span>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         if (*name == '%' &amp;&amp; is_numeric(name+1, 0))</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                 return process_find_id(atoi(name+1), verbose);</span>
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :         for (tmp = processes; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :                 PROCESS_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                 if (rec-&gt;name != NULL &amp;&amp; g_strcmp0(rec-&gt;name, name) == 0)</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :                         return rec;</span></a>
+<span class="lineNum">     166 </span>            :         }
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         if (verbose) {</span>
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :                 printtext(NULL, NULL, MSGLEVEL_CLIENTERROR,</span></a>
+<span class="lineNum">     170 </span>            :                           &quot;Unknown process name: %s&quot;, name);
+<span class="lineNum">     171 </span>            :         }
+<span class="lineNum">     172 </span>            : 
+<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 :         return NULL;</span></a>
+<a name="174"><span class="lineNum">     174 </span>            : }</a>
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 : static void process_destroy(PROCESS_REC *rec, int status)</span>
+<a name="177"><span class="lineNum">     177 </span>            : {</a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         processes = g_slist_remove(processes, rec);</span>
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         signal_emit(&quot;exec remove&quot;, 2, rec, GINT_TO_POINTER(status));</span>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         if (rec-&gt;read_tag != -1)</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                 g_source_remove(rec-&gt;read_tag);</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         if (rec-&gt;target_item != NULL)</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineNoCov">          0 :                 exec_wi_destroy(rec-&gt;target_item);</span></a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :         line_split_free(rec-&gt;databuf);</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :         g_io_channel_shutdown(rec-&gt;in, TRUE, NULL);</span>
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :         g_io_channel_unref(rec-&gt;in);</span></a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :         net_sendbuffer_destroy(rec-&gt;out, TRUE);</span>
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :         g_free_not_null(rec-&gt;name);</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :         g_free_not_null(rec-&gt;target);</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :         g_free_not_null(rec-&gt;target_server);</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :         g_free(rec-&gt;args);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         g_free(rec);</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 : static void processes_killall(int signum)</span>
+<span class="lineNum">     200 </span>            : {
+<a name="201"><span class="lineNum">     201 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     202 </span>            :         int kill_ret;
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :         for (tmp = processes; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :                 PROCESS_REC *rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 kill_ret = kill(-rec-&gt;pid, signum);</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                 if (kill_ret != 0)</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :                         printtext(NULL, NULL, MSGLEVEL_CLIENTERROR,</span></a>
+<span class="lineNum">     210 </span>            :                                   &quot;Error sending signal %d to pid %d: %s&quot;,
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                                   signum, rec-&gt;pid, g_strerror(errno));</span>
+<span class="lineNum">     212 </span>            :         }
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 : static int signal_name_to_id(const char *name)</span>
+<span class="lineNum">     216 </span>            : {
+<a name="217"><span class="lineNum">     217 </span>            :         /* check only the few most common signals, too much job to check</a>
+<span class="lineNum">     218 </span>            :            them all. if we sometimes want more, procps-sources/proc/sig.c
+<span class="lineNum">     219 </span>            :            would be useful for copypasting */
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(name, &quot;hup&quot;) == 0)</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :                 return SIGHUP;</span></a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(name, &quot;int&quot;) == 0)</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                 return SIGINT;</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(name, &quot;term&quot;) == 0)</span>
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :                 return SIGTERM;</span></a>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(name, &quot;kill&quot;) == 0)</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :                 return SIGKILL;</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(name, &quot;usr1&quot;) == 0)</span>
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 return SIGUSR1;</span></a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(name, &quot;usr2&quot;) == 0)</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 return SIGUSR2;</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="233"><span class="lineNum">     233 </span>            : }</a>
+<span class="lineNum">     234 </span>            : 
+<a name="235"><span class="lineNum">     235 </span>            : /* `optlist' should contain only one unknown key - the server tag.</a>
+<span class="lineNum">     236 </span>            :    returns NULL if there was unknown -option */
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 : static int cmd_options_get_signal(const char *cmd,</span></a>
+<span class="lineNum">     238 </span>            :                                   GHashTable *optlist)
+<span class="lineNum">     239 </span>            : {
+<span class="lineNum">     240 </span>            :         GList *list;
+<a name="241"><span class="lineNum">     241 </span>            :         char *signame;</a>
+<span class="lineNum">     242 </span>            :         int signum;
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span>            :         /* get all the options, then remove the known ones. there should
+<a name="245"><span class="lineNum">     245 </span>            :            be only one left - the signal */</a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :         list = optlist_remove_known(cmd, optlist);</span>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :         if (list == NULL)</span>
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :                 return -1;</span></a>
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :         signame = list-&gt;data;</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :         signum = -1;</span>
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :         signum = is_numeric(signame, 0) ? atol(signame) :</span>
+<span class="lineNum">     255 </span>            :                 signal_name_to_id(signame);
+<span class="lineNum">     256 </span>            : 
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :         if (signum == -1 || list-&gt;next != NULL) {</span></a>
+<span class="lineNum">     258 </span>            :                 /* unknown option (not a signal) */
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;error command&quot;, 2,</span>
+<span class="lineNum">     260 </span>            :                             GINT_TO_POINTER(CMDERR_OPTION_UNKNOWN),
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :                             signum == -1 ? list-&gt;data : list-&gt;next-&gt;data);</span></a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                 signal_stop();</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                 return -2;</span>
+<span class="lineNum">     264 </span>            :         }
+<a name="265"><span class="lineNum">     265 </span>            : </a>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :         g_list_free(list);</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         return signum;</span>
+<a name="268"><span class="lineNum">     268 </span>            : }</a>
+<a name="269"><span class="lineNum">     269 </span>            : </a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 : static void exec_show_list(void)</span>
+<span class="lineNum">     271 </span>            : {
+<span class="lineNum">     272 </span>            :         GSList *tmp;
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :         for (tmp = processes; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                 PROCESS_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     276 </span>            : 
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :                 printtext(NULL, NULL, MSGLEVEL_CLIENTCRAP,</span></a>
+<span class="lineNum">     278 </span>            :                           &quot;%d (%s): %s&quot;, rec-&gt;id, rec-&gt;name, rec-&gt;args);
+<span class="lineNum">     279 </span>            :         }
+<a name="280"><span class="lineNum">     280 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 : static void process_exec(PROCESS_REC *rec, const char *cmd)</span>
+<span class="lineNum">     283 </span>            : {
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :         const char *shell_args[4] = { &quot;/bin/sh&quot;, &quot;-c&quot;, NULL, NULL };</span>
+<a name="285"><span class="lineNum">     285 </span>            :         char **args;</a>
+<span class="lineNum">     286 </span>            :         int in[2], out[2];
+<span class="lineNum">     287 </span>            :         int n;
+<span class="lineNum">     288 </span>            : 
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :         if (pipe(in) == -1)</span></a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :         if (pipe(out) == -1)</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="293"><span class="lineNum">     293 </span>            : </a>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :         shell_args[2] = cmd;</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :         rec-&gt;pid = fork();</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :         if (rec-&gt;pid == -1) {</span>
+<a name="297"><span class="lineNum">     297 </span>            :                 /* error */</a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 close(in[0]); close(in[1]);</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                 close(out[0]); close(out[1]);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="301"><span class="lineNum">     301 </span>            :         }</a>
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         if (rec-&gt;pid != 0) {</span>
+<span class="lineNum">     304 </span>            :                 /* parent process */
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 GIOChannel *outio = g_io_channel_new(in[1]);</span></a>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 rec-&gt;in = g_io_channel_new(out[0]);</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 rec-&gt;out = net_sendbuffer_create(outio, 0);</span>
+<a name="309"><span class="lineNum">     309 </span>            : </a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 close(out[1]);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                 close(in[0]);</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                 pidwait_add(rec-&gt;pid);</span>
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     314 </span>            :         }
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span>            :         /* child process, try to clean up everything */
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :         setsid();</span></a>
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :         if (setuid(getuid()) != 0)</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                 _exit(EXIT_FAILURE);</span>
+<a name="321"><span class="lineNum">     321 </span>            : </a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :         if (setgid(getgid()) != 0)</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 _exit(EXIT_FAILURE);</span>
+<span class="lineNum">     324 </span>            : 
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :         signal(SIGINT, SIG_IGN);</span></a>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :         signal(SIGQUIT, SIG_DFL);</span>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :         putenv(&quot;TERM=tty&quot;);</span>
+<a name="329"><span class="lineNum">     329 </span>            : </a>
+<span class="lineNum">     330 </span>            :         /* set stdin, stdout and stderr */
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :         dup2(in[0], STDIN_FILENO);</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :         dup2(out[1], STDOUT_FILENO);</span>
+<a name="333"><span class="lineNum">     333 </span><span class="lineNoCov">          0 :         dup2(out[1], STDERR_FILENO);</span></a>
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span>            :         /* don't let child see our files */
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         for (n = 3; n &lt; 256; n++)</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :                 close(n);</span></a>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :         if (rec-&gt;shell) {</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :                 execvp(shell_args[0], (char **) shell_args);</span>
+<a name="341"><span class="lineNum">     341 </span>            : </a>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                 fprintf(stderr, &quot;Exec: /bin/sh: %s\n&quot;, g_strerror(errno));</span>
+<span class="lineNum">     343 </span>            :         } else {
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                 args = g_strsplit(cmd, &quot; &quot;, -1);</span>
+<a name="345"><span class="lineNum">     345 </span><span class="lineNoCov">          0 :                 execvp(args[0], args);</span></a>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :                 fprintf(stderr, &quot;Exec: %s: %s\n&quot;, args[0], g_strerror(errno));</span>
+<span class="lineNum">     348 </span>            :         }
+<a name="349"><span class="lineNum">     349 </span>            : </a>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :         _exit(-1);</span>
+<a name="351"><span class="lineNum">     351 </span>            : }</a>
+<span class="lineNum">     352 </span>            : 
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 : static void sig_exec_input_reader(PROCESS_REC *rec)</span></a>
+<span class="lineNum">     354 </span>            : {
+<span class="lineNum">     355 </span>            :         char tmpbuf[512], *str;
+<span class="lineNum">     356 </span>            :         int recvlen;
+<a name="357"><span class="lineNum">     357 </span>            :         int ret;</a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :         g_return_if_fail(rec != NULL);</span>
+<span class="lineNum">     360 </span>            : 
+<a name="361"><span class="lineNum">     361 </span><span class="lineNoCov">          0 :         recvlen = net_receive(rec-&gt;in, tmpbuf, sizeof(tmpbuf));</span></a>
+<span class="lineNum">     362 </span>            :         do {
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :                 ret = line_split(tmpbuf, recvlen, &amp;str, &amp;rec-&gt;databuf);</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :                 if (ret == -1) {</span>
+<a name="365"><span class="lineNum">     365 </span>            :                         /* link to terminal closed? */</a>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :                         g_source_remove(rec-&gt;read_tag);</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                         rec-&gt;read_tag = -1;</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                         break;</span>
+<a name="369"><span class="lineNum">     369 </span>            :                 }</a>
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 if (ret &gt; 0) {</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                         signal_emit_id(signal_exec_input, 2, rec, str);</span>
+<a name="373"><span class="lineNum">     373 </span><span class="lineNoCov">          0 :                         if (recvlen &gt; 0) recvlen = 0;</span></a>
+<span class="lineNum">     374 </span>            :                 }
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :         } while (ret &gt; 0);</span>
+<a name="376"><span class="lineNum">     376 </span>            : }</a>
+<a name="377"><span class="lineNum">     377 </span>            : </a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 : static void handle_exec(const char *args, GHashTable *optlist,</span>
+<span class="lineNum">     379 </span>            :                         SERVER_REC *server, WI_ITEM_REC *item)
+<span class="lineNum">     380 </span>            : {
+<a name="381"><span class="lineNum">     381 </span>            :         PROCESS_REC *rec;</a>
+<span class="lineNum">     382 </span>            :         SERVER_REC *target_server;
+<span class="lineNum">     383 </span>            :         char *target, *level;
+<span class="lineNum">     384 </span>            :         int notice, signum, interactive, target_nick, target_channel, kill_ret;
+<a name="385"><span class="lineNum">     385 </span>            : </a>
+<span class="lineNum">     386 </span>            :         /* check that there's no unknown options. we allowed them
+<span class="lineNum">     387 </span>            :            because signals can be used as options, but there should be
+<span class="lineNum">     388 </span>            :            only one unknown option: the signal name/number. */
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 :         signum = cmd_options_get_signal(&quot;exec&quot;, optlist);</span></a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         if (signum == -2)</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     392 </span>            : 
+<a name="393"><span class="lineNum">     393 </span><span class="lineNoCov">          0 :         if (*args == '\0') {</span></a>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 exec_show_list();</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     396 </span>            :         }
+<a name="397"><span class="lineNum">     397 </span>            : </a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :         target = NULL;</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :         target_server = NULL;</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :         notice = FALSE;</span>
+<a name="401"><span class="lineNum">     401 </span>            : </a>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;in&quot;) != NULL) {</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :                 rec = process_find(g_hash_table_lookup(optlist, &quot;in&quot;), TRUE);</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :                 if (rec != NULL) {</span>
+<a name="405"><span class="lineNum">     405 </span><span class="lineNoCov">          0 :                         net_sendbuffer_send(rec-&gt;out, args, strlen(args));</span></a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                         net_sendbuffer_send(rec-&gt;out, &quot;\n&quot;, 1);</span>
+<span class="lineNum">     407 </span>            :                 }
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="409"><span class="lineNum">     409 </span>            :         }</a>
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span>            :         /* check if args is a process ID or name. if it's ID but not found,
+<span class="lineNum">     412 </span>            :            complain about it and fail immediately */
+<a name="413"><span class="lineNum">     413 </span><span class="lineNoCov">          0 :         rec = process_find(args, *args == '%');</span></a>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :         if (*args == '%' &amp;&amp; rec == NULL)</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     416 </span>            : 
+<a name="417"><span class="lineNum">     417 </span>            :         /* common options */</a>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :         target_channel = target_nick = FALSE;</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;out&quot;) != NULL) {</span>
+<span class="lineNum">     420 </span>            :                 /* redirect output to active channel/query */
+<a name="421"><span class="lineNum">     421 </span><span class="lineNoCov">          0 :                 if (item == NULL)</span></a>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :                         cmd_return_error(CMDERR_NOT_JOINED);</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :                 target = (char *) window_item_get_target(item);</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                 target_server = item-&gt;server;</span>
+<a name="425"><span class="lineNum">     425 </span><span class="lineNoCov">          0 :                 target_channel = IS_CHANNEL(item);</span></a>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                 target_nick = IS_QUERY(item);</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :         } else if (g_hash_table_lookup(optlist, &quot;msg&quot;) != NULL) {</span>
+<span class="lineNum">     428 </span>            :                 /* redirect output to /msg &lt;nick&gt; */
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 :                 target = g_hash_table_lookup(optlist, &quot;msg&quot;);</span></a>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                 target_server = server;</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         } else if (g_hash_table_lookup(optlist, &quot;notice&quot;) != NULL) {</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :                 target = g_hash_table_lookup(optlist, &quot;notice&quot;);</span>
+<a name="433"><span class="lineNum">     433 </span><span class="lineNoCov">          0 :                 target_server = server;</span></a>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                 notice = TRUE;</span>
+<span class="lineNum">     435 </span>            :         }
+<span class="lineNum">     436 </span>            : 
+<a name="437"><span class="lineNum">     437 </span>            :         /* options that require process ID/name as argument */</a>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :         if (rec == NULL &amp;&amp;</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :             (signum != -1 || g_hash_table_lookup(optlist, &quot;close&quot;) != NULL)) {</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                 printtext(NULL, NULL, MSGLEVEL_CLIENTERROR,</span>
+<a name="441"><span class="lineNum">     441 </span>            :                           &quot;Unknown process name: %s&quot;, args);</a>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     443 </span>            :         }
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;close&quot;) != NULL) {</span>
+<a name="445"><span class="lineNum">     445 </span>            :                 /* forcibly close the process */</a>
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :                 process_destroy(rec, -1);</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     448 </span>            :         }
+<a name="449"><span class="lineNum">     449 </span>            : </a>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :         if (signum != -1) {</span>
+<span class="lineNum">     451 </span>            :                 /* send a signal to process group */
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :                 kill_ret = kill(-rec-&gt;pid, signum);</span>
+<a name="453"><span class="lineNum">     453 </span><span class="lineNoCov">          0 :                 if (kill_ret != 0)</span></a>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                         printtext(NULL, NULL, MSGLEVEL_CLIENTERROR,</span>
+<span class="lineNum">     455 </span>            :                                   &quot;Error sending signal %d to pid %d: %s&quot;,
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :                                   signum, rec-&gt;pid, g_strerror(errno));</span>
+<a name="457"><span class="lineNum">     457 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     458 </span>            :         }
+<span class="lineNum">     459 </span>            : 
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :         interactive = g_hash_table_lookup(optlist, &quot;interactive&quot;) != NULL;</span>
+<a name="461"><span class="lineNum">     461 </span><span class="lineNoCov">          0 :         if (*args == '%') {</span></a>
+<span class="lineNum">     462 </span>            :                 /* do something to already existing process */
+<span class="lineNum">     463 </span>            :                 char *name;
+<span class="lineNum">     464 </span>            : 
+<a name="465"><span class="lineNum">     465 </span><span class="lineNoCov">          0 :                 if (target != NULL) {</span></a>
+<span class="lineNum">     466 </span>            :                         /* redirect output to target */
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :                         g_free_and_null(rec-&gt;target);</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :                         rec-&gt;target = g_strdup(target);</span>
+<a name="469"><span class="lineNum">     469 </span><span class="lineNoCov">          0 :                         rec-&gt;target_server = target_server == NULL ? NULL :</span></a>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :                                 g_strdup(target_server-&gt;tag);</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :                         rec-&gt;notice = notice;</span>
+<span class="lineNum">     472 </span>            :                 }
+<a name="473"><span class="lineNum">     473 </span>            : </a>
+<span class="lineNum">     474 </span><span class="lineNoCov">          0 :                 name = g_hash_table_lookup(optlist, &quot;name&quot;);</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :                 if (name != NULL) {</span>
+<span class="lineNum">     476 </span>            :                         /* change window name */
+<a name="477"><span class="lineNum">     477 </span><span class="lineNoCov">          0 :                         g_free_not_null(rec-&gt;name);</span></a>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :                         rec-&gt;name = *name == '\0' ? NULL : g_strdup(name);</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :                 } else if (target == NULL &amp;&amp;</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :                            (rec-&gt;target_item == NULL || interactive)) {</span>
+<a name="481"><span class="lineNum">     481 </span>            :                         /* no parameters given,</a>
+<span class="lineNum">     482 </span>            :                            redirect output to the active window */
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :                         g_free_and_null(rec-&gt;target);</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :                         rec-&gt;target_win = active_win;</span>
+<a name="485"><span class="lineNum">     485 </span>            : </a>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                         if (rec-&gt;target_item != NULL)</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                                 exec_wi_destroy(rec-&gt;target_item);</span>
+<span class="lineNum">     488 </span>            : 
+<a name="489"><span class="lineNum">     489 </span><span class="lineNoCov">          0 :                         if (interactive) {</span></a>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                                 rec-&gt;target_item =</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                                         exec_wi_create(active_win, rec);</span>
+<span class="lineNum">     492 </span>            :                         }
+<a name="493"><span class="lineNum">     493 </span>            :                 }</a>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     495 </span>            :         }
+<span class="lineNum">     496 </span>            : 
+<a name="497"><span class="lineNum">     497 </span>            :         /* starting a new process */</a>
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :         rec = g_new0(PROCESS_REC, 1);</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :         rec-&gt;pid = -1;</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :         rec-&gt;shell = g_hash_table_lookup(optlist, &quot;nosh&quot;) == NULL;</span>
+<a name="501"><span class="lineNum">     501 </span>            : </a>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :         process_exec(rec, args);</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :         if (rec-&gt;pid == -1) {</span>
+<span class="lineNum">     504 </span>            :                 /* pipe() or fork() failed */
+<a name="505"><span class="lineNum">     505 </span><span class="lineNoCov">          0 :                 g_free(rec);</span></a>
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 :                 cmd_return_error(CMDERR_ERRNO);</span>
+<span class="lineNum">     507 </span>            :         }
+<span class="lineNum">     508 </span>            : 
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :         rec-&gt;id = process_get_new_id();</span></a>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :         rec-&gt;target = g_strdup(target);</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :         rec-&gt;target_server = target_server == NULL ? NULL :</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :                 g_strdup(target_server-&gt;tag);</span>
+<a name="513"><span class="lineNum">     513 </span><span class="lineNoCov">          0 :         rec-&gt;target_win = active_win;</span></a>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :         rec-&gt;target_channel = target_channel;</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :         rec-&gt;target_nick = target_nick;</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :         rec-&gt;args = g_strdup(args);</span>
+<a name="517"><span class="lineNum">     517 </span><span class="lineNoCov">          0 :         rec-&gt;notice = notice;</span></a>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :         rec-&gt;silent = g_hash_table_lookup(optlist, &quot;-&quot;) != NULL;</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :         rec-&gt;quiet = g_hash_table_lookup(optlist, &quot;quiet&quot;) != NULL;</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :         rec-&gt;name = g_strdup(g_hash_table_lookup(optlist, &quot;name&quot;));</span>
+<a name="521"><span class="lineNum">     521 </span>            : </a>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :         level = g_hash_table_lookup(optlist, &quot;level&quot;);</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :         rec-&gt;level = level == NULL ? MSGLEVEL_CLIENTCRAP : level2bits(level, NULL);</span>
+<span class="lineNum">     524 </span>            : 
+<a name="525"><span class="lineNum">     525 </span><span class="lineNoCov">          0 :         rec-&gt;read_tag = g_input_add(rec-&gt;in, G_INPUT_READ,</span></a>
+<span class="lineNum">     526 </span>            :                                     (GInputFunction) sig_exec_input_reader,
+<span class="lineNum">     527 </span>            :                                     rec);
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :         processes = g_slist_append(processes, rec);</span>
+<a name="529"><span class="lineNum">     529 </span>            : </a>
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :         if (rec-&gt;target == NULL &amp;&amp; interactive)</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                 rec-&gt;target_item = exec_wi_create(active_win, rec);</span>
+<span class="lineNum">     532 </span>            : 
+<a name="533"><span class="lineNum">     533 </span><span class="lineNoCov">          0 :         signal_emit(&quot;exec new&quot;, 1, rec);</span></a>
+<span class="lineNum">     534 </span>            : }
+<span class="lineNum">     535 </span>            : 
+<span class="lineNum">     536 </span>            : /* SYNTAX: EXEC [-] [-nosh] [-out | -msg &lt;target&gt; | -notice &lt;target&gt;]
+<a name="537"><span class="lineNum">     537 </span>            :                 [-name &lt;name&gt;] &lt;cmd line&gt;</a>
+<span class="lineNum">     538 </span>            :            EXEC -out | -window | -msg &lt;target&gt; | -notice &lt;target&gt; |
+<a name="539"><span class="lineNum">     539 </span>            :                 -close | -&lt;signal&gt; %&lt;id&gt;</a>
+<span class="lineNum">     540 </span>            :            EXEC -in %&lt;id&gt; &lt;text to send to process&gt; */
+<a name="541"><span class="lineNum">     541 </span><span class="lineNoCov">          0 : static void cmd_exec(const char *data, SERVER_REC *server, WI_ITEM_REC *item)</span></a>
+<span class="lineNum">     542 </span>            : {
+<span class="lineNum">     543 </span>            :         GHashTable *optlist;
+<span class="lineNum">     544 </span>            :         char *args;
+<a name="545"><span class="lineNum">     545 </span>            :         void *free_arg;</a>
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     548 </span>            : 
+<a name="549"><span class="lineNum">     549 </span><span class="lineNoCov">          0 :         if (cmd_get_params(data, &amp;free_arg, 1 | PARAM_FLAG_OPTIONS |</span></a>
+<span class="lineNum">     550 </span>            :                            PARAM_FLAG_UNKNOWN_OPTIONS | PARAM_FLAG_GETREST,
+<span class="lineNum">     551 </span>            :                            &quot;exec&quot;, &amp;optlist, &amp;args)) {
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :                 handle_exec(args, optlist, server, item);</span>
+<a name="553"><span class="lineNum">     553 </span><span class="lineNoCov">          0 :                 cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     554 </span>            :         }
+<a name="555"><span class="lineNum">     555 </span>            : }</a>
+<span class="lineNum">     556 </span>            : 
+<a name="557"><span class="lineNum">     557 </span><span class="lineNoCov">          0 : static void sig_pidwait(void *pid, void *statusp)</span></a>
+<span class="lineNum">     558 </span>            : {
+<span class="lineNum">     559 </span>            :         PROCESS_REC *rec;
+<span class="lineNum">     560 </span>            :         char *str;
+<a name="561"><span class="lineNum">     561 </span><span class="lineNoCov">          0 :         int status = GPOINTER_TO_INT(statusp);</span></a>
+<span class="lineNum">     562 </span>            : 
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :         rec = process_find_pid(GPOINTER_TO_INT(pid));</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :         if (rec == NULL) return;</span>
+<a name="565"><span class="lineNum">     565 </span>            : </a>
+<span class="lineNum">     566 </span>            :         /* process exited - print the last line if
+<span class="lineNum">     567 </span>            :            there wasn't a newline at end. */
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :         if (line_split(&quot;\n&quot;, 1, &amp;str, &amp;rec-&gt;databuf) &gt; 0 &amp;&amp; *str != '\0')</span>
+<a name="569"><span class="lineNum">     569 </span><span class="lineNoCov">          0 :                 signal_emit_id(signal_exec_input, 2, rec, str);</span></a>
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :         if (!rec-&gt;silent) {</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">          0 :                 if (WIFSIGNALED(status)) {</span>
+<a name="573"><span class="lineNum">     573 </span><span class="lineNoCov">          0 :                         status = WTERMSIG(status);</span></a>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :                         printtext(NULL, NULL, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     575 </span>            :                                   &quot;process %d (%s) terminated with signal %d (%s)&quot;,
+<span class="lineNum">     576 </span>            :                                   rec-&gt;id, rec-&gt;args,
+<a name="577"><span class="lineNum">     577 </span>            :                                   status, g_strsignal(status));</a>
+<span class="lineNum">     578 </span>            :                 } else {
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :                         status = WIFEXITED(status) ? WEXITSTATUS(status) : -1;</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">          0 :                         printtext(NULL, NULL, MSGLEVEL_CLIENTNOTICE,</span>
+<a name="581"><span class="lineNum">     581 </span>            :                                   &quot;process %d (%s) terminated with return code %d&quot;,</a>
+<span class="lineNum">     582 </span>            :                                   rec-&gt;id, rec-&gt;args, status);
+<span class="lineNum">     583 </span>            :                 }
+<span class="lineNum">     584 </span>            :         }
+<a name="585"><span class="lineNum">     585 </span><span class="lineNoCov">          0 :         process_destroy(rec, status);</span></a>
+<a name="586"><span class="lineNum">     586 </span>            : }</a>
+<span class="lineNum">     587 </span>            : 
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 : static void sig_exec_input(PROCESS_REC *rec, const char *text)</span>
+<a name="589"><span class="lineNum">     589 </span>            : {</a>
+<span class="lineNum">     590 </span>            :         WI_ITEM_REC *item;
+<span class="lineNum">     591 </span>            :         SERVER_REC *server;
+<span class="lineNum">     592 </span>            :         char *str;
+<a name="593"><span class="lineNum">     593 </span>            : </a>
+<span class="lineNum">     594 </span><span class="lineNoCov">          0 :         if (rec-&gt;quiet)</span>
+<span class="lineNum">     595 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     596 </span>            : 
+<a name="597"><span class="lineNum">     597 </span><span class="lineNoCov">          0 :         item = NULL;</span></a>
+<span class="lineNum">     598 </span><span class="lineNoCov">          0 :         server = NULL;</span>
+<span class="lineNum">     599 </span>            : 
+<span class="lineNum">     600 </span><span class="lineNoCov">          0 :         if (rec-&gt;target != NULL) {</span>
+<a name="601"><span class="lineNum">     601 </span><span class="lineNoCov">          0 :                 if (rec-&gt;target_server != NULL) {</span></a>
+<span class="lineNum">     602 </span><span class="lineNoCov">          0 :                         server = server_find_tag(rec-&gt;target_server);</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :                         if (server == NULL) {</span>
+<span class="lineNum">     604 </span>            :                                 /* disconnected - target is lost */
+<a name="605"><span class="lineNum">     605 </span><span class="lineNoCov">          0 :                                 return;</span></a>
+<span class="lineNum">     606 </span>            :                         }
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :                         item = NULL;</span>
+<span class="lineNum">     608 </span>            :                 } else {
+<a name="609"><span class="lineNum">     609 </span><span class="lineNoCov">          0 :                         item = window_item_find(NULL, rec-&gt;target);</span></a>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :                         server = item != NULL ? item-&gt;server :</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :                                 active_win-&gt;active_server;</span>
+<span class="lineNum">     612 </span>            :                 }
+<a name="613"><span class="lineNum">     613 </span>            : </a>
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :                 str = g_strconcat(rec-&gt;target_nick ? &quot;-nick &quot; :</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">          0 :                                   rec-&gt;target_channel ? &quot;-channel &quot; : &quot;&quot;,</span>
+<span class="lineNum">     616 </span>            :                                   rec-&gt;target, &quot; &quot;, text, NULL);
+<a name="617"><span class="lineNum">     617 </span><span class="lineNoCov">          0 :                 signal_emit(rec-&gt;notice ? &quot;command notice&quot; : &quot;command msg&quot;,</span></a>
+<span class="lineNum">     618 </span>            :                             3, str, server, item);
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :                 g_free(str);</span>
+<span class="lineNum">     620 </span><span class="lineNoCov">          0 :         } else if (rec-&gt;target_item != NULL) {</span>
+<a name="621"><span class="lineNum">     621 </span><span class="lineNoCov">          0 :                 printtext(NULL, rec-&gt;target_item-&gt;visible_name,</span></a>
+<span class="lineNum">     622 </span>            :                           rec-&gt;level, &quot;%s&quot;, text);
+<span class="lineNum">     623 </span>            :         } else {
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 :                 printtext_window(rec-&gt;target_win, rec-&gt;level, &quot;%s&quot;, text);</span>
+<a name="625"><span class="lineNum">     625 </span>            :         }</a>
+<a name="626"><span class="lineNum">     626 </span>            : }</a>
+<span class="lineNum">     627 </span>            : 
+<span class="lineNum">     628 </span><span class="lineCov">          3 : static void sig_window_destroyed(WINDOW_REC *window)</span>
+<a name="629"><span class="lineNum">     629 </span>            : {</a>
+<span class="lineNum">     630 </span>            :         GSList *tmp;
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span>            :         /* window is being closed, if there's any /exec targets for it,
+<a name="633"><span class="lineNum">     633 </span>            :            change them to active window. */</a>
+<span class="lineNum">     634 </span><span class="lineCov">          3 :         for (tmp = processes; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :                 PROCESS_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     636 </span>            : 
+<a name="637"><span class="lineNum">     637 </span><span class="lineNoCov">          0 :                 if (rec-&gt;target_win == window)</span></a>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :                         rec-&gt;target_win = active_win;</span>
+<span class="lineNum">     639 </span>            :         }
+<a name="640"><span class="lineNum">     640 </span><span class="lineCov">          3 : }</span></a>
+<a name="641"><span class="lineNum">     641 </span>            : </a>
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 : static void event_text(const char *data, SERVER_REC *server, EXEC_WI_REC *item)</span>
+<span class="lineNum">     643 </span>            : {
+<span class="lineNum">     644 </span><span class="lineNoCov">          0 :         if (!IS_EXEC_WI(item))</span>
+<a name="645"><span class="lineNum">     645 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 :         net_sendbuffer_send(item-&gt;process-&gt;out, data, strlen(data));</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :         net_sendbuffer_send(item-&gt;process-&gt;out, &quot;\n&quot;, 1);</span>
+<a name="649"><span class="lineNum">     649 </span><span class="lineNoCov">          0 :         signal_stop();</span></a>
+<a name="650"><span class="lineNum">     650 </span>            : }</a>
+<span class="lineNum">     651 </span>            : 
+<span class="lineNum">     652 </span><span class="lineCov">          1 : void fe_exec_init(void)</span>
+<a name="653"><span class="lineNum">     653 </span>            : {</a>
+<span class="lineNum">     654 </span><span class="lineCov">          1 :         command_bind(&quot;exec&quot;, NULL, (SIGNAL_FUNC) cmd_exec);</span>
+<span class="lineNum">     655 </span><span class="lineCov">          1 :         command_set_options(&quot;exec&quot;, &quot;!- interactive nosh +name out +msg +notice +in window close +level quiet&quot;);</span>
+<span class="lineNum">     656 </span>            : 
+<a name="657"><span class="lineNum">     657 </span><span class="lineCov">          1 :         signal_exec_input = signal_get_uniq_id(&quot;exec input&quot;);</span></a>
+<span class="lineNum">     658 </span><span class="lineCov">          1 :         signal_add(&quot;pidwait&quot;, (SIGNAL_FUNC) sig_pidwait);</span>
+<span class="lineNum">     659 </span><span class="lineCov">          1 :         signal_add(&quot;exec input&quot;, (SIGNAL_FUNC) sig_exec_input);</span>
+<span class="lineNum">     660 </span><span class="lineCov">          1 :         signal_add(&quot;window destroyed&quot;, (SIGNAL_FUNC) sig_window_destroyed);</span>
+<a name="661"><span class="lineNum">     661 </span><span class="lineCov">          1 :         signal_add_first(&quot;send text&quot;, (SIGNAL_FUNC) event_text);</span></a>
+<a name="662"><span class="lineNum">     662 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     663 </span>            : 
+<span class="lineNum">     664 </span><span class="lineCov">          1 : void fe_exec_deinit(void)</span>
+<a name="665"><span class="lineNum">     665 </span>            : {</a>
+<span class="lineNum">     666 </span><span class="lineCov">          1 :         if (processes != NULL) {</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :                 processes_killall(SIGTERM);</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :                 sleep(1);</span>
+<a name="669"><span class="lineNum">     669 </span><span class="lineNoCov">          0 :                 processes_killall(SIGKILL);</span></a>
+<span class="lineNum">     670 </span>            : 
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :                 while (processes != NULL)</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :                         process_destroy(processes-&gt;data, -1);</span>
+<a name="673"><span class="lineNum">     673 </span>            :         }</a>
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span><span class="lineCov">          1 :         command_unbind(&quot;exec&quot;, (SIGNAL_FUNC) cmd_exec);</span>
+<span class="lineNum">     676 </span>            : 
+<a name="677"><span class="lineNum">     677 </span><span class="lineCov">          1 :         signal_remove(&quot;pidwait&quot;, (SIGNAL_FUNC) sig_pidwait);</span></a>
+<span class="lineNum">     678 </span><span class="lineCov">          1 :         signal_remove(&quot;exec input&quot;, (SIGNAL_FUNC) sig_exec_input);</span>
+<span class="lineNum">     679 </span><span class="lineCov">          1 :         signal_remove(&quot;window destroyed&quot;, (SIGNAL_FUNC) sig_window_destroyed);</span>
+<span class="lineNum">     680 </span><span class="lineCov">          1 :         signal_remove(&quot;send text&quot;, (SIGNAL_FUNC) event_text);</span>
+<a name="681"><span class="lineNum">     681 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

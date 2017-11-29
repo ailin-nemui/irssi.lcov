@@ -1,0 +1,609 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-text/statusbar-items.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-text</a> - statusbar-items.c<span style="font-size: 80%;"> (source / <a href="statusbar-items.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">156</td>
+            <td class="headerCovTableEntry">275</td>
+            <td class="headerCovTableEntryLo">56.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntry">20</td>
+            <td class="headerCovTableEntryMed">75.0 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  statusbar-items.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;servers.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : </a>
+<span class="lineNum">      26 </span>            : #include &quot;themes.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;statusbar.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;gui-entry.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;gui-windows.h&quot;</a>
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : /* how often to redraw lagging time (seconds) */
+<span class="lineNum">      32 </span>            : #define LAG_REFRESH_TIME 10
+<a name="33"><span class="lineNum">      33 </span>            : </a>
+<span class="lineNum">      34 </span>            : static GList *activity_list;
+<span class="lineNum">      35 </span>            : static guint8 actlist_sort;
+<span class="lineNum">      36 </span>            : static GSList *more_visible; /* list of MAIN_WINDOW_RECs which have --more-- */
+<a name="37"><span class="lineNum">      37 </span>            : static GHashTable *input_entries;</a>
+<a name="38"><span class="lineNum">      38 </span>            : static int last_lag, last_lag_unknown, lag_timeout_tag;</a>
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span><span class="lineCov">         39 : static void item_window_active(SBAR_ITEM_REC *item, int get_size_only)</span>
+<a name="41"><span class="lineNum">      41 </span>            : {</a>
+<span class="lineNum">      42 </span>            :         WINDOW_REC *window;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span><span class="lineCov">         39 :         window = active_win;</span>
+<a name="45"><span class="lineNum">      45 </span><span class="lineCov">         39 :         if (item-&gt;bar-&gt;parent_window != NULL)</span></a>
+<span class="lineNum">      46 </span><span class="lineCov">         32 :                 window = item-&gt;bar-&gt;parent_window-&gt;active;</span>
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span><span class="lineCov">         39 :         if (window != NULL &amp;&amp; window-&gt;active != NULL) {</span>
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :                 statusbar_item_default_handler(item, get_size_only,</span></a>
+<span class="lineNum">      50 </span>            :                                                NULL, &quot;&quot;, TRUE);
+<span class="lineNum">      51 </span><span class="lineCov">         39 :         } else if (get_size_only) {</span>
+<span class="lineNum">      52 </span><span class="lineCov">         33 :                 item-&gt;min_size = item-&gt;max_size = 0;</span>
+<a name="53"><span class="lineNum">      53 </span>            :         }</a>
+<a name="54"><span class="lineNum">      54 </span><span class="lineCov">         39 : }</span></a>
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span><span class="lineCov">         37 : static void item_window_empty(SBAR_ITEM_REC *item, int get_size_only)</span>
+<a name="57"><span class="lineNum">      57 </span>            : {</a>
+<span class="lineNum">      58 </span>            :         WINDOW_REC *window;
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span><span class="lineCov">         37 :         window = active_win;</span>
+<a name="61"><span class="lineNum">      61 </span><span class="lineCov">         37 :         if (item-&gt;bar-&gt;parent_window != NULL)</span></a>
+<span class="lineNum">      62 </span><span class="lineCov">         33 :                 window = item-&gt;bar-&gt;parent_window-&gt;active;</span>
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span><span class="lineCov">         37 :         if (window != NULL &amp;&amp; window-&gt;active == NULL) {</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineCov">         35 :                 statusbar_item_default_handler(item, get_size_only,</span></a>
+<span class="lineNum">      66 </span>            :                                                NULL, &quot;&quot;, TRUE);
+<span class="lineNum">      67 </span><span class="lineCov">          2 :         } else if (get_size_only) {</span>
+<span class="lineNum">      68 </span><span class="lineCov">          1 :                 item-&gt;min_size = item-&gt;max_size = 0;</span>
+<a name="69"><span class="lineNum">      69 </span>            :         }</a>
+<a name="70"><span class="lineNum">      70 </span><span class="lineCov">         37 : }</span></a>
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineCov">          1 : static char *get_activity_list(MAIN_WINDOW_REC *window, int normal, int hilight)</span>
+<a name="73"><span class="lineNum">      73 </span>            : {</a>
+<span class="lineNum">      74 </span>            :         THEME_REC *theme;
+<span class="lineNum">      75 </span>            :         GString *str;
+<span class="lineNum">      76 </span>            :         GString *format;
+<a name="77"><span class="lineNum">      77 </span>            :         GList *tmp;</a>
+<span class="lineNum">      78 </span>            :         char *ret, *name, *value;
+<span class="lineNum">      79 </span>            :         int is_det;
+<span class="lineNum">      80 </span><span class="lineCov">          1 :         int add_name = settings_get_bool(&quot;actlist_names&quot;);</span>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<span class="lineNum">      82 </span><span class="lineCov">          1 :         str = g_string_new(NULL);</span>
+<span class="lineNum">      83 </span><span class="lineCov">          1 :         format = g_string_new(NULL);</span>
+<span class="lineNum">      84 </span>            : 
+<a name="85"><span class="lineNum">      85 </span><span class="lineCov">          3 :         theme = window != NULL &amp;&amp; window-&gt;active != NULL &amp;&amp;</span></a>
+<span class="lineNum">      86 </span><span class="lineCov">          1 :                 window-&gt;active-&gt;theme != NULL ?</span>
+<span class="lineNum">      87 </span><span class="lineCov">          1 :                 window-&gt;active-&gt;theme : current_theme;</span>
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineCov">          1 :         for (tmp = activity_list; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                 WINDOW_REC *window = tmp-&gt;data;</span>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :                 is_det = window-&gt;data_level &gt;= DATA_LEVEL_HILIGHT;</span>
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :                 if ((!is_det &amp;&amp; !normal) || (is_det &amp;&amp; !hilight))</span></a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span>            :                 /* comma separator */
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :                 if (str-&gt;len &gt; 0) {</span></a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :                         value = theme_format_expand(theme, &quot;{sb_act_sep ,}&quot;);</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :                         g_string_append(str, value);</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :                         g_free(value);</span>
+<a name="101"><span class="lineNum">     101 </span>            :                 }</a>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :                 switch (window-&gt;data_level) {</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                 case DATA_LEVEL_NONE:</span>
+<a name="105"><span class="lineNum">     105 </span>            :                 case DATA_LEVEL_TEXT:</a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :                         name = &quot;{sb_act_text %d&quot;;</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 case DATA_LEVEL_MSG:</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                         name = &quot;{sb_act_msg %d&quot;;</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 default:</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                         if (window-&gt;hilight_color == NULL)</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :                                 name = &quot;{sb_act_hilight %d&quot;;</span></a>
+<span class="lineNum">     114 </span>            :                         else
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                                 name = NULL;</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :                         break;</span>
+<a name="117"><span class="lineNum">     117 </span>            :                 }</a>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :                 if (name != NULL)</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                         g_string_printf(format, name, window-&gt;refnum);</span>
+<a name="121"><span class="lineNum">     121 </span>            :                 else</a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                         g_string_printf(format, &quot;{sb_act_hilight_color %s %d&quot;,</span>
+<span class="lineNum">     123 </span>            :                                                  window-&gt;hilight_color,
+<span class="lineNum">     124 </span>            :                                                  window-&gt;refnum);
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 if (add_name &amp;&amp; window-&gt;active != NULL)</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :                         g_string_append_printf(format, &quot;:%s&quot;, window-&gt;active-&gt;visible_name);</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                 g_string_append_c(format, '}');</span>
+<span class="lineNum">     128 </span>            : 
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 value = theme_format_expand(theme, format-&gt;str);</span></a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 g_string_append(str, value);</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 g_free(value);</span>
+<span class="lineNum">     132 </span>            :         }
+<a name="133"><span class="lineNum">     133 </span>            : </a>
+<span class="lineNum">     134 </span><span class="lineCov">          1 :         ret = str-&gt;len == 0 ? NULL : str-&gt;str;</span>
+<span class="lineNum">     135 </span><span class="lineCov">          1 :         g_string_free(str, ret == NULL);</span>
+<span class="lineNum">     136 </span><span class="lineCov">          1 :         g_string_free(format, TRUE);</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineCov">          1 :         return ret;</span></a>
+<span class="lineNum">     138 </span>            : }
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span>            : /* redraw activity, FIXME: if we didn't get enough size, this gets buggy.
+<a name="141"><span class="lineNum">     141 </span>            :    At least &quot;Det:&quot; isn't printed properly. also we should rearrange the</a>
+<span class="lineNum">     142 </span>            :    act list so that the highest priority items comes first. */
+<span class="lineNum">     143 </span><span class="lineCov">          6 : static void item_act(SBAR_ITEM_REC *item, int get_size_only)</span>
+<span class="lineNum">     144 </span>            : {
+<a name="145"><span class="lineNum">     145 </span>            :         char *actlist;</a>
+<span class="lineNum">     146 </span>            :         int max_size;
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineCov">          6 :         if (get_size_only) {</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineCov">          5 :                 if (activity_list == NULL)</span></a>
+<span class="lineNum">     150 </span><span class="lineCov">          5 :                         item-&gt;min_size = item-&gt;max_size = 0;</span>
+<span class="lineNum">     151 </span>            :                 /* Skip activity calculation on regular trigger, only
+<span class="lineNum">     152 </span>            :                    set dirty */
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">          5 :                 return;</span></a>
+<span class="lineNum">     154 </span>            :         }
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineCov">          1 :         actlist = get_activity_list(item-&gt;bar-&gt;parent_window, TRUE, TRUE);</span>
+<a name="157"><span class="lineNum">     157 </span><span class="lineCov">          1 :         if (actlist == NULL) {</span></a>
+<span class="lineNum">     158 </span><span class="lineCov">          1 :                 return;</span>
+<span class="lineNum">     159 </span>            :         }
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :         max_size = item-&gt;max_size;</span></a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         statusbar_item_default_handler(item, TRUE,</span>
+<span class="lineNum">     163 </span>            :                                        NULL, actlist, FALSE);
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         statusbar_item_default_handler(item, FALSE,</span>
+<a name="165"><span class="lineNum">     165 </span>            :                                        NULL, actlist, FALSE);</a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :         if (max_size != item-&gt;max_size) {</span>
+<span class="lineNum">     167 </span>            :                 /* Due to above hack of skipping the calculation, we
+<span class="lineNum">     168 </span>            :                    need to manually trigger the redraw process now or
+<a name="169"><span class="lineNum">     169 </span>            :                    we won't see the item */</a>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :                 item-&gt;bar-&gt;dirty = item-&gt;dirty = TRUE;</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :                 statusbar_redraw(item-&gt;bar, TRUE);</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                 statusbar_redraw_dirty();</span>
+<a name="173"><span class="lineNum">     173 </span>            :         }</a>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :         g_free_not_null(actlist);</span>
+<a name="176"><span class="lineNum">     176 </span>            : }</a>
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 : static int window_level_recent_cmp(WINDOW_REC *w1, WINDOW_REC *w2)</span>
+<span class="lineNum">     179 </span>            : {
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         if (w1-&gt;data_level &gt;= w2-&gt;data_level)</span>
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :                 return -1;</span></a>
+<span class="lineNum">     182 </span>            :         else
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<a name="184"><span class="lineNum">     184 </span>            : }</a>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 : static int window_level_cmp(WINDOW_REC *w1, WINDOW_REC *w2)</span>
+<span class="lineNum">     187 </span>            : {
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :         if (w1-&gt;data_level &gt; w2-&gt;data_level ||</span>
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :             (w1-&gt;data_level == w2-&gt;data_level &amp;&amp; w1-&gt;refnum &lt; w2-&gt;refnum))</span></a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">     191 </span>            :         else
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<a name="193"><span class="lineNum">     193 </span>            : }</a>
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineCov">          6 : static void sig_statusbar_activity_hilight(WINDOW_REC *window, gpointer oldlevel)</span>
+<span class="lineNum">     196 </span>            : {
+<a name="197"><span class="lineNum">     197 </span>            :         GList *node;</a>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineCov">          6 :         g_return_if_fail(window != NULL);</span>
+<span class="lineNum">     200 </span>            : 
+<a name="201"><span class="lineNum">     201 </span><span class="lineCov">          6 :         node = g_list_find(activity_list, window);</span></a>
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineCov">          6 :         if (actlist_sort == 1) {</span>
+<span class="lineNum">     204 </span>            :                 /* Move the window to the first in the activity list */
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :                 if (node != NULL)</span></a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :                         activity_list = g_list_delete_link(activity_list, node);</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 if (window-&gt;data_level != 0)</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                         activity_list = g_list_prepend(activity_list, window);</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :                 statusbar_items_redraw(&quot;act&quot;);</span></a>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     211 </span>            :         }
+<span class="lineNum">     212 </span>            : 
+<a name="213"><span class="lineNum">     213 </span><span class="lineCov">          6 :         if (actlist_sort == 2) {</span></a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 if (node != NULL) {</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                         if (window-&gt;data_level == GPOINTER_TO_INT(oldlevel)) {</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                                 if (window-&gt;hilight_color != 0)</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :                                         statusbar_items_redraw(&quot;act&quot;);</span></a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                                 return;</span>
+<span class="lineNum">     219 </span>            :                         }
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                         activity_list = g_list_delete_link(activity_list, node);</span>
+<a name="221"><span class="lineNum">     221 </span>            :                 }</a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                 if (window-&gt;data_level != 0)</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                         activity_list = g_list_insert_sorted(activity_list, window, (GCompareFunc)</span>
+<span class="lineNum">     224 </span>            :                                                              window_level_cmp);
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :                 statusbar_items_redraw(&quot;act&quot;);</span></a>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     227 </span>            :         }
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">          6 :         if (actlist_sort == 3) {</span></a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 if (node != NULL)</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                         activity_list = g_list_delete_link(activity_list, node);</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                 if (window-&gt;data_level != 0)</span>
+<a name="233"><span class="lineNum">     233 </span><span class="lineNoCov">          0 :                         activity_list = g_list_insert_sorted(activity_list, window, (GCompareFunc)</span></a>
+<span class="lineNum">     234 </span>            :                                                              window_level_recent_cmp);
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                 statusbar_items_redraw(&quot;act&quot;);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="237"><span class="lineNum">     237 </span>            :         }</a>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineCov">          6 :         if (node != NULL) {</span>
+<span class="lineNum">     240 </span>            :                 /* already in activity list */
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :                 if (window-&gt;data_level == 0) {</span></a>
+<span class="lineNum">     242 </span>            :                         /* remove from activity list */
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :                         activity_list = g_list_delete_link(activity_list, node);</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                         statusbar_items_redraw(&quot;act&quot;);</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :                 } else if (window-&gt;data_level != GPOINTER_TO_INT(oldlevel) ||</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                          window-&gt;hilight_color != 0) {</span>
+<span class="lineNum">     247 </span>            :                         /* different level as last time (or maybe different
+<span class="lineNum">     248 </span>            :                            hilight color?), just redraw it. */
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :                         statusbar_items_redraw(&quot;act&quot;);</span></a>
+<span class="lineNum">     250 </span>            :                 }
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     252 </span>            :         }
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<span class="lineNum">     254 </span><span class="lineCov">          6 :         if (window-&gt;data_level == 0)</span>
+<span class="lineNum">     255 </span><span class="lineCov">          6 :                 return;</span>
+<span class="lineNum">     256 </span>            : 
+<a name="257"><span class="lineNum">     257 </span>            :         /* add window to activity list .. */</a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         activity_list = g_list_insert_sorted(activity_list, window, (GCompareFunc)</span>
+<span class="lineNum">     259 </span>            :                                              window_refnum_cmp);
+<span class="lineNum">     260 </span>            : 
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :         statusbar_items_redraw(&quot;act&quot;);</span></a>
+<a name="262"><span class="lineNum">     262 </span>            : }</a>
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 : static void sig_statusbar_activity_window_destroyed(WINDOW_REC *window)</span>
+<a name="265"><span class="lineNum">     265 </span>            : {</a>
+<span class="lineNum">     266 </span>            :         GList *node;
+<span class="lineNum">     267 </span>            : 
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         g_return_if_fail(window != NULL);</span>
+<a name="269"><span class="lineNum">     269 </span>            : </a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :         node = g_list_find(activity_list, window);</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         if (node != NULL)</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                 activity_list = g_list_delete_link(activity_list, node);</span>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :         statusbar_items_redraw(&quot;act&quot;);</span></a>
+<a name="274"><span class="lineNum">     274 </span>            : }</a>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineCov">          1 : static void sig_statusbar_activity_updated(void)</span>
+<a name="277"><span class="lineNum">     277 </span>            : {</a>
+<span class="lineNum">     278 </span><span class="lineCov">          1 :         statusbar_items_redraw(&quot;act&quot;);</span>
+<a name="279"><span class="lineNum">     279 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     280 </span>            : 
+<a name="281"><span class="lineNum">     281 </span><span class="lineCov">         13 : static void item_more(SBAR_ITEM_REC *item, int get_size_only)</span></a>
+<span class="lineNum">     282 </span>            : {
+<span class="lineNum">     283 </span>            :         MAIN_WINDOW_REC *mainwin;
+<span class="lineNum">     284 </span>            :         int visible;
+<a name="285"><span class="lineNum">     285 </span>            : </a>
+<span class="lineNum">     286 </span><span class="lineCov">         13 :         if (active_win == NULL) {</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :                 mainwin = NULL;</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 visible = FALSE;</span>
+<a name="289"><span class="lineNum">     289 </span>            :         } else {</a>
+<span class="lineNum">     290 </span><span class="lineCov">         13 :                 mainwin = WINDOW_MAIN(active_win);</span>
+<span class="lineNum">     291 </span><span class="lineCov">         13 :                 visible = WINDOW_GUI(active_win)-&gt;view-&gt;more_text;</span>
+<span class="lineNum">     292 </span>            :         }
+<a name="293"><span class="lineNum">     293 </span>            : </a>
+<span class="lineNum">     294 </span><span class="lineCov">         13 :         if (!visible) {</span>
+<span class="lineNum">     295 </span><span class="lineCov">         13 :                 if (mainwin != NULL)</span>
+<span class="lineNum">     296 </span><span class="lineCov">         13 :                         more_visible = g_slist_remove(more_visible, mainwin);</span>
+<a name="297"><span class="lineNum">     297 </span><span class="lineCov">         13 :                 if (get_size_only)</span></a>
+<span class="lineNum">     298 </span><span class="lineCov">         10 :                         item-&gt;min_size = item-&gt;max_size = 0;</span>
+<span class="lineNum">     299 </span><span class="lineCov">         13 :                 return;</span>
+<span class="lineNum">     300 </span>            :         }
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         more_visible = g_slist_prepend(more_visible, mainwin);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         statusbar_item_default_handler(item, get_size_only, NULL, &quot;&quot;, FALSE);</span>
+<a name="304"><span class="lineNum">     304 </span>            : }</a>
+<a name="305"><span class="lineNum">     305 </span>            : </a>
+<span class="lineNum">     306 </span><span class="lineCov">         10 : static void sig_statusbar_more_updated(void)</span>
+<span class="lineNum">     307 </span>            : {
+<span class="lineNum">     308 </span>            :         int visible;
+<a name="309"><span class="lineNum">     309 </span>            : </a>
+<span class="lineNum">     310 </span>            :          /* no active window, for example during /window hide */
+<span class="lineNum">     311 </span><span class="lineCov">         10 :         if (active_win == NULL)</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="313"><span class="lineNum">     313 </span>            : </a>
+<span class="lineNum">     314 </span><span class="lineCov">         10 :         visible = g_slist_find(more_visible, WINDOW_MAIN(active_win)) != NULL;</span>
+<span class="lineNum">     315 </span><span class="lineCov">         10 :         if (WINDOW_GUI(active_win)-&gt;view-&gt;more_text != visible)</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                 statusbar_items_redraw(&quot;more&quot;);</span>
+<a name="317"><span class="lineNum">     317 </span>            : }</a>
+<span class="lineNum">     318 </span>            : 
+<a name="319"><span class="lineNum">     319 </span>            : /* Returns the lag in milliseconds. If we haven't been able to ask the lag</a>
+<span class="lineNum">     320 </span>            :    for a while, unknown is set to TRUE. */
+<a name="321"><span class="lineNum">     321 </span><span class="lineCov">          8 : static int get_lag(SERVER_REC *server, int *unknown)</span></a>
+<span class="lineNum">     322 </span>            : {
+<span class="lineNum">     323 </span>            :         long lag;
+<span class="lineNum">     324 </span>            : 
+<a name="325"><span class="lineNum">     325 </span><span class="lineCov">          8 :         *unknown = FALSE;</span></a>
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineCov">          8 :         if (server == NULL || server-&gt;lag_last_check == 0) {</span>
+<span class="lineNum">     328 </span>            :                 /* lag has not been asked even once yet */
+<a name="329"><span class="lineNum">     329 </span><span class="lineCov">          8 :                 return 0;</span></a>
+<span class="lineNum">     330 </span>            :         }
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :         if (server-&gt;lag_sent.tv_sec == 0) {</span>
+<a name="333"><span class="lineNum">     333 </span>            :                 /* no lag queries going on currently */</a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :                 return server-&gt;lag;</span>
+<span class="lineNum">     335 </span>            :         }
+<span class="lineNum">     336 </span>            : 
+<a name="337"><span class="lineNum">     337 </span>            :         /* we're not sure about our current lag.. */</a>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :         *unknown = TRUE;</span>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         lag = (long) (time(NULL)-server-&gt;lag_sent.tv_sec);</span>
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :         if (server-&gt;lag/1000 &gt; lag) {</span></a>
+<span class="lineNum">     342 </span>            :                 /* we've been waiting the lag reply less time than
+<span class="lineNum">     343 </span>            :                    what last known lag was -&gt; use the last known lag */
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                 return server-&gt;lag;</span>
+<a name="345"><span class="lineNum">     345 </span>            :         }</a>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span>            :         /* return how long we have been waiting for lag reply */
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :         return lag*1000;</span>
+<a name="349"><span class="lineNum">     349 </span>            : }</a>
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineCov">          5 : static void item_lag(SBAR_ITEM_REC *item, int get_size_only)</span>
+<span class="lineNum">     352 </span>            : {
+<a name="353"><span class="lineNum">     353 </span>            :         SERVER_REC *server;</a>
+<span class="lineNum">     354 </span>            :         char str[MAX_INT_STRLEN+10];
+<span class="lineNum">     355 </span>            :         int lag, lag_unknown;
+<span class="lineNum">     356 </span>            : 
+<a name="357"><span class="lineNum">     357 </span><span class="lineCov">          5 :         server = active_win == NULL ? NULL : active_win-&gt;active_server;</span></a>
+<span class="lineNum">     358 </span><span class="lineCov">          5 :         lag = get_lag(server, &amp;lag_unknown);</span>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineCov">          5 :         if (lag &lt;= 0 || lag &lt; settings_get_time(&quot;lag_min_show&quot;)) {</span>
+<a name="361"><span class="lineNum">     361 </span>            :                 /* don't print the lag item */</a>
+<span class="lineNum">     362 </span><span class="lineCov">          5 :                 if (get_size_only)</span>
+<span class="lineNum">     363 </span><span class="lineCov">          4 :                         item-&gt;min_size = item-&gt;max_size = 0;</span>
+<span class="lineNum">     364 </span><span class="lineCov">          5 :                 return;</span>
+<a name="365"><span class="lineNum">     365 </span>            :         }</a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :         lag /= 10;</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         last_lag = lag;</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :         last_lag_unknown = lag_unknown;</span></a>
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :         if (lag_unknown) {</span>
+<span class="lineNum">     372 </span>            :                 // &quot;??)&quot; in C becomes ']'
+<a name="373"><span class="lineNum">     373 </span>            :                 // See: https://en.wikipedia.org/wiki/Digraphs_and_trigraphs#C</a>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                 g_snprintf(str, sizeof(str), &quot;%d (?&quot;&quot;?)&quot;, lag / 100);</span>
+<span class="lineNum">     375 </span>            :         } else {
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                 if (lag % 100 == 0)</span>
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 :                         g_snprintf(str, sizeof(str), &quot;%d&quot;, lag / 100);</span></a>
+<span class="lineNum">     378 </span>            :                 else
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :                         g_snprintf(str, sizeof(str), &quot;%d.%02d&quot;, lag / 100, lag % 100);</span>
+<span class="lineNum">     380 </span>            :         }
+<a name="381"><span class="lineNum">     381 </span>            : </a>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :         statusbar_item_default_handler(item, get_size_only,</span>
+<span class="lineNum">     383 </span>            :                                        NULL, str, TRUE);
+<a name="384"><span class="lineNum">     384 </span>            : }</a>
+<a name="385"><span class="lineNum">     385 </span>            : </a>
+<span class="lineNum">     386 </span><span class="lineCov">          3 : static void lag_check_update(void)</span>
+<span class="lineNum">     387 </span>            : {
+<span class="lineNum">     388 </span>            :         SERVER_REC *server;
+<a name="389"><span class="lineNum">     389 </span>            :         int lag, lag_unknown;</a>
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineCov">          3 :         server = active_win == NULL ? NULL : active_win-&gt;active_server;</span>
+<span class="lineNum">     392 </span><span class="lineCov">          3 :         lag = get_lag(server, &amp;lag_unknown)/10;</span>
+<a name="393"><span class="lineNum">     393 </span>            : </a>
+<span class="lineNum">     394 </span><span class="lineCov">          3 :         if (lag &lt; settings_get_time(&quot;lag_min_show&quot;))</span>
+<span class="lineNum">     395 </span><span class="lineCov">          3 :                 lag = 0;</span>
+<span class="lineNum">     396 </span>            :         else
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :                 lag /= 10;</span></a>
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span><span class="lineCov">          3 :         if (lag != last_lag || (lag &gt; 0 &amp;&amp; lag_unknown != last_lag_unknown))</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                 statusbar_items_redraw(&quot;lag&quot;);</span>
+<a name="401"><span class="lineNum">     401 </span><span class="lineCov">          3 : }</span></a>
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 : static void sig_server_lag_updated(SERVER_REC *server)</span>
+<span class="lineNum">     404 </span>            : {
+<a name="405"><span class="lineNum">     405 </span><span class="lineNoCov">          0 :         if (active_win != NULL &amp;&amp; active_win-&gt;active_server == server)</span></a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                 lag_check_update();</span>
+<a name="407"><span class="lineNum">     407 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     408 </span>            : 
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 : static int sig_lag_timeout(void)</span></a>
+<span class="lineNum">     410 </span>            : {
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :         lag_check_update();</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :         return 1;</span>
+<a name="413"><span class="lineNum">     413 </span>            : }</a>
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span><span class="lineCov">          9 : static void item_input(SBAR_ITEM_REC *item, int get_size_only)</span>
+<span class="lineNum">     416 </span>            : {
+<a name="417"><span class="lineNum">     417 </span>            :         GUI_ENTRY_REC *rec;</a>
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineCov">          9 :         rec = g_hash_table_lookup(input_entries, item-&gt;bar-&gt;config-&gt;name);</span>
+<span class="lineNum">     420 </span><span class="lineCov">          9 :         if (rec == NULL) {</span>
+<a name="421"><span class="lineNum">     421 </span><span class="lineCov">          1 :                 rec = gui_entry_create(item-&gt;xpos, item-&gt;bar-&gt;real_ypos,</span></a>
+<span class="lineNum">     422 </span>            :                                        item-&gt;size, term_type == TERM_TYPE_UTF8);
+<span class="lineNum">     423 </span><span class="lineCov">          1 :                 gui_entry_set_active(rec);</span>
+<span class="lineNum">     424 </span><span class="lineCov">          1 :                 g_hash_table_insert(input_entries,</span>
+<a name="425"><span class="lineNum">     425 </span><span class="lineCov">          1 :                                     g_strdup(item-&gt;bar-&gt;config-&gt;name), rec);</span></a>
+<span class="lineNum">     426 </span>            :         }
+<span class="lineNum">     427 </span>            : 
+<span class="lineNum">     428 </span><span class="lineCov">          9 :         if (get_size_only) {</span>
+<a name="429"><span class="lineNum">     429 </span><span class="lineCov">          8 :                 item-&gt;min_size = 2+term_width/10;</span></a>
+<span class="lineNum">     430 </span><span class="lineCov">          8 :                 item-&gt;max_size = term_width;</span>
+<span class="lineNum">     431 </span><span class="lineCov">          8 :                 return;</span>
+<span class="lineNum">     432 </span>            :         }
+<a name="433"><span class="lineNum">     433 </span>            : </a>
+<span class="lineNum">     434 </span><span class="lineCov">          1 :         gui_entry_move(rec, item-&gt;xpos, item-&gt;bar-&gt;real_ypos,</span>
+<span class="lineNum">     435 </span>            :                        item-&gt;size);
+<span class="lineNum">     436 </span><span class="lineCov">          1 :         gui_entry_redraw(rec); /* FIXME: this is only necessary with ^L.. */</span>
+<a name="437"><span class="lineNum">     437 </span>            : }</a>
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span><span class="lineCov">          1 : static void read_settings(void)</span>
+<span class="lineNum">     440 </span>            : {
+<a name="441"><span class="lineNum">     441 </span>            :         const char *str;</a>
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span><span class="lineCov">          1 :         if (active_entry != NULL)</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                 gui_entry_set_utf8(active_entry, term_type == TERM_TYPE_UTF8);</span>
+<a name="445"><span class="lineNum">     445 </span>            : </a>
+<span class="lineNum">     446 </span><span class="lineCov">          1 :         str = settings_get_str(&quot;actlist_sort&quot;);</span>
+<span class="lineNum">     447 </span><span class="lineCov">          1 :         if (g_ascii_strcasecmp(str, &quot;recent&quot;) == 0)</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :                 actlist_sort = 1;</span>
+<a name="449"><span class="lineNum">     449 </span><span class="lineCov">          1 :         else if (g_ascii_strcasecmp(str, &quot;level&quot;) == 0)</span></a>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :                 actlist_sort = 2;</span>
+<span class="lineNum">     451 </span><span class="lineCov">          1 :         else if (g_ascii_strcasecmp(str, &quot;level,recent&quot;) == 0)</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :                 actlist_sort = 3;</span>
+<a name="453"><span class="lineNum">     453 </span>            :         else {</a>
+<span class="lineNum">     454 </span><span class="lineCov">          1 :                 settings_set_str(&quot;actlist_sort&quot;, &quot;refnum&quot;);</span>
+<span class="lineNum">     455 </span><span class="lineCov">          1 :                 actlist_sort = 0;</span>
+<span class="lineNum">     456 </span>            :         }
+<a name="457"><span class="lineNum">     457 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineCov">          1 : void statusbar_items_init(void)</span>
+<span class="lineNum">     460 </span>            : {
+<a name="461"><span class="lineNum">     461 </span><span class="lineCov">          1 :         settings_add_time(&quot;misc&quot;, &quot;lag_min_show&quot;, &quot;1sec&quot;);</span></a>
+<span class="lineNum">     462 </span><span class="lineCov">          1 :         settings_add_str(&quot;lookandfeel&quot;, &quot;actlist_sort&quot;, &quot;refnum&quot;);</span>
+<span class="lineNum">     463 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;actlist_names&quot;, FALSE);</span>
+<span class="lineNum">     464 </span>            : 
+<a name="465"><span class="lineNum">     465 </span><span class="lineCov">          1 :         statusbar_item_register(&quot;window&quot;, NULL, item_window_active);</span></a>
+<span class="lineNum">     466 </span><span class="lineCov">          1 :         statusbar_item_register(&quot;window_empty&quot;, NULL, item_window_empty);</span>
+<span class="lineNum">     467 </span><span class="lineCov">          1 :         statusbar_item_register(&quot;prompt&quot;, NULL, item_window_active);</span>
+<span class="lineNum">     468 </span><span class="lineCov">          1 :         statusbar_item_register(&quot;prompt_empty&quot;, NULL, item_window_empty);</span>
+<a name="469"><span class="lineNum">     469 </span><span class="lineCov">          1 :         statusbar_item_register(&quot;topic&quot;, NULL, item_window_active);</span></a>
+<span class="lineNum">     470 </span><span class="lineCov">          1 :         statusbar_item_register(&quot;topic_empty&quot;, NULL, item_window_empty);</span>
+<span class="lineNum">     471 </span><span class="lineCov">          1 :         statusbar_item_register(&quot;lag&quot;, NULL, item_lag);</span>
+<span class="lineNum">     472 </span><span class="lineCov">          1 :         statusbar_item_register(&quot;act&quot;, NULL, item_act);</span>
+<a name="473"><span class="lineNum">     473 </span><span class="lineCov">          1 :         statusbar_item_register(&quot;more&quot;, NULL, item_more);</span></a>
+<span class="lineNum">     474 </span><span class="lineCov">          1 :         statusbar_item_register(&quot;input&quot;, NULL, item_input);</span>
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span>            :         /* activity */
+<a name="477"><span class="lineNum">     477 </span><span class="lineCov">          1 :         activity_list = NULL;</span></a>
+<span class="lineNum">     478 </span><span class="lineCov">          1 :         signal_add(&quot;window activity&quot;, (SIGNAL_FUNC) sig_statusbar_activity_hilight);</span>
+<span class="lineNum">     479 </span><span class="lineCov">          1 :         signal_add(&quot;window destroyed&quot;, (SIGNAL_FUNC) sig_statusbar_activity_window_destroyed);</span>
+<span class="lineNum">     480 </span><span class="lineCov">          1 :         signal_add(&quot;window refnum changed&quot;, (SIGNAL_FUNC) sig_statusbar_activity_updated);</span>
+<a name="481"><span class="lineNum">     481 </span>            : </a>
+<span class="lineNum">     482 </span>            :         /* more */
+<span class="lineNum">     483 </span><span class="lineCov">          1 :         more_visible = NULL;</span>
+<span class="lineNum">     484 </span><span class="lineCov">          1 :         signal_add(&quot;gui page scrolled&quot;, (SIGNAL_FUNC) sig_statusbar_more_updated);</span>
+<a name="485"><span class="lineNum">     485 </span><span class="lineCov">          1 :         signal_add(&quot;window changed&quot;, (SIGNAL_FUNC) sig_statusbar_more_updated);</span></a>
+<span class="lineNum">     486 </span><span class="lineCov">          1 :         signal_add_last(&quot;gui print text finished&quot;, (SIGNAL_FUNC) sig_statusbar_more_updated);</span>
+<span class="lineNum">     487 </span><span class="lineCov">          1 :         signal_add_last(&quot;command clear&quot;, (SIGNAL_FUNC) sig_statusbar_more_updated);</span>
+<span class="lineNum">     488 </span><span class="lineCov">          1 :         signal_add_last(&quot;command scrollback&quot;, (SIGNAL_FUNC) sig_statusbar_more_updated);</span>
+<a name="489"><span class="lineNum">     489 </span>            : </a>
+<span class="lineNum">     490 </span>            :         /* lag */
+<span class="lineNum">     491 </span><span class="lineCov">          1 :         last_lag = 0; last_lag_unknown = FALSE;</span>
+<span class="lineNum">     492 </span><span class="lineCov">          1 :         signal_add(&quot;server lag&quot;, (SIGNAL_FUNC) sig_server_lag_updated);</span>
+<a name="493"><span class="lineNum">     493 </span><span class="lineCov">          1 :         signal_add(&quot;window changed&quot;, (SIGNAL_FUNC) lag_check_update);</span></a>
+<span class="lineNum">     494 </span><span class="lineCov">          1 :         signal_add(&quot;window server changed&quot;, (SIGNAL_FUNC) lag_check_update);</span>
+<span class="lineNum">     495 </span><span class="lineCov">          1 :         lag_timeout_tag = g_timeout_add(5000, (GSourceFunc) sig_lag_timeout, NULL);</span>
+<span class="lineNum">     496 </span>            : 
+<a name="497"><span class="lineNum">     497 </span>            :         /* input */</a>
+<span class="lineNum">     498 </span><span class="lineCov">          1 :         input_entries = g_hash_table_new((GHashFunc) g_str_hash,</span>
+<span class="lineNum">     499 </span>            :                                          (GCompareFunc) g_str_equal);
+<span class="lineNum">     500 </span>            : 
+<a name="501"><span class="lineNum">     501 </span><span class="lineCov">          1 :         read_settings();</span></a>
+<span class="lineNum">     502 </span><span class="lineCov">          1 :         signal_add_last(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<a name="503"><span class="lineNum">     503 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     504 </span>            : 
+<a name="505"><span class="lineNum">     505 </span><span class="lineCov">          1 : void statusbar_items_deinit(void)</span></a>
+<span class="lineNum">     506 </span>            : {
+<span class="lineNum">     507 </span>            :         /* activity */
+<span class="lineNum">     508 </span><span class="lineCov">          1 :         signal_remove(&quot;window activity&quot;, (SIGNAL_FUNC) sig_statusbar_activity_hilight);</span>
+<a name="509"><span class="lineNum">     509 </span><span class="lineCov">          1 :         signal_remove(&quot;window destroyed&quot;, (SIGNAL_FUNC) sig_statusbar_activity_window_destroyed);</span></a>
+<span class="lineNum">     510 </span><span class="lineCov">          1 :         signal_remove(&quot;window refnum changed&quot;, (SIGNAL_FUNC) sig_statusbar_activity_updated);</span>
+<span class="lineNum">     511 </span><span class="lineCov">          1 :         g_list_free(activity_list);</span>
+<span class="lineNum">     512 </span><span class="lineCov">          1 :         activity_list = NULL;</span>
+<a name="513"><span class="lineNum">     513 </span>            : </a>
+<span class="lineNum">     514 </span>            :         /* more */
+<span class="lineNum">     515 </span><span class="lineCov">          1 :         g_slist_free(more_visible);</span>
+<span class="lineNum">     516 </span><span class="lineCov">          1 :         signal_remove(&quot;gui page scrolled&quot;, (SIGNAL_FUNC) sig_statusbar_more_updated);</span>
+<a name="517"><span class="lineNum">     517 </span><span class="lineCov">          1 :         signal_remove(&quot;window changed&quot;, (SIGNAL_FUNC) sig_statusbar_more_updated);</span></a>
+<span class="lineNum">     518 </span><span class="lineCov">          1 :         signal_remove(&quot;gui print text finished&quot;, (SIGNAL_FUNC) sig_statusbar_more_updated);</span>
+<span class="lineNum">     519 </span><span class="lineCov">          1 :         signal_remove(&quot;command clear&quot;, (SIGNAL_FUNC) sig_statusbar_more_updated);</span>
+<span class="lineNum">     520 </span><span class="lineCov">          1 :         signal_remove(&quot;command scrollback&quot;, (SIGNAL_FUNC) sig_statusbar_more_updated);</span>
+<a name="521"><span class="lineNum">     521 </span>            : </a>
+<span class="lineNum">     522 </span>            :         /* lag */
+<span class="lineNum">     523 </span><span class="lineCov">          1 :         signal_remove(&quot;server lag&quot;, (SIGNAL_FUNC) sig_server_lag_updated);</span>
+<span class="lineNum">     524 </span><span class="lineCov">          1 :         signal_remove(&quot;window changed&quot;, (SIGNAL_FUNC) lag_check_update);</span>
+<a name="525"><span class="lineNum">     525 </span><span class="lineCov">          1 :         signal_remove(&quot;window server changed&quot;, (SIGNAL_FUNC) lag_check_update);</span></a>
+<span class="lineNum">     526 </span><span class="lineCov">          1 :         g_source_remove(lag_timeout_tag);</span>
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span>            :         /* input */
+<a name="529"><span class="lineNum">     529 </span><span class="lineCov">          1 :         g_hash_table_foreach(input_entries, (GHFunc) g_free, NULL);</span></a>
+<span class="lineNum">     530 </span><span class="lineCov">          1 :         g_hash_table_destroy(input_entries);</span>
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span><span class="lineCov">          1 :         signal_remove(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<a name="533"><span class="lineNum">     533 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

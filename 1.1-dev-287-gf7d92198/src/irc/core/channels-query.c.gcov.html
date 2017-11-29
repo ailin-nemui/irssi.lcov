@@ -1,0 +1,591 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/irc/core/channels-query.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/irc/core</a> - channels-query.c<span style="font-size: 80%;"> (source / <a href="channels-query.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntry">219</td>
+            <td class="headerCovTableEntryLo">10.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntryLo">11.1 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  channels-query.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : /*</a>
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span>            :  How the thing works:
+<span class="lineNum">      24 </span>            : 
+<a name="25"><span class="lineNum">      25 </span>            :  - After channel is joined and NAMES list is got, send &quot;channel joined&quot; signal</a>
+<span class="lineNum">      26 </span>            :  - &quot;channel joined&quot; : add channel to server-&gt;queries lists
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : loop:
+<a name="29"><span class="lineNum">      29 </span>            :  - Wait for NAMES list from all channels before doing anything else..</a>
+<span class="lineNum">      30 </span>            :  - After got the last NAMES list, start sending the queries ..
+<span class="lineNum">      31 </span>            :  - find the query to send, check where server-&gt;queries list isn't NULL
+<span class="lineNum">      32 </span>            :    (mode, who, banlist, ban exceptions, invite list)
+<a name="33"><span class="lineNum">      33 </span>            :  - if not found anything -&gt; all channels are synced</a>
+<span class="lineNum">      34 </span>            :  - send &quot;command #chan1,#chan2,#chan3,..&quot; command to server
+<span class="lineNum">      35 </span>            :  - wait for reply from server, then check if it was last query to be sent to
+<span class="lineNum">      36 </span>            :    channel. If it was, send &quot;channel sync&quot; signal
+<a name="37"><span class="lineNum">      37 </span>            :  - check if the reply was for last channel in the command list. If so,</a>
+<span class="lineNum">      38 </span>            :    goto loop
+<span class="lineNum">      39 </span>            : */
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      42 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;settings.h&quot;
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span>            : #include &quot;modes.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;mode-lists.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;nicklist.h&quot;
+<a name="49"><span class="lineNum">      49 </span>            : #include &quot;irc-servers.h&quot;</a>
+<span class="lineNum">      50 </span>            : #include &quot;irc-channels.h&quot;
+<span class="lineNum">      51 </span>            : #include &quot;servers-redirect.h&quot;
+<span class="lineNum">      52 </span>            : 
+<a name="53"><span class="lineNum">      53 </span>            : enum {</a>
+<span class="lineNum">      54 </span>            :         CHANNEL_QUERY_MODE,
+<span class="lineNum">      55 </span>            :         CHANNEL_QUERY_WHO,
+<span class="lineNum">      56 </span>            :         CHANNEL_QUERY_BMODE,
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<span class="lineNum">      58 </span>            :         CHANNEL_QUERIES
+<span class="lineNum">      59 </span>            : };
+<span class="lineNum">      60 </span>            : 
+<a name="61"><span class="lineNum">      61 </span>            : #define CHANNEL_IS_MODE_QUERY(a) ((a) != CHANNEL_QUERY_WHO)</a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : typedef struct {
+<span class="lineNum">      64 </span>            :         int current_query_type; /* query type that is currently being asked */
+<a name="65"><span class="lineNum">      65 </span>            :         GSList *current_queries; /* All channels that are currently being queried */</a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span>            :         GSList *queries[CHANNEL_QUERIES]; /* All queries that need to be asked from server */
+<a name="68"><span class="lineNum">      68 </span>            : } SERVER_QUERY_REC;</a>
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 : static void sig_connected(IRC_SERVER_REC *server)</span>
+<span class="lineNum">      71 </span>            : {
+<span class="lineNum">      72 </span>            :         SERVER_QUERY_REC *rec;
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         g_return_if_fail(server != NULL);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER(server))</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         rec = g_new0(SERVER_QUERY_REC, 1);</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         server-&gt;chanqueries = rec;</span>
+<a name="80"><span class="lineNum">      80 </span>            : }</a>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 : static void sig_disconnected(IRC_SERVER_REC *server)</span>
+<span class="lineNum">      83 </span>            : {
+<span class="lineNum">      84 </span>            :         SERVER_QUERY_REC *rec;
+<a name="85"><span class="lineNum">      85 </span>            :         int n;</a>
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :         g_return_if_fail(server != NULL);</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER(server))</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :         rec = server-&gt;chanqueries;</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         g_return_if_fail(rec != NULL);</span>
+<a name="93"><span class="lineNum">      93 </span>            : </a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :         for (n = 0; n &lt; CHANNEL_QUERIES; n++)</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :                 g_slist_free(rec-&gt;queries[n]);</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         g_slist_free(rec-&gt;current_queries);</span>
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :         g_free(rec);</span></a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         server-&gt;chanqueries = NULL;</span>
+<span class="lineNum">     100 </span>            : }
+<a name="101"><span class="lineNum">     101 </span>            : </a>
+<span class="lineNum">     102 </span>            : /* Add channel to query list */
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 : static void query_add_channel(IRC_CHANNEL_REC *channel, int query_type)</span>
+<span class="lineNum">     104 </span>            : {
+<a name="105"><span class="lineNum">     105 </span>            :         SERVER_QUERY_REC *rec;</a>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         g_return_if_fail(channel != NULL);</span>
+<span class="lineNum">     108 </span>            : 
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :         rec = channel-&gt;server-&gt;chanqueries;</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :         rec-&gt;queries[query_type] =</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 g_slist_append(rec-&gt;queries[query_type], channel);</span>
+<span class="lineNum">     112 </span>            : }
+<a name="113"><span class="lineNum">     113 </span>            : </a>
+<a name="114"><span class="lineNum">     114 </span>            : static void query_check(IRC_SERVER_REC *server);</a>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 : static void query_remove_all(IRC_CHANNEL_REC *channel)</span>
+<a name="117"><span class="lineNum">     117 </span>            : {</a>
+<span class="lineNum">     118 </span>            :         SERVER_QUERY_REC *rec;
+<span class="lineNum">     119 </span>            :         int n;
+<span class="lineNum">     120 </span>            : 
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :         rec = channel-&gt;server-&gt;chanqueries;</span></a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :         if (rec == NULL) return;</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span>            :         /* remove channel from query lists */
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :         for (n = 0; n &lt; CHANNEL_QUERIES; n++)</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :                 rec-&gt;queries[n] = g_slist_remove(rec-&gt;queries[n], channel);</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :         rec-&gt;current_queries = g_slist_remove(rec-&gt;current_queries, channel);</span>
+<span class="lineNum">     128 </span>            : 
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :         if (!channel-&gt;server-&gt;disconnected)</span></a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 query_check(channel-&gt;server);</span>
+<a name="131"><span class="lineNum">     131 </span>            : }</a>
+<span class="lineNum">     132 </span>            : 
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 : static void sig_channel_destroyed(IRC_CHANNEL_REC *channel)</span></a>
+<span class="lineNum">     134 </span>            : {
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :         g_return_if_fail(channel != NULL);</span>
+<span class="lineNum">     136 </span>            : 
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :         if (IS_IRC_CHANNEL(channel))</span></a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 query_remove_all(channel);</span>
+<a name="139"><span class="lineNum">     139 </span>            : }</a>
+<span class="lineNum">     140 </span>            : 
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 : static int channels_have_all_names(IRC_SERVER_REC *server)</span></a>
+<span class="lineNum">     142 </span>            : {
+<span class="lineNum">     143 </span>            :         GSList *tmp;
+<span class="lineNum">     144 </span>            : 
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 :         for (tmp = server-&gt;channels; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                 IRC_CHANNEL_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 if (IS_IRC_CHANNEL(rec) &amp;&amp; !rec-&gt;names_got)</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :                         return 0;</span></a>
+<span class="lineNum">     150 </span>            :         }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :         return 1;</span>
+<a name="153"><span class="lineNum">     153 </span>            : }</a>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 : static int query_find_next(SERVER_QUERY_REC *server)</span>
+<span class="lineNum">     156 </span>            : {
+<a name="157"><span class="lineNum">     157 </span>            :         int n;</a>
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         for (n = 0; n &lt; CHANNEL_QUERIES; n++) {</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :                 if (server-&gt;queries[n] != NULL)</span>
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :                         return n;</span></a>
+<span class="lineNum">     162 </span>            :         }
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="165"><span class="lineNum">     165 </span>            : }</a>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 : static void query_send(IRC_SERVER_REC *server, int query)</span>
+<span class="lineNum">     168 </span>            : {
+<a name="169"><span class="lineNum">     169 </span>            :         SERVER_QUERY_REC *rec;</a>
+<span class="lineNum">     170 </span>            :         IRC_CHANNEL_REC *chanrec;
+<span class="lineNum">     171 </span>            :         GSList *chans;
+<span class="lineNum">     172 </span>            :         char *cmd, *chanstr_commas, *chanstr;
+<a name="173"><span class="lineNum">     173 </span>            :         int onlyone, count;</a>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :         rec = server-&gt;chanqueries;</span>
+<span class="lineNum">     176 </span>            : 
+<a name="177"><span class="lineNum">     177 </span>            :         /* get the list of channels to query */</a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         onlyone = (server-&gt;no_multi_who &amp;&amp; query == CHANNEL_QUERY_WHO) ||</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                 (server-&gt;no_multi_mode &amp;&amp; CHANNEL_IS_MODE_QUERY(query));</span>
+<span class="lineNum">     180 </span>            : 
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :         if (onlyone) {</span></a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :                 chans = rec-&gt;queries[query];</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                 rec-&gt;queries[query] =</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                         g_slist_remove_link(rec-&gt;queries[query], chans);</span>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :                 chanrec = chans-&gt;data;</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                 chanstr_commas = g_strdup(chanrec-&gt;name);</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 chanstr = g_strdup(chanrec-&gt;name);</span>
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :                 count = 1;</span></a>
+<span class="lineNum">     190 </span>            :         } else {
+<span class="lineNum">     191 </span>            :                 char *chanstr_spaces;
+<span class="lineNum">     192 </span>            : 
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :                 chans = rec-&gt;queries[query];</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 count = g_slist_length(chans);</span>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 if (count &gt; server-&gt;max_query_chans) {</span>
+<a name="197"><span class="lineNum">     197 </span>            :                         GSList *lastchan;</a>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                         lastchan = g_slist_nth(rec-&gt;queries[query],</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                                                server-&gt;max_query_chans-1);</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :                         count = server-&gt;max_query_chans;</span></a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                         rec-&gt;queries[query] = lastchan-&gt;next;</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                         lastchan-&gt;next = NULL;</span>
+<span class="lineNum">     204 </span>            :                 } else {
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :                         rec-&gt;queries[query] = NULL;</span></a>
+<span class="lineNum">     206 </span>            :                 }
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                 chanstr_commas = gslistptr_to_string(chans, G_STRUCT_OFFSET(IRC_CHANNEL_REC, name), &quot;,&quot;);</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :                 chanstr_spaces = gslistptr_to_string(chans, G_STRUCT_OFFSET(IRC_CHANNEL_REC, name), &quot; &quot;);</span></a>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 chanstr = g_strconcat(chanstr_commas, &quot; &quot;, chanstr_spaces, NULL);</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 g_free(chanstr_spaces);</span>
+<a name="213"><span class="lineNum">     213 </span>            :         }</a>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :         rec-&gt;current_query_type = query;</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :         rec-&gt;current_queries = chans;</span>
+<a name="217"><span class="lineNum">     217 </span>            : </a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :         switch (query) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         case CHANNEL_QUERY_MODE:</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                 cmd = g_strdup_printf(&quot;MODE %s&quot;, chanstr_commas);</span>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span>            :                 /* the stop-event is received once for each channel,
+<span class="lineNum">     223 </span>            :                    and we want to print 329 event (channel created). */
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                 server_redirect_event(server, &quot;mode channel&quot;, count,</span>
+<a name="225"><span class="lineNum">     225 </span>            :                                       chanstr, -1, &quot;chanquery abort&quot;,</a>
+<span class="lineNum">     226 </span>            :                                       &quot;event 324&quot;, &quot;chanquery mode&quot;,
+<span class="lineNum">     227 </span>            :                                       &quot;event 329&quot;, &quot;event 329&quot;,
+<span class="lineNum">     228 </span>            :                                       &quot;&quot;, &quot;chanquery abort&quot;, NULL);
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 break;</span></a>
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :         case CHANNEL_QUERY_WHO:</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                 cmd = g_strdup_printf(&quot;WHO %s&quot;, chanstr_commas);</span>
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :                 server_redirect_event(server, &quot;who&quot;,</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                                       server-&gt;one_endofwho ? 1 : count,</span>
+<span class="lineNum">     236 </span>            :                                       chanstr, -1,
+<a name="237"><span class="lineNum">     237 </span>            :                                       &quot;chanquery abort&quot;,</a>
+<span class="lineNum">     238 </span>            :                                       &quot;event 315&quot;, &quot;chanquery who end&quot;,
+<span class="lineNum">     239 </span>            :                                       &quot;event 352&quot;, &quot;silent event who&quot;,
+<span class="lineNum">     240 </span>            :                                       &quot;&quot;, &quot;chanquery abort&quot;, NULL);
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :                 break;</span></a>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :         case CHANNEL_QUERY_BMODE:</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                 cmd = g_strdup_printf(&quot;MODE %s b&quot;, chanstr_commas);</span>
+<a name="245"><span class="lineNum">     245 </span>            :                 /* check all the multichannel problems with all</a>
+<span class="lineNum">     246 </span>            :                    mode requests - if channels are joined manually
+<span class="lineNum">     247 </span>            :                    irssi could ask modes separately but afterwards
+<span class="lineNum">     248 </span>            :                    join the two b/e/I modes together */
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :                 server_redirect_event(server, &quot;mode b&quot;, count, chanstr, -1,</span></a>
+<span class="lineNum">     250 </span>            :                                       &quot;chanquery abort&quot;,
+<span class="lineNum">     251 </span>            :                                       &quot;event 367&quot;, &quot;chanquery ban&quot;,
+<span class="lineNum">     252 </span>            :                                       &quot;event 368&quot;, &quot;chanquery ban end&quot;,
+<a name="253"><span class="lineNum">     253 </span>            :                                       &quot;&quot;, &quot;chanquery abort&quot;, NULL);</a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :         default:</span>
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 cmd = NULL;</span></a>
+<span class="lineNum">     258 </span>            :         }
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :         irc_send_cmd(server, cmd);</span>
+<a name="261"><span class="lineNum">     261 </span>            : </a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :         g_free(chanstr);</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :         g_free(chanstr_commas);</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :         g_free(cmd);</span>
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 : static void query_check(IRC_SERVER_REC *server)</span>
+<span class="lineNum">     268 </span>            : {
+<a name="269"><span class="lineNum">     269 </span>            :         SERVER_QUERY_REC *rec;</a>
+<span class="lineNum">     270 </span>            :         int query;
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :         g_return_if_fail(server != NULL);</span>
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :         rec = server-&gt;chanqueries;</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :         if (rec-&gt;current_queries != NULL)</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                 return; /* old queries haven't been answered yet */</span>
+<a name="277"><span class="lineNum">     277 </span>            : </a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :         if (server-&gt;max_query_chans &gt; 1 &amp;&amp; !server-&gt;no_multi_who &amp;&amp; !server-&gt;no_multi_mode &amp;&amp; !channels_have_all_names(server)) {</span>
+<span class="lineNum">     279 </span>            :                 /* all channels haven't sent /NAMES list yet */
+<span class="lineNum">     280 </span>            :                 /* only do this if there would be a benefit in combining
+<a name="281"><span class="lineNum">     281 </span>            :                  * queries -- jilles */</a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     283 </span>            :         }
+<span class="lineNum">     284 </span>            : 
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :         query = query_find_next(rec);</span></a>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :         if (query == -1) {</span>
+<span class="lineNum">     287 </span>            :                 /* no queries left */
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="289"><span class="lineNum">     289 </span>            :         }</a>
+<span class="lineNum">     290 </span>            : 
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :         query_send(server, query);</span>
+<span class="lineNum">     292 </span>            : }
+<a name="293"><span class="lineNum">     293 </span>            : </a>
+<span class="lineNum">     294 </span>            : /* if there's no more queries in queries in buffer, send the sync signal */
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 : static void channel_checksync(IRC_CHANNEL_REC *channel)</span>
+<span class="lineNum">     296 </span>            : {
+<a name="297"><span class="lineNum">     297 </span>            :         SERVER_QUERY_REC *rec;</a>
+<span class="lineNum">     298 </span>            :         int n;
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :         g_return_if_fail(channel != NULL);</span>
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         if (channel-&gt;synced)</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                 return; /* already synced */</span>
+<span class="lineNum">     304 </span>            : 
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :         rec = channel-&gt;server-&gt;chanqueries;</span></a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :         for (n = 0; n &lt; CHANNEL_QUERIES; n++) {</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 if (g_slist_find(rec-&gt;queries[n], channel))</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                         return;</span>
+<a name="309"><span class="lineNum">     309 </span>            :         }</a>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :         channel-&gt;synced = TRUE;</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :         signal_emit(&quot;channel sync&quot;, 1, channel);</span>
+<a name="313"><span class="lineNum">     313 </span>            : }</a>
+<a name="314"><span class="lineNum">     314 </span>            : </a>
+<span class="lineNum">     315 </span>            : /* Error occurred when trying to execute query - abort and try again. */
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 : static void query_current_error(IRC_SERVER_REC *server)</span>
+<a name="317"><span class="lineNum">     317 </span>            : {</a>
+<span class="lineNum">     318 </span>            :         SERVER_QUERY_REC *rec;
+<span class="lineNum">     319 </span>            :         GSList *tmp;
+<span class="lineNum">     320 </span>            :         int query, abort_query;
+<a name="321"><span class="lineNum">     321 </span>            : </a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :         rec = server-&gt;chanqueries;</span>
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span>            :         /* fix the thing that went wrong - or if it was already fixed,
+<a name="325"><span class="lineNum">     325 </span>            :            then all we can do is abort. */</a>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :         abort_query = FALSE;</span>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :         query = rec-&gt;current_query_type;</span>
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :         if (query == CHANNEL_QUERY_WHO) {</span></a>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :                 if (server-&gt;no_multi_who)</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :                         abort_query = TRUE;</span>
+<span class="lineNum">     332 </span>            :                 else
+<a name="333"><span class="lineNum">     333 </span><span class="lineNoCov">          0 :                         server-&gt;no_multi_who = TRUE;</span></a>
+<span class="lineNum">     334 </span>            :         } else {
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :                 if (server-&gt;no_multi_mode)</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                         abort_query = TRUE;</span>
+<a name="337"><span class="lineNum">     337 </span>            :                 else</a>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                         server-&gt;no_multi_mode = TRUE;</span>
+<span class="lineNum">     339 </span>            :         }
+<span class="lineNum">     340 </span>            : 
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :         if (!abort_query) {</span></a>
+<span class="lineNum">     342 </span>            :                 /* move all currently queried channels to main query lists */
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                 for (tmp = rec-&gt;current_queries; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                         rec-&gt;queries[query] =</span>
+<a name="345"><span class="lineNum">     345 </span><span class="lineNoCov">          0 :                                 g_slist_append(rec-&gt;queries[query], tmp-&gt;data);</span></a>
+<span class="lineNum">     346 </span>            :                 }
+<span class="lineNum">     347 </span>            :         } else {
+<span class="lineNum">     348 </span>            :                 /* check if failed channels are synced after this error */
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :                 g_slist_foreach(rec-&gt;current_queries,</span></a>
+<span class="lineNum">     350 </span>            :                                 (GFunc) channel_checksync, NULL);
+<span class="lineNum">     351 </span>            :         }
+<span class="lineNum">     352 </span>            : 
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :         g_slist_free(rec-&gt;current_queries);</span></a>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :         rec-&gt;current_queries = NULL;</span>
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :         query_check(server);</span>
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 : static void sig_channel_joined(IRC_CHANNEL_REC *channel)</span>
+<span class="lineNum">     360 </span>            : {
+<a name="361"><span class="lineNum">     361 </span><span class="lineNoCov">          0 :         if (!IS_IRC_CHANNEL(channel))</span></a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         if (!settings_get_bool(&quot;channel_sync&quot;))</span>
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span>            :         /* Add channel to query lists */
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         if (!channel-&gt;no_modes)</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :                 query_add_channel(channel, CHANNEL_QUERY_MODE);</span></a>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :         if (g_hash_table_size(channel-&gt;nicks) &lt;</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :             settings_get_int(&quot;channel_max_who_sync&quot;))</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                 query_add_channel(channel, CHANNEL_QUERY_WHO);</span>
+<a name="373"><span class="lineNum">     373 </span><span class="lineNoCov">          0 :         if (!channel-&gt;no_modes)</span></a>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                 query_add_channel(channel, CHANNEL_QUERY_BMODE);</span>
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :         query_check(channel-&gt;server);</span>
+<a name="377"><span class="lineNum">     377 </span>            : }</a>
+<span class="lineNum">     378 </span>            : 
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 : static void channel_got_query(IRC_CHANNEL_REC *chanrec, int query_type)</span>
+<span class="lineNum">     380 </span>            : {
+<a name="381"><span class="lineNum">     381 </span>            :         SERVER_QUERY_REC *rec;</a>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :         g_return_if_fail(chanrec != NULL);</span>
+<span class="lineNum">     384 </span>            : 
+<a name="385"><span class="lineNum">     385 </span><span class="lineNoCov">          0 :         rec = chanrec-&gt;server-&gt;chanqueries;</span></a>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :         if (query_type != rec-&gt;current_query_type)</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                 return; /* shouldn't happen */</span>
+<span class="lineNum">     388 </span>            : 
+<a name="389"><span class="lineNum">     389 </span>            :         /* got the query for channel.. */</a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         rec-&gt;current_queries =</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 g_slist_remove(rec-&gt;current_queries, chanrec);</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :         channel_checksync(chanrec);</span>
+<a name="393"><span class="lineNum">     393 </span>            : </a>
+<span class="lineNum">     394 </span>            :         /* check if we need to send another query.. */
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :         query_check(chanrec-&gt;server);</span>
+<a name="396"><span class="lineNum">     396 </span>            : }</a>
+<a name="397"><span class="lineNum">     397 </span>            : </a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 : static void event_channel_mode(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">     399 </span>            :                                const char *nick)
+<span class="lineNum">     400 </span>            : {
+<a name="401"><span class="lineNum">     401 </span>            :         IRC_CHANNEL_REC *chanrec;</a>
+<span class="lineNum">     402 </span>            :         char *params, *channel, *mode;
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="405"><span class="lineNum">     405 </span>            : </a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 3 | PARAM_FLAG_GETREST,</span>
+<span class="lineNum">     407 </span>            :                                   NULL, &amp;channel, &amp;mode);
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :         chanrec = irc_channel_find(server, channel);</span>
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :         if (chanrec != NULL) {</span></a>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                 if (chanrec-&gt;key != NULL &amp;&amp; strchr(mode, 'k') == NULL) {</span>
+<span class="lineNum">     411 </span>            :                         /* we joined the channel with a key,
+<span class="lineNum">     412 </span>            :                            but it didn't have +k mode.. */
+<a name="413"><span class="lineNum">     413 </span><span class="lineNoCov">          0 :                         parse_channel_modes(chanrec, NULL, &quot;-k&quot;, TRUE);</span></a>
+<span class="lineNum">     414 </span>            :                 }
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                 parse_channel_modes(chanrec, nick, mode, FALSE);</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :                 channel_got_query(chanrec, CHANNEL_QUERY_MODE);</span>
+<a name="417"><span class="lineNum">     417 </span>            :         }</a>
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="420"><span class="lineNum">     420 </span>            : }</a>
+<a name="421"><span class="lineNum">     421 </span>            : </a>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 : static void event_end_of_who(IRC_SERVER_REC *server, const char *data)</span>
+<span class="lineNum">     423 </span>            : {
+<span class="lineNum">     424 </span>            :         SERVER_QUERY_REC *rec;
+<a name="425"><span class="lineNum">     425 </span>            :         GSList *tmp, *next;</a>
+<span class="lineNum">     426 </span>            :         char *params, *channel, **channels;
+<span class="lineNum">     427 </span>            :         int failed, multiple;
+<span class="lineNum">     428 </span>            : 
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span></a>
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2, NULL, &amp;channel);</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :         multiple = strchr(channel, ',') != NULL;</span>
+<a name="433"><span class="lineNum">     433 </span><span class="lineNoCov">          0 :         channels = g_strsplit(channel, &quot;,&quot;, -1);</span></a>
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :         failed = FALSE;</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :         rec = server-&gt;chanqueries;</span>
+<a name="437"><span class="lineNum">     437 </span><span class="lineNoCov">          0 :         for (tmp = rec-&gt;current_queries; tmp != NULL; tmp = next) {</span></a>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :                 IRC_CHANNEL_REC *chanrec = tmp-&gt;data;</span>
+<span class="lineNum">     439 </span>            : 
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span>
+<a name="441"><span class="lineNum">     441 </span><span class="lineNoCov">          0 :                 if (strarray_find(channels, chanrec-&gt;name) == -1)</span></a>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                 if (chanrec-&gt;ownnick-&gt;host == NULL &amp;&amp; multiple &amp;&amp;</span>
+<a name="445"><span class="lineNum">     445 </span><span class="lineNoCov">          0 :                     !server-&gt;one_endofwho) {</span></a>
+<span class="lineNum">     446 </span>            :                         /* we should receive our own host for each channel.
+<span class="lineNum">     447 </span>            :                            However, some servers really are stupid enough
+<span class="lineNum">     448 </span>            :                            not to reply anything to /WHO requests.. */
+<a name="449"><span class="lineNum">     449 </span><span class="lineNoCov">          0 :                         failed = TRUE;</span></a>
+<span class="lineNum">     450 </span>            :                 } else {
+<span class="lineNum">     451 </span><span class="lineNoCov">          0 :                         chanrec-&gt;wholist = TRUE;</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;channel wholist&quot;, 1, chanrec);</span>
+<a name="453"><span class="lineNum">     453 </span><span class="lineNoCov">          0 :                         channel_got_query(chanrec, CHANNEL_QUERY_WHO);</span></a>
+<span class="lineNum">     454 </span>            :                 }
+<span class="lineNum">     455 </span>            :         }
+<span class="lineNum">     456 </span>            : 
+<a name="457"><span class="lineNum">     457 </span><span class="lineNoCov">          0 :         g_strfreev(channels);</span></a>
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :         if (multiple)</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :                 server-&gt;one_endofwho = TRUE;</span>
+<span class="lineNum">     460 </span>            : 
+<a name="461"><span class="lineNum">     461 </span><span class="lineNoCov">          0 :         if (failed) {</span></a>
+<span class="lineNum">     462 </span>            :                 /* server didn't understand multiple WHO replies,
+<span class="lineNum">     463 </span>            :                    send them again separately */
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                 query_current_error(server);</span>
+<a name="465"><span class="lineNum">     465 </span>            :         }</a>
+<span class="lineNum">     466 </span>            : 
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="468"><span class="lineNum">     468 </span>            : }</a>
+<a name="469"><span class="lineNum">     469 </span>            : </a>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 : static void event_end_of_banlist(IRC_SERVER_REC *server, const char *data)</span>
+<span class="lineNum">     471 </span>            : {
+<span class="lineNum">     472 </span>            :         IRC_CHANNEL_REC *chanrec;
+<a name="473"><span class="lineNum">     473 </span>            :         char *params, *channel;</a>
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     476 </span>            : 
+<a name="477"><span class="lineNum">     477 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2, NULL, &amp;channel);</span></a>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :         chanrec = irc_channel_find(server, channel);</span>
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :         if (chanrec != NULL)</span>
+<a name="481"><span class="lineNum">     481 </span><span class="lineNoCov">          0 :                 channel_got_query(chanrec, CHANNEL_QUERY_BMODE);</span></a>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="484"><span class="lineNum">     484 </span>            : }</a>
+<a name="485"><span class="lineNum">     485 </span>            : </a>
+<span class="lineNum">     486 </span><span class="lineCov">          1 : void channels_query_init(void)</span>
+<span class="lineNum">     487 </span>            : {
+<span class="lineNum">     488 </span><span class="lineCov">          1 :         settings_add_bool(&quot;misc&quot;, &quot;channel_sync&quot;, TRUE);</span>
+<a name="489"><span class="lineNum">     489 </span><span class="lineCov">          1 :         settings_add_int(&quot;misc&quot;, &quot;channel_max_who_sync&quot;, 1000);</span></a>
+<span class="lineNum">     490 </span>            : 
+<span class="lineNum">     491 </span><span class="lineCov">          1 :         signal_add(&quot;server connected&quot;, (SIGNAL_FUNC) sig_connected);</span>
+<span class="lineNum">     492 </span><span class="lineCov">          1 :         signal_add(&quot;server disconnected&quot;, (SIGNAL_FUNC) sig_disconnected);</span>
+<a name="493"><span class="lineNum">     493 </span><span class="lineCov">          1 :         signal_add(&quot;channel joined&quot;, (SIGNAL_FUNC) sig_channel_joined);</span></a>
+<span class="lineNum">     494 </span><span class="lineCov">          1 :         signal_add(&quot;channel destroyed&quot;, (SIGNAL_FUNC) sig_channel_destroyed);</span>
+<span class="lineNum">     495 </span>            : 
+<span class="lineNum">     496 </span><span class="lineCov">          1 :         signal_add(&quot;chanquery mode&quot;, (SIGNAL_FUNC) event_channel_mode);</span>
+<a name="497"><span class="lineNum">     497 </span><span class="lineCov">          1 :         signal_add(&quot;chanquery who end&quot;, (SIGNAL_FUNC) event_end_of_who);</span></a>
+<span class="lineNum">     498 </span>            : 
+<span class="lineNum">     499 </span><span class="lineCov">          1 :         signal_add(&quot;chanquery ban end&quot;, (SIGNAL_FUNC) event_end_of_banlist);</span>
+<span class="lineNum">     500 </span><span class="lineCov">          1 :         signal_add(&quot;chanquery abort&quot;, (SIGNAL_FUNC) query_current_error);</span>
+<a name="501"><span class="lineNum">     501 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     502 </span>            : 
+<span class="lineNum">     503 </span><span class="lineCov">          1 : void channels_query_deinit(void)</span>
+<span class="lineNum">     504 </span>            : {
+<a name="505"><span class="lineNum">     505 </span><span class="lineCov">          1 :         signal_remove(&quot;server connected&quot;, (SIGNAL_FUNC) sig_connected);</span></a>
+<span class="lineNum">     506 </span><span class="lineCov">          1 :         signal_remove(&quot;server disconnected&quot;, (SIGNAL_FUNC) sig_disconnected);</span>
+<span class="lineNum">     507 </span><span class="lineCov">          1 :         signal_remove(&quot;channel joined&quot;, (SIGNAL_FUNC) sig_channel_joined);</span>
+<span class="lineNum">     508 </span><span class="lineCov">          1 :         signal_remove(&quot;channel destroyed&quot;, (SIGNAL_FUNC) sig_channel_destroyed);</span>
+<a name="509"><span class="lineNum">     509 </span>            : </a>
+<span class="lineNum">     510 </span><span class="lineCov">          1 :         signal_remove(&quot;chanquery mode&quot;, (SIGNAL_FUNC) event_channel_mode);</span>
+<span class="lineNum">     511 </span><span class="lineCov">          1 :         signal_remove(&quot;chanquery who end&quot;, (SIGNAL_FUNC) event_end_of_who);</span>
+<span class="lineNum">     512 </span>            : 
+<a name="513"><span class="lineNum">     513 </span><span class="lineCov">          1 :         signal_remove(&quot;chanquery ban end&quot;, (SIGNAL_FUNC) event_end_of_banlist);</span></a>
+<span class="lineNum">     514 </span><span class="lineCov">          1 :         signal_remove(&quot;chanquery abort&quot;, (SIGNAL_FUNC) query_current_error);</span>
+<span class="lineNum">     515 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,812 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/core/hilight-text.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/core</a> - hilight-text.c<span style="font-size: 80%;"> (source / <a href="hilight-text.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">102</td>
+            <td class="headerCovTableEntry">378</td>
+            <td class="headerCovTableEntryLo">27.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntry">26</td>
+            <td class="headerCovTableEntryLo">42.3 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  hilight-text.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;commands.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;levels.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;lib-config/iconfig.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;settings.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;iregex.h&quot;</a>
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;channels.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;nicklist.h&quot;</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &quot;hilight-text.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;nickmatch-cache.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : #include &quot;printtext.h&quot;</a>
+<span class="lineNum">      38 </span>            : #include &quot;formats.h&quot;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : static NICKMATCH_REC *nickmatch;
+<a name="41"><span class="lineNum">      41 </span>            : static int never_hilight_level, default_hilight_level;</a>
+<a name="42"><span class="lineNum">      42 </span>            : GSList *hilights;</a>
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span><span class="lineCov">          2 : static void reset_level_cache(void)</span>
+<a name="45"><span class="lineNum">      45 </span>            : {</a>
+<span class="lineNum">      46 </span>            :         GSList *tmp;
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span><span class="lineCov">          2 :         never_hilight_level = MSGLEVEL_ALL &amp; ~default_hilight_level;</span>
+<a name="49"><span class="lineNum">      49 </span><span class="lineCov">          5 :         for (tmp = hilights; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">      50 </span><span class="lineCov">          3 :                 HILIGHT_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span><span class="lineCov">          3 :                 if (never_hilight_level &amp; rec-&gt;level)</span>
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :                         never_hilight_level &amp;= ~rec-&gt;level;</span></a>
+<span class="lineNum">      54 </span>            :         }
+<a name="55"><span class="lineNum">      55 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">      56 </span>            : 
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">          1 : static void reset_cache(void)</span></a>
+<span class="lineNum">      58 </span>            : {
+<span class="lineNum">      59 </span><span class="lineCov">          1 :         reset_level_cache();</span>
+<span class="lineNum">      60 </span><span class="lineCov">          1 :         nickmatch_rebuild(nickmatch);</span>
+<a name="61"><span class="lineNum">      61 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 : static void hilight_add_config(HILIGHT_REC *rec)</span>
+<span class="lineNum">      64 </span>            : {
+<a name="65"><span class="lineNum">      65 </span>            :         CONFIG_NODE *node;</a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :         g_return_if_fail(rec != NULL);</span>
+<span class="lineNum">      68 </span>            : 
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :         node = iconfig_node_traverse(&quot;(hilights&quot;, TRUE);</span></a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :         node = iconfig_node_section(node, NULL, NODE_TYPE_BLOCK);</span>
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :         iconfig_node_set_str(node, &quot;text&quot;, rec-&gt;text);</span>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :         if (rec-&gt;level &gt; 0) iconfig_node_set_int(node, &quot;level&quot;, rec-&gt;level);</span></a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         if (rec-&gt;color) iconfig_node_set_str(node, &quot;color&quot;, rec-&gt;color);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         if (rec-&gt;act_color) iconfig_node_set_str(node, &quot;act_color&quot;, rec-&gt;act_color);</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         if (rec-&gt;priority &gt; 0) iconfig_node_set_int(node, &quot;priority&quot;, rec-&gt;priority);</span>
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :         iconfig_node_set_bool(node, &quot;nick&quot;, rec-&gt;nick);</span></a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         iconfig_node_set_bool(node, &quot;word&quot;, rec-&gt;word);</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         if (rec-&gt;nickmask) iconfig_node_set_bool(node, &quot;mask&quot;, TRUE);</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :         if (rec-&gt;fullword) iconfig_node_set_bool(node, &quot;fullword&quot;, TRUE);</span>
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :         if (rec-&gt;regexp) iconfig_node_set_bool(node, &quot;regexp&quot;, TRUE);</span></a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         if (rec-&gt;case_sensitive) iconfig_node_set_bool(node, &quot;matchcase&quot;, TRUE);</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :         if (rec-&gt;servertag) iconfig_node_set_str(node, &quot;servertag&quot;, rec-&gt;servertag);</span>
+<span class="lineNum">      84 </span>            : 
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :         if (rec-&gt;channels != NULL &amp;&amp; *rec-&gt;channels != NULL) {</span></a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                 node = iconfig_node_section(node, &quot;channels&quot;, NODE_TYPE_LIST);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 iconfig_node_add_list(node, rec-&gt;channels);</span>
+<span class="lineNum">      88 </span>            :         }
+<a name="89"><span class="lineNum">      89 </span>            : }</a>
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 : static void hilight_remove_config(HILIGHT_REC *rec)</span>
+<span class="lineNum">      92 </span>            : {
+<a name="93"><span class="lineNum">      93 </span>            :         CONFIG_NODE *node;</a>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         g_return_if_fail(rec != NULL);</span>
+<span class="lineNum">      96 </span>            : 
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :         node = iconfig_node_traverse(&quot;hilights&quot;, FALSE);</span></a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         if (node != NULL) iconfig_node_list_remove(node, g_slist_index(hilights, rec));</span>
+<a name="99"><span class="lineNum">      99 </span>            : }</a>
+<span class="lineNum">     100 </span>            : 
+<a name="101"><span class="lineNum">     101 </span><span class="lineCov">          3 : static void hilight_destroy(HILIGHT_REC *rec)</span></a>
+<span class="lineNum">     102 </span>            : {
+<span class="lineNum">     103 </span><span class="lineCov">          3 :         g_return_if_fail(rec != NULL);</span>
+<span class="lineNum">     104 </span>            : 
+<a name="105"><span class="lineNum">     105 </span><span class="lineCov">          3 :         if (rec-&gt;preg != NULL) i_regex_unref(rec-&gt;preg);</span></a>
+<span class="lineNum">     106 </span><span class="lineCov">          3 :         if (rec-&gt;channels != NULL) g_strfreev(rec-&gt;channels);</span>
+<span class="lineNum">     107 </span><span class="lineCov">          3 :         g_free_not_null(rec-&gt;color);</span>
+<span class="lineNum">     108 </span><span class="lineCov">          3 :         g_free_not_null(rec-&gt;act_color);</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineCov">          3 :         g_free_not_null(rec-&gt;servertag);</span></a>
+<span class="lineNum">     110 </span><span class="lineCov">          3 :         g_free(rec-&gt;text);</span>
+<span class="lineNum">     111 </span><span class="lineCov">          3 :         g_free(rec);</span>
+<a name="112"><span class="lineNum">     112 </span>            : }</a>
+<a name="113"><span class="lineNum">     113 </span>            : </a>
+<span class="lineNum">     114 </span><span class="lineCov">          2 : static void hilights_destroy_all(void)</span>
+<span class="lineNum">     115 </span>            : {
+<span class="lineNum">     116 </span><span class="lineCov">          2 :         g_slist_foreach(hilights, (GFunc) hilight_destroy, NULL);</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineCov">          2 :         g_slist_free(hilights);</span></a>
+<span class="lineNum">     118 </span><span class="lineCov">          2 :         hilights = NULL;</span>
+<a name="119"><span class="lineNum">     119 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     120 </span>            : 
+<a name="121"><span class="lineNum">     121 </span><span class="lineCov">          3 : static void hilight_init_rec(HILIGHT_REC *rec)</span></a>
+<span class="lineNum">     122 </span>            : {
+<span class="lineNum">     123 </span><span class="lineCov">          3 :         if (rec-&gt;preg != NULL)</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                 i_regex_unref(rec-&gt;preg);</span>
+<a name="125"><span class="lineNum">     125 </span>            : </a>
+<span class="lineNum">     126 </span><span class="lineCov">          3 :         rec-&gt;preg = i_regex_new(rec-&gt;text, G_REGEX_OPTIMIZE | G_REGEX_CASELESS, 0, NULL);</span>
+<a name="127"><span class="lineNum">     127 </span><span class="lineCov">          3 : }</span></a>
+<span class="lineNum">     128 </span>            : 
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 : void hilight_create(HILIGHT_REC *rec)</span></a>
+<span class="lineNum">     130 </span>            : {
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :         if (g_slist_find(hilights, rec) != NULL) {</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                 hilight_remove_config(rec);</span>
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :                 hilights = g_slist_remove(hilights, rec);</span></a>
+<span class="lineNum">     134 </span>            :         }
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         hilights = g_slist_append(hilights, rec);</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :         hilight_add_config(rec);</span></a>
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :         hilight_init_rec(rec);</span>
+<span class="lineNum">     140 </span>            : 
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :         signal_emit(&quot;hilight created&quot;, 1, rec);</span></a>
+<a name="142"><span class="lineNum">     142 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 : void hilight_remove(HILIGHT_REC *rec)</span>
+<a name="145"><span class="lineNum">     145 </span>            : {</a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         g_return_if_fail(rec != NULL);</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :         hilight_remove_config(rec);</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :         hilights = g_slist_remove(hilights, rec);</span></a>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         signal_emit(&quot;hilight destroyed&quot;, 1, rec);</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :         hilight_destroy(rec);</span>
+<a name="153"><span class="lineNum">     153 </span>            : }</a>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 : static HILIGHT_REC *hilight_find(const char *text, char **channels)</span>
+<span class="lineNum">     156 </span>            : {
+<a name="157"><span class="lineNum">     157 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     158 </span>            :         char **chan;
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(text != NULL, NULL);</span>
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         for (tmp = hilights; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                 HILIGHT_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     164 </span>            : 
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 if (g_ascii_strcasecmp(rec-&gt;text, text) != 0)</span></a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                 if ((channels == NULL &amp;&amp; rec-&gt;channels == NULL))</span>
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :                         return rec; /* no channels - ok */</span></a>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :                 if (channels != NULL &amp;&amp; g_strcmp0(*channels, &quot;*&quot;) == 0)</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                         return rec; /* ignore channels */</span>
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :                 if (channels == NULL || rec-&gt;channels == NULL)</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :                         continue; /* other doesn't have channels */</span>
+<span class="lineNum">     176 </span>            : 
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 :                 if (g_strv_length(channels) != g_strv_length(rec-&gt;channels))</span></a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                         continue; /* different amount of channels */</span>
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span>            :                 /* check that channels match */
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :                 for (chan = channels; *chan != NULL; chan++) {</span></a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :                         if (strarray_find(rec-&gt;channels, *chan) == -1)</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     184 </span>            :                 }
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :                 if (*chan == NULL)</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                         return rec; /* channels ok */</span>
+<span class="lineNum">     188 </span>            :         }
+<a name="189"><span class="lineNum">     189 </span>            : </a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="191"><span class="lineNum">     191 </span>            : }</a>
+<span class="lineNum">     192 </span>            : 
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 : static gboolean hilight_match_text(HILIGHT_REC *rec, const char *text,</span></a>
+<span class="lineNum">     194 </span>            :                                   int *match_beg, int *match_end)
+<span class="lineNum">     195 </span>            : {
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         gboolean ret = FALSE;</span>
+<a name="197"><span class="lineNum">     197 </span>            : </a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :         if (rec-&gt;regexp) {</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                 if (rec-&gt;preg != NULL) {</span>
+<span class="lineNum">     200 </span>            :                         MatchInfo *match;
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :                         i_regex_match(rec-&gt;preg, text, 0, &amp;match);</span></a>
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                         if (i_match_info_matches(match))</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                                 ret = i_match_info_fetch_pos(match, 0, match_beg, match_end);</span>
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :                         i_match_info_free(match);</span>
+<span class="lineNum">     207 </span>            :                 }
+<span class="lineNum">     208 </span>            :         } else {
+<a name="209"><span class="lineNum">     209 </span>            :                 char *match;</a>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 if (rec-&gt;case_sensitive) {</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                         match = rec-&gt;fullword ?</span>
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :                                 strstr_full(text, rec-&gt;text) :</span></a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                                 strstr(text, rec-&gt;text);</span>
+<span class="lineNum">     215 </span>            :                 } else {
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                         match = rec-&gt;fullword ?</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :                                 stristr_full(text, rec-&gt;text) :</span></a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                                 stristr(text, rec-&gt;text);</span>
+<span class="lineNum">     219 </span>            :                 }
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                 if (match != NULL) {</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :                         if (match_beg != NULL &amp;&amp; match_end != NULL) {</span></a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                                 *match_beg = (int) (match-text);</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                                 *match_end = *match_beg + strlen(rec-&gt;text);</span>
+<span class="lineNum">     224 </span>            :                         }
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :                         ret = TRUE;</span></a>
+<span class="lineNum">     226 </span>            :                 }
+<span class="lineNum">     227 </span>            :         }
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :         return ret;</span></a>
+<span class="lineNum">     230 </span>            : }
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span>            : #define hilight_match_level(rec, level) \
+<a name="233"><span class="lineNum">     233 </span>            :         (level &amp; (((rec)-&gt;level != 0 ? rec-&gt;level : default_hilight_level)))</a>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            : #define hilight_match_channel(rec, channel) \
+<span class="lineNum">     236 </span>            :         ((rec)-&gt;channels == NULL || ((channel) != NULL &amp;&amp; \
+<a name="237"><span class="lineNum">     237 </span>            :                 strarray_find((rec)-&gt;channels, (channel)) != -1))</a>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineCov">          7 : HILIGHT_REC *hilight_match(SERVER_REC *server, const char *channel,</span>
+<span class="lineNum">     240 </span>            :                            const char *nick, const char *address,
+<a name="241"><span class="lineNum">     241 </span>            :                            int level, const char *str,</a>
+<span class="lineNum">     242 </span>            :                            int *match_beg, int *match_end)
+<span class="lineNum">     243 </span>            : {
+<span class="lineNum">     244 </span>            :         GSList *tmp;
+<a name="245"><span class="lineNum">     245 </span>            :         CHANNEL_REC *chanrec;</a>
+<span class="lineNum">     246 </span>            :         NICK_REC *nickrec;
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineCov">          7 :         g_return_val_if_fail(str != NULL, NULL);</span>
+<a name="249"><span class="lineNum">     249 </span>            : </a>
+<span class="lineNum">     250 </span><span class="lineCov">          7 :         if ((never_hilight_level &amp; level) == level)</span>
+<span class="lineNum">     251 </span><span class="lineCov">          6 :                 return NULL;</span>
+<span class="lineNum">     252 </span>            : 
+<a name="253"><span class="lineNum">     253 </span><span class="lineCov">          1 :         if (nick != NULL) {</span></a>
+<span class="lineNum">     254 </span>            :                 /* check nick mask hilights */
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                 chanrec = channel_find(server, channel);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                 nickrec = chanrec == NULL ? NULL :</span>
+<a name="257"><span class="lineNum">     257 </span>            :                         nicklist_find(chanrec, nick);</a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 if (nickrec != NULL) {</span>
+<span class="lineNum">     259 </span>            :                         HILIGHT_REC *rec;
+<span class="lineNum">     260 </span>            : 
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :                         if (nickrec-&gt;host == NULL)</span></a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                                 nicklist_set_host(chanrec, nickrec, address);</span>
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                         rec = nickmatch_find(nickmatch, nickrec);</span>
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :                         if (rec != NULL &amp;&amp; hilight_match_level(rec, level))</span></a>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :                                 return rec;</span>
+<span class="lineNum">     267 </span>            :                 }
+<span class="lineNum">     268 </span>            :         }
+<a name="269"><span class="lineNum">     269 </span>            : </a>
+<span class="lineNum">     270 </span><span class="lineCov">          4 :         for (tmp = hilights; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     271 </span><span class="lineCov">          3 :                 HILIGHT_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     272 </span>            : 
+<a name="273"><span class="lineNum">     273 </span><span class="lineCov">          3 :                 if (!rec-&gt;nickmask &amp;&amp; hilight_match_level(rec, level) &amp;&amp;</span></a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                         hilight_match_channel(rec, channel) &amp;&amp;</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                         (rec-&gt;servertag == NULL ||</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                          (server != NULL &amp;&amp; g_ascii_strcasecmp(rec-&gt;servertag, server-&gt;tag) == 0)) &amp;&amp;</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :                         hilight_match_text(rec, str, match_beg, match_end))</span></a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                         return rec;</span>
+<span class="lineNum">     279 </span>            :         }
+<span class="lineNum">     280 </span>            : 
+<a name="281"><span class="lineNum">     281 </span><span class="lineCov">          1 :         return NULL;</span></a>
+<a name="282"><span class="lineNum">     282 </span>            : }</a>
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 : static char *hilight_get_act_color(HILIGHT_REC *rec)</span>
+<a name="285"><span class="lineNum">     285 </span>            : {</a>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(rec != NULL, NULL);</span>
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :         return g_strdup(rec-&gt;act_color != NULL ? rec-&gt;act_color :</span>
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :                         rec-&gt;color != NULL ? rec-&gt;color :</span></a>
+<span class="lineNum">     290 </span>            :                         settings_get_str(&quot;hilight_act_color&quot;));
+<a name="291"><span class="lineNum">     291 </span>            : }</a>
+<span class="lineNum">     292 </span>            : 
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 : char *hilight_get_color(HILIGHT_REC *rec)</span></a>
+<span class="lineNum">     294 </span>            : {
+<span class="lineNum">     295 </span>            :         const char *color;
+<span class="lineNum">     296 </span>            : 
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(rec != NULL, NULL);</span></a>
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :         color = rec-&gt;color != NULL ? rec-&gt;color :</span>
+<span class="lineNum">     300 </span>            :                 settings_get_str(&quot;hilight_color&quot;);
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         return format_string_expand(color, NULL);</span>
+<a name="303"><span class="lineNum">     303 </span>            : }</a>
+<span class="lineNum">     304 </span>            : 
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 : void hilight_update_text_dest(TEXT_DEST_REC *dest, HILIGHT_REC *rec)</span></a>
+<span class="lineNum">     306 </span>            : {
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :         dest-&gt;level |= MSGLEVEL_HILIGHT;</span>
+<span class="lineNum">     308 </span>            : 
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :         if (rec-&gt;priority &gt; 0)</span></a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 dest-&gt;hilight_priority = rec-&gt;priority;</span>
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :         g_free_and_null(dest-&gt;hilight_color);</span>
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :         if (rec-&gt;act_color != NULL &amp;&amp; g_strcmp0(rec-&gt;act_color, &quot;%n&quot;) == 0)</span></a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                 dest-&gt;level |= MSGLEVEL_NO_ACT;</span>
+<span class="lineNum">     315 </span>            :         else
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                 dest-&gt;hilight_color = hilight_get_act_color(rec);</span>
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     318 </span>            : 
+<a name="319"><span class="lineNum">     319 </span>            : static void hilight_print(int index, HILIGHT_REC *rec);</a>
+<span class="lineNum">     320 </span>            : 
+<a name="321"><span class="lineNum">     321 </span><span class="lineCov">          7 : static void sig_print_text(TEXT_DEST_REC *dest, const char *text,</span></a>
+<span class="lineNum">     322 </span>            :                            const char *stripped)
+<span class="lineNum">     323 </span>            : {
+<span class="lineNum">     324 </span>            :         HILIGHT_REC *hilight;
+<a name="325"><span class="lineNum">     325 </span>            :         char *color, *newstr;</a>
+<span class="lineNum">     326 </span>            :         int old_level, hilight_start, hilight_end, hilight_len;
+<span class="lineNum">     327 </span>            :         int nick_match;
+<span class="lineNum">     328 </span>            : 
+<a name="329"><span class="lineNum">     329 </span><span class="lineCov">          7 :         if (dest-&gt;level &amp; MSGLEVEL_NOHILIGHT)</span></a>
+<span class="lineNum">     330 </span><span class="lineCov">          7 :                 return;</span>
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineCov">          7 :         hilight_start = hilight_end = 0;</span>
+<a name="333"><span class="lineNum">     333 </span><span class="lineCov">          7 :         hilight = hilight_match(dest-&gt;server, dest-&gt;target, dest-&gt;nick,</span></a>
+<span class="lineNum">     334 </span>            :                                 dest-&gt;address, dest-&gt;level, stripped,
+<span class="lineNum">     335 </span>            :                                 &amp;hilight_start, &amp;hilight_end);
+<span class="lineNum">     336 </span>            : 
+<a name="337"><span class="lineNum">     337 </span><span class="lineCov">          7 :         if (hilight == NULL)</span></a>
+<span class="lineNum">     338 </span><span class="lineCov">          7 :                 return;</span>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         nick_match = hilight-&gt;nick &amp;&amp; (dest-&gt;level &amp; (MSGLEVEL_PUBLIC|MSGLEVEL_ACTIONS)) == MSGLEVEL_PUBLIC;</span>
+<a name="341"><span class="lineNum">     341 </span>            : </a>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :         old_level = dest-&gt;level;</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :         if (!nick_match || (dest-&gt;level &amp; MSGLEVEL_HILIGHT)) {</span>
+<span class="lineNum">     344 </span>            :                 /* Remove NO_ACT, this means explicitly defined hilights will bypass
+<a name="345"><span class="lineNum">     345 </span>            :                  * /IGNORE ... NO_ACT.</a>
+<span class="lineNum">     346 </span>            :                  * (It's still possible to use /hilight -actcolor %n to hide
+<span class="lineNum">     347 </span>            :                  * hilight/beep).
+<span class="lineNum">     348 </span>            :                  */
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :                 dest-&gt;level &amp;= ~MSGLEVEL_NO_ACT;</span></a>
+<span class="lineNum">     350 </span>            :                 /* update the level / hilight info */
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :                 hilight_update_text_dest(dest, hilight);</span>
+<span class="lineNum">     352 </span>            :         }
+<a name="353"><span class="lineNum">     353 </span>            : </a>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :         if (nick_match)</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                 return; /* fe-messages.c should have taken care of this */</span>
+<span class="lineNum">     356 </span>            : 
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 :         if (old_level &amp; MSGLEVEL_HILIGHT) {</span></a>
+<span class="lineNum">     358 </span>            :                 /* nick is highlighted, just set priority */
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     360 </span>            :         }
+<a name="361"><span class="lineNum">     361 </span>            : </a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         color = hilight_get_color(hilight);</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :         hilight_len = hilight_end-hilight_start;</span>
+<span class="lineNum">     364 </span>            : 
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :         if (!hilight-&gt;word) {</span></a>
+<span class="lineNum">     366 </span>            :                 /* hilight whole line */
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                 char *tmp = strip_codes(text);</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                 newstr = g_strconcat(color, tmp, NULL);</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :                 g_free(tmp);</span></a>
+<span class="lineNum">     370 </span>            :         } else {
+<span class="lineNum">     371 </span>            :                 /* hilight part of the line */
+<span class="lineNum">     372 </span>            :                 GString *tmp;
+<a name="373"><span class="lineNum">     373 </span>            :                 char *middle;</a>
+<span class="lineNum">     374 </span>            :                 int pos, color_pos, color_len;
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span>            :                 /* start of the line */
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 :                 pos = strip_real_length(text, hilight_start, NULL, NULL);</span></a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :                 tmp = g_string_new_len(text, pos);</span>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span>            :                 /* color */
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :                 g_string_append(tmp, color);</span></a>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span>            :                 /* middle of the line, stripped */
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :                 middle = strip_codes(text + pos);</span>
+<a name="385"><span class="lineNum">     385 </span><span class="lineNoCov">          0 :                 g_string_append_len(tmp, middle, hilight_len);</span></a>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                 g_free(middle);</span>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span>            :                 /* end of the line */
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 :                 pos = strip_real_length(text, hilight_end,</span></a>
+<span class="lineNum">     390 </span>            :                                         &amp;color_pos, &amp;color_len);
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 if (color_pos &gt; 0)</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                         g_string_append_len(tmp, text + color_pos, color_len);</span>
+<a name="393"><span class="lineNum">     393 </span>            :                 else {</a>
+<span class="lineNum">     394 </span>            :                         /* no colors in line, change back to default */
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                         g_string_append_c(tmp, 4);</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                         g_string_append_c(tmp, FORMAT_STYLE_DEFAULTS);</span>
+<a name="397"><span class="lineNum">     397 </span>            :                 }</a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :                 g_string_append(tmp, text + pos);</span>
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                 newstr = tmp-&gt;str;</span>
+<a name="401"><span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 g_string_free(tmp, FALSE);</span></a>
+<span class="lineNum">     402 </span>            :         }
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         signal_emit(&quot;print text&quot;, 3, dest, newstr, stripped);</span>
+<a name="405"><span class="lineNum">     405 </span>            : </a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :         g_free(color);</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :         g_free(newstr);</span>
+<span class="lineNum">     408 </span>            : 
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :         signal_stop();</span></a>
+<a name="410"><span class="lineNum">     410 </span>            : }</a>
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 : HILIGHT_REC *hilight_match_nick(SERVER_REC *server, const char *channel,</span>
+<a name="413"><span class="lineNum">     413 </span>            :                          const char *nick, const char *address,</a>
+<span class="lineNum">     414 </span>            :                          int level, const char *msg)
+<span class="lineNum">     415 </span>            : {
+<span class="lineNum">     416 </span>            :         HILIGHT_REC *rec;
+<a name="417"><span class="lineNum">     417 </span>            : </a>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :         rec = hilight_match(server, channel, nick, address,</span>
+<span class="lineNum">     419 </span>            :                                 level, msg, NULL, NULL);
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :         return (rec == NULL || !rec-&gt;nick) ? NULL : rec;</span>
+<a name="421"><span class="lineNum">     421 </span>            : }</a>
+<span class="lineNum">     422 </span>            : 
+<span class="lineNum">     423 </span><span class="lineCov">          1 : static void read_hilight_config(void)</span>
+<span class="lineNum">     424 </span>            : {
+<a name="425"><span class="lineNum">     425 </span>            :         CONFIG_NODE *node;</a>
+<span class="lineNum">     426 </span>            :         HILIGHT_REC *rec;
+<span class="lineNum">     427 </span>            :         GSList *tmp;
+<span class="lineNum">     428 </span>            :         char *text, *color, *servertag;
+<a name="429"><span class="lineNum">     429 </span>            : </a>
+<span class="lineNum">     430 </span><span class="lineCov">          1 :         hilights_destroy_all();</span>
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span><span class="lineCov">          1 :         node = iconfig_node_traverse(&quot;hilights&quot;, FALSE);</span>
+<a name="433"><span class="lineNum">     433 </span><span class="lineCov">          1 :         if (node == NULL) {</span></a>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                 reset_cache();</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     436 </span>            :         }
+<a name="437"><span class="lineNum">     437 </span>            : </a>
+<span class="lineNum">     438 </span><span class="lineCov">          1 :         tmp = config_node_first(node-&gt;value);</span>
+<span class="lineNum">     439 </span><span class="lineCov">          4 :         for (; tmp != NULL; tmp = config_node_next(tmp)) {</span>
+<span class="lineNum">     440 </span><span class="lineCov">          3 :                 node = tmp-&gt;data;</span>
+<a name="441"><span class="lineNum">     441 </span>            : </a>
+<span class="lineNum">     442 </span><span class="lineCov">          3 :                 if (node-&gt;type != NODE_TYPE_BLOCK)</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     444 </span>            : 
+<a name="445"><span class="lineNum">     445 </span><span class="lineCov">          3 :                 text = config_node_get_str(node, &quot;text&quot;, NULL);</span></a>
+<span class="lineNum">     446 </span><span class="lineCov">          3 :                 if (text == NULL || *text == '\0')</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     448 </span>            : 
+<a name="449"><span class="lineNum">     449 </span><span class="lineCov">          3 :                 rec = g_new0(HILIGHT_REC, 1);</span></a>
+<span class="lineNum">     450 </span><span class="lineCov">          3 :                 hilights = g_slist_append(hilights, rec);</span>
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span><span class="lineCov">          3 :                 rec-&gt;text = g_strdup(text);</span>
+<a name="453"><span class="lineNum">     453 </span>            : </a>
+<span class="lineNum">     454 </span><span class="lineCov">          3 :                 color = config_node_get_str(node, &quot;color&quot;, NULL);</span>
+<span class="lineNum">     455 </span><span class="lineCov">          3 :                 rec-&gt;color = color == NULL || *color == '\0' ? NULL :</span>
+<span class="lineNum">     456 </span>            :                         g_strdup(color);
+<a name="457"><span class="lineNum">     457 </span>            : </a>
+<span class="lineNum">     458 </span><span class="lineCov">          3 :                 color = config_node_get_str(node, &quot;act_color&quot;, NULL);</span>
+<span class="lineNum">     459 </span><span class="lineCov">          3 :                 rec-&gt;act_color = color == NULL || *color == '\0' ? NULL :</span>
+<span class="lineNum">     460 </span>            :                         g_strdup(color);
+<a name="461"><span class="lineNum">     461 </span>            : </a>
+<span class="lineNum">     462 </span><span class="lineCov">          3 :                 rec-&gt;level = config_node_get_int(node, &quot;level&quot;, 0);</span>
+<span class="lineNum">     463 </span><span class="lineCov">          3 :                 rec-&gt;priority = config_node_get_int(node, &quot;priority&quot;, 0);</span>
+<span class="lineNum">     464 </span><span class="lineCov">          3 :                 rec-&gt;nick = config_node_get_bool(node, &quot;nick&quot;, TRUE);</span>
+<a name="465"><span class="lineNum">     465 </span><span class="lineCov">          3 :                 rec-&gt;word = config_node_get_bool(node, &quot;word&quot;, TRUE);</span></a>
+<span class="lineNum">     466 </span><span class="lineCov">          3 :                 rec-&gt;case_sensitive = config_node_get_bool(node, &quot;matchcase&quot;, FALSE);</span>
+<span class="lineNum">     467 </span>            : 
+<span class="lineNum">     468 </span><span class="lineCov">          3 :                 rec-&gt;nickmask = config_node_get_bool(node, &quot;mask&quot;, FALSE);</span>
+<a name="469"><span class="lineNum">     469 </span><span class="lineCov">          3 :                 rec-&gt;fullword = config_node_get_bool(node, &quot;fullword&quot;, FALSE);</span></a>
+<span class="lineNum">     470 </span><span class="lineCov">          3 :                 rec-&gt;regexp = config_node_get_bool(node, &quot;regexp&quot;, FALSE);</span>
+<span class="lineNum">     471 </span><span class="lineCov">          3 :                 servertag = config_node_get_str(node, &quot;servertag&quot;, NULL);</span>
+<span class="lineNum">     472 </span><span class="lineCov">          3 :                 rec-&gt;servertag = servertag == NULL || *servertag == '\0' ? NULL :</span>
+<a name="473"><span class="lineNum">     473 </span>            :                         g_strdup(servertag);</a>
+<span class="lineNum">     474 </span><span class="lineCov">          3 :                 hilight_init_rec(rec);</span>
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span><span class="lineCov">          3 :                 node = iconfig_node_section(node, &quot;channels&quot;, -1);</span>
+<a name="477"><span class="lineNum">     477 </span><span class="lineCov">          3 :                 if (node != NULL) rec-&gt;channels = config_node_get_list(node);</span></a>
+<span class="lineNum">     478 </span>            :         }
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span><span class="lineCov">          1 :         reset_cache();</span>
+<a name="481"><span class="lineNum">     481 </span>            : }</a>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 : static void hilight_print(int index, HILIGHT_REC *rec)</span>
+<span class="lineNum">     484 </span>            : {
+<a name="485"><span class="lineNum">     485 </span>            :         char *chans, *levelstr;</a>
+<span class="lineNum">     486 </span>            :         GString *options;
+<span class="lineNum">     487 </span>            : 
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :         options = g_string_new(NULL);</span>
+<a name="489"><span class="lineNum">     489 </span>            : </a>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :         if (rec-&gt;nick &amp;&amp; rec-&gt;word) { /* default case, no option */ }</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :         else if (rec-&gt;nick)</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :                 g_string_append(options, &quot;-nick &quot;);</span>
+<a name="493"><span class="lineNum">     493 </span><span class="lineNoCov">          0 :         else if (rec-&gt;word)</span></a>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :                 g_string_append(options, &quot;-word &quot;);</span>
+<span class="lineNum">     495 </span>            :         else
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :                 g_string_append(options, &quot;-line &quot;);</span>
+<a name="497"><span class="lineNum">     497 </span>            : </a>
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :         if (rec-&gt;nickmask) g_string_append(options, &quot;-mask &quot;);</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :         if (rec-&gt;fullword) g_string_append(options, &quot;-full &quot;);</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :         if (rec-&gt;case_sensitive) g_string_append(options, &quot;-matchcase &quot;);</span>
+<a name="501"><span class="lineNum">     501 </span><span class="lineNoCov">          0 :         if (rec-&gt;regexp) {</span></a>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :                 g_string_append(options, &quot;-regexp &quot;);</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :                 if (rec-&gt;preg == NULL)</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                         g_string_append(options, &quot;[INVALID!] &quot;);</span>
+<a name="505"><span class="lineNum">     505 </span>            :         }</a>
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineNoCov">          0 :         if (rec-&gt;priority != 0)</span>
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :                 g_string_append_printf(options, &quot;-priority %d &quot;, rec-&gt;priority);</span>
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :         if (rec-&gt;servertag != NULL)</span></a>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :                 g_string_append_printf(options, &quot;-network %s &quot;, rec-&gt;servertag);</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :         if (rec-&gt;color != NULL)</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :                 g_string_append_printf(options, &quot;-color %s &quot;, rec-&gt;color);</span>
+<a name="513"><span class="lineNum">     513 </span><span class="lineNoCov">          0 :         if (rec-&gt;act_color != NULL)</span></a>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :                 g_string_append_printf(options, &quot;-actcolor %s &quot;, rec-&gt;act_color);</span>
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :         chans = rec-&gt;channels == NULL ? NULL :</span>
+<a name="517"><span class="lineNum">     517 </span><span class="lineNoCov">          0 :                 g_strjoinv(&quot;,&quot;, rec-&gt;channels);</span></a>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :         levelstr = rec-&gt;level == 0 ? NULL :</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :                 bits2level(rec-&gt;level);</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :         if (levelstr != NULL)</span>
+<a name="521"><span class="lineNum">     521 </span><span class="lineNoCov">          0 :                 levelstr = g_strconcat(levelstr, &quot; &quot;, NULL);</span></a>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :         printformat(NULL, NULL, MSGLEVEL_CLIENTCRAP,</span>
+<span class="lineNum">     523 </span>            :                         TXT_HILIGHT_LINE, index, rec-&gt;text,
+<span class="lineNum">     524 </span>            :                         chans != NULL ? chans : &quot;&quot;,
+<a name="525"><span class="lineNum">     525 </span>            :                         levelstr != NULL ? levelstr : &quot;&quot;,</a>
+<span class="lineNum">     526 </span>            :                         options-&gt;str);
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :         g_free_not_null(chans);</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :         g_free_not_null(levelstr);</span>
+<a name="529"><span class="lineNum">     529 </span><span class="lineNoCov">          0 :         g_string_free(options, TRUE);</span></a>
+<a name="530"><span class="lineNum">     530 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 : static void cmd_hilight_show(void)</span>
+<a name="533"><span class="lineNum">     533 </span>            : {</a>
+<span class="lineNum">     534 </span>            :         GSList *tmp;
+<span class="lineNum">     535 </span>            :         int index;
+<span class="lineNum">     536 </span>            : 
+<a name="537"><span class="lineNum">     537 </span><span class="lineNoCov">          0 :         printformat(NULL, NULL, MSGLEVEL_CLIENTCRAP, TXT_HILIGHT_HEADER);</span></a>
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :         index = 1;</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :         for (tmp = hilights; tmp != NULL; tmp = tmp-&gt;next, index++) {</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :                 HILIGHT_REC *rec = tmp-&gt;data;</span>
+<a name="541"><span class="lineNum">     541 </span>            : </a>
+<span class="lineNum">     542 </span><span class="lineNoCov">          0 :                 hilight_print(index, rec);</span>
+<span class="lineNum">     543 </span>            :         }
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :         printformat(NULL, NULL, MSGLEVEL_CLIENTCRAP, TXT_HILIGHT_FOOTER);</span>
+<a name="545"><span class="lineNum">     545 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span>            : /* SYNTAX: HILIGHT [-nick | -word | -line] [-mask | -full | -matchcase | -regexp]
+<a name="548"><span class="lineNum">     548 </span>            :                    [-color &lt;color&gt;] [-actcolor &lt;color&gt;] [-level &lt;level&gt;]</a>
+<a name="549"><span class="lineNum">     549 </span>            :                    [-network &lt;network&gt;] [-channels &lt;channels&gt;] &lt;text&gt; */</a>
+<span class="lineNum">     550 </span><span class="lineNoCov">          0 : static void cmd_hilight(const char *data)</span>
+<span class="lineNum">     551 </span>            : {
+<span class="lineNum">     552 </span>            :         GHashTable *optlist;
+<a name="553"><span class="lineNum">     553 </span>            :         HILIGHT_REC *rec;</a>
+<span class="lineNum">     554 </span>            :         char *colorarg, *actcolorarg, *levelarg, *priorityarg, *chanarg, *text, *servertag;
+<span class="lineNum">     555 </span>            :         char **channels;
+<span class="lineNum">     556 </span>            :         void *free_arg;
+<a name="557"><span class="lineNum">     557 </span>            : </a>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :         if (*data == '\0') {</span>
+<a name="561"><span class="lineNum">     561 </span><span class="lineNoCov">          0 :                 cmd_hilight_show();</span></a>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     563 </span>            :         }
+<span class="lineNum">     564 </span>            : 
+<a name="565"><span class="lineNum">     565 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1 | PARAM_FLAG_OPTIONS |</span></a>
+<span class="lineNum">     566 </span>            :                                 PARAM_FLAG_GETREST, &quot;hilight&quot;, &amp;optlist, &amp;text))
+<span class="lineNum">     567 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     568 </span>            : 
+<a name="569"><span class="lineNum">     569 </span><span class="lineNoCov">          0 :         chanarg = g_hash_table_lookup(optlist, &quot;channels&quot;);</span></a>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :         levelarg = g_hash_table_lookup(optlist, &quot;level&quot;);</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :         priorityarg = g_hash_table_lookup(optlist, &quot;priority&quot;);</span>
+<span class="lineNum">     572 </span><span class="lineNoCov">          0 :         colorarg = g_hash_table_lookup(optlist, &quot;color&quot;);</span>
+<a name="573"><span class="lineNum">     573 </span><span class="lineNoCov">          0 :         actcolorarg = g_hash_table_lookup(optlist, &quot;actcolor&quot;);</span></a>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :         servertag = g_hash_table_lookup(optlist, &quot;network&quot;);</span>
+<span class="lineNum">     575 </span>            : 
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 :         if (*text == '\0') cmd_param_error(CMDERR_NOT_ENOUGH_PARAMS);</span>
+<a name="577"><span class="lineNum">     577 </span>            : </a>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :         channels = (chanarg == NULL || *chanarg == '\0') ? NULL :</span>
+<span class="lineNum">     579 </span>            :                 g_strsplit(chanarg, &quot;,&quot;, -1);
+<span class="lineNum">     580 </span>            : 
+<a name="581"><span class="lineNum">     581 </span><span class="lineNoCov">          0 :         rec = hilight_find(text, channels);</span></a>
+<span class="lineNum">     582 </span><span class="lineNoCov">          0 :         if (rec == NULL) {</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 :                 rec = g_new0(HILIGHT_REC, 1);</span>
+<span class="lineNum">     584 </span>            : 
+<a name="585"><span class="lineNum">     585 </span>            :                 /* default to nick/word hilighting */</a>
+<span class="lineNum">     586 </span><span class="lineNoCov">          0 :                 rec-&gt;nick = TRUE;</span>
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 :                 rec-&gt;word = TRUE;</span>
+<span class="lineNum">     588 </span>            : 
+<a name="589"><span class="lineNum">     589 </span><span class="lineNoCov">          0 :                 rec-&gt;text = g_strdup(text);</span></a>
+<span class="lineNum">     590 </span><span class="lineNoCov">          0 :                 rec-&gt;channels = channels;</span>
+<span class="lineNum">     591 </span>            :         } else {
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :                 g_strfreev(channels);</span>
+<a name="593"><span class="lineNum">     593 </span>            :         }</a>
+<span class="lineNum">     594 </span>            : 
+<span class="lineNum">     595 </span><span class="lineNoCov">          0 :         rec-&gt;level = (levelarg == NULL || *levelarg == '\0') ? 0 :</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 :                 level2bits(replace_chars(levelarg, ',', ' '), NULL);</span>
+<a name="597"><span class="lineNum">     597 </span><span class="lineNoCov">          0 :         rec-&gt;priority = priorityarg == NULL ? 0 : atoi(priorityarg);</span></a>
+<span class="lineNum">     598 </span>            : 
+<span class="lineNum">     599 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;line&quot;) != NULL) {</span>
+<span class="lineNum">     600 </span><span class="lineNoCov">          0 :                 rec-&gt;word = FALSE;</span>
+<a name="601"><span class="lineNum">     601 </span><span class="lineNoCov">          0 :                 rec-&gt;nick = FALSE;</span></a>
+<span class="lineNum">     602 </span>            :         }
+<span class="lineNum">     603 </span>            : 
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;word&quot;) != NULL) {</span>
+<a name="605"><span class="lineNum">     605 </span><span class="lineNoCov">          0 :                 rec-&gt;word = TRUE;</span></a>
+<span class="lineNum">     606 </span><span class="lineNoCov">          0 :                 rec-&gt;nick = FALSE;</span>
+<span class="lineNum">     607 </span>            :         }
+<span class="lineNum">     608 </span>            : 
+<a name="609"><span class="lineNum">     609 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;nick&quot;) != NULL)</span></a>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :                 rec-&gt;nick = TRUE;</span>
+<span class="lineNum">     611 </span>            : 
+<span class="lineNum">     612 </span><span class="lineNoCov">          0 :         rec-&gt;nickmask = g_hash_table_lookup(optlist, &quot;mask&quot;) != NULL;</span>
+<a name="613"><span class="lineNum">     613 </span><span class="lineNoCov">          0 :         rec-&gt;fullword = g_hash_table_lookup(optlist, &quot;full&quot;) != NULL;</span></a>
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :         rec-&gt;regexp = g_hash_table_lookup(optlist, &quot;regexp&quot;) != NULL;</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">          0 :         rec-&gt;case_sensitive = g_hash_table_lookup(optlist, &quot;matchcase&quot;) != NULL;</span>
+<span class="lineNum">     616 </span>            : 
+<a name="617"><span class="lineNum">     617 </span><span class="lineNoCov">          0 :         if (colorarg != NULL) {</span></a>
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 :                 g_free_and_null(rec-&gt;color);</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :                 if (*colorarg != '\0')</span>
+<span class="lineNum">     620 </span><span class="lineNoCov">          0 :                         rec-&gt;color = g_strdup(colorarg);</span>
+<a name="621"><span class="lineNum">     621 </span>            :         }</a>
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :         if (actcolorarg != NULL) {</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">          0 :                 g_free_and_null(rec-&gt;act_color);</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 :                 if (*actcolorarg != '\0')</span>
+<a name="625"><span class="lineNum">     625 </span><span class="lineNoCov">          0 :                         rec-&gt;act_color = g_strdup(actcolorarg);</span></a>
+<span class="lineNum">     626 </span>            :         }
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :         if (servertag != NULL) {</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 :                 g_free_and_null(rec-&gt;servertag);</span>
+<a name="629"><span class="lineNum">     629 </span><span class="lineNoCov">          0 :                 if (*servertag != '\0')</span></a>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :                         rec-&gt;servertag = g_strdup(servertag);</span>
+<span class="lineNum">     631 </span>            :         }
+<span class="lineNum">     632 </span>            : 
+<a name="633"><span class="lineNum">     633 </span><span class="lineNoCov">          0 :         hilight_create(rec);</span></a>
+<span class="lineNum">     634 </span>            : 
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :         hilight_print(g_slist_index(hilights, rec)+1, rec);</span>
+<span class="lineNum">     636 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<a name="637"><span class="lineNum">     637 </span>            : </a>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :         reset_cache();</span>
+<span class="lineNum">     639 </span>            : }
+<a name="640"><span class="lineNum">     640 </span>            : </a>
+<a name="641"><span class="lineNum">     641 </span>            : /* SYNTAX: DEHILIGHT &lt;id&gt;|&lt;mask&gt; */</a>
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 : static void cmd_dehilight(const char *data)</span>
+<span class="lineNum">     643 </span>            : {
+<span class="lineNum">     644 </span>            :         HILIGHT_REC *rec;
+<a name="645"><span class="lineNum">     645 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 :         if (is_numeric(data, ' ')) {</span>
+<span class="lineNum">     648 </span>            :                 /* with index number */
+<a name="649"><span class="lineNum">     649 </span><span class="lineNoCov">          0 :                 tmp = g_slist_nth(hilights, atoi(data)-1);</span></a>
+<span class="lineNum">     650 </span><span class="lineNoCov">          0 :                 rec = tmp == NULL ? NULL : tmp-&gt;data;</span>
+<span class="lineNum">     651 </span>            :         } else {
+<span class="lineNum">     652 </span>            :                 /* with mask */
+<a name="653"><span class="lineNum">     653 </span><span class="lineNoCov">          0 :                 char *chans[2] = { &quot;*&quot;, NULL };</span></a>
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :                 rec = hilight_find(data, chans);</span>
+<span class="lineNum">     655 </span>            :         }
+<span class="lineNum">     656 </span>            : 
+<a name="657"><span class="lineNum">     657 </span><span class="lineNoCov">          0 :         if (rec == NULL)</span></a>
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTNOTICE, TXT_HILIGHT_NOT_FOUND, data);</span>
+<span class="lineNum">     659 </span>            :         else {
+<span class="lineNum">     660 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTNOTICE, TXT_HILIGHT_REMOVED, rec-&gt;text);</span>
+<a name="661"><span class="lineNum">     661 </span><span class="lineNoCov">          0 :                 hilight_remove(rec);</span></a>
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :                 reset_cache();</span>
+<span class="lineNum">     663 </span>            :         }
+<a name="664"><span class="lineNum">     664 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="665"><span class="lineNum">     665 </span>            : </a>
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 : static void hilight_nick_cache(GHashTable *list, CHANNEL_REC *channel,</span>
+<span class="lineNum">     667 </span>            :                                    NICK_REC *nick)
+<span class="lineNum">     668 </span>            : {
+<a name="669"><span class="lineNum">     669 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     670 </span>            :         HILIGHT_REC *match;
+<span class="lineNum">     671 </span>            :         char *nickmask;
+<span class="lineNum">     672 </span>            :         int len, best_match;
+<a name="673"><span class="lineNum">     673 </span>            : </a>
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :         if (nick-&gt;host == NULL)</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :                 return; /* don't check until host is known */</span>
+<span class="lineNum">     676 </span>            : 
+<a name="677"><span class="lineNum">     677 </span><span class="lineNoCov">          0 :         nickmask = g_strconcat(nick-&gt;nick, &quot;!&quot;, nick-&gt;host, NULL);</span></a>
+<span class="lineNum">     678 </span>            : 
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :         best_match = 0; match = NULL;</span>
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :         for (tmp = hilights; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="681"><span class="lineNum">     681 </span><span class="lineNoCov">          0 :                 HILIGHT_REC *rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     682 </span>            : 
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :                 if (rec-&gt;nickmask &amp;&amp;</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :                         hilight_match_channel(rec, channel-&gt;name) &amp;&amp;</span>
+<a name="685"><span class="lineNum">     685 </span><span class="lineNoCov">          0 :                         match_wildcards(rec-&gt;text, nickmask)) {</span></a>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :                         len = strlen(rec-&gt;text);</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :                         if (best_match &lt; len) {</span>
+<span class="lineNum">     688 </span><span class="lineNoCov">          0 :                                 best_match = len;</span>
+<a name="689"><span class="lineNum">     689 </span><span class="lineNoCov">          0 :                                 match = rec;</span></a>
+<span class="lineNum">     690 </span>            :                         }
+<span class="lineNum">     691 </span>            :                 }
+<span class="lineNum">     692 </span>            :         }
+<a name="693"><span class="lineNum">     693 </span><span class="lineNoCov">          0 :         g_free_not_null(nickmask);</span></a>
+<span class="lineNum">     694 </span>            : 
+<span class="lineNum">     695 </span><span class="lineNoCov">          0 :         if (match != NULL)</span>
+<span class="lineNum">     696 </span><span class="lineNoCov">          0 :                 g_hash_table_insert(list, nick, match);</span>
+<a name="697"><span class="lineNum">     697 </span>            : }</a>
+<span class="lineNum">     698 </span>            : 
+<span class="lineNum">     699 </span><span class="lineCov">          1 : static void read_settings(void)</span>
+<span class="lineNum">     700 </span>            : {
+<a name="701"><span class="lineNum">     701 </span><span class="lineCov">          1 :         default_hilight_level = settings_get_level(&quot;hilight_level&quot;);</span></a>
+<span class="lineNum">     702 </span><span class="lineCov">          1 :         reset_level_cache();</span>
+<a name="703"><span class="lineNum">     703 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     704 </span>            : 
+<a name="705"><span class="lineNum">     705 </span><span class="lineCov">          1 : void hilight_text_init(void)</span></a>
+<span class="lineNum">     706 </span>            : {
+<span class="lineNum">     707 </span><span class="lineCov">          1 :         settings_add_str(&quot;lookandfeel&quot;, &quot;hilight_color&quot;, &quot;%Y&quot;);</span>
+<span class="lineNum">     708 </span><span class="lineCov">          1 :         settings_add_str(&quot;lookandfeel&quot;, &quot;hilight_act_color&quot;, &quot;%M&quot;);</span>
+<a name="709"><span class="lineNum">     709 </span><span class="lineCov">          1 :         settings_add_level(&quot;lookandfeel&quot;, &quot;hilight_level&quot;, &quot;PUBLIC DCCMSGS&quot;);</span></a>
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span><span class="lineCov">          1 :         read_settings();</span>
+<span class="lineNum">     712 </span>            : 
+<a name="713"><span class="lineNum">     713 </span><span class="lineCov">          1 :         nickmatch = nickmatch_init(hilight_nick_cache);</span></a>
+<span class="lineNum">     714 </span><span class="lineCov">          1 :         read_hilight_config();</span>
+<span class="lineNum">     715 </span>            : 
+<span class="lineNum">     716 </span><span class="lineCov">          1 :         signal_add_first(&quot;print text&quot;, (SIGNAL_FUNC) sig_print_text);</span>
+<a name="717"><span class="lineNum">     717 </span><span class="lineCov">          1 :         signal_add(&quot;setup reread&quot;, (SIGNAL_FUNC) read_hilight_config);</span></a>
+<span class="lineNum">     718 </span><span class="lineCov">          1 :         signal_add(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<span class="lineNum">     719 </span>            : 
+<span class="lineNum">     720 </span><span class="lineCov">          1 :         command_bind(&quot;hilight&quot;, NULL, (SIGNAL_FUNC) cmd_hilight);</span>
+<a name="721"><span class="lineNum">     721 </span><span class="lineCov">          1 :         command_bind(&quot;dehilight&quot;, NULL, (SIGNAL_FUNC) cmd_dehilight);</span></a>
+<span class="lineNum">     722 </span><span class="lineCov">          1 :         command_set_options(&quot;hilight&quot;, &quot;-color -actcolor -level -priority -network -channels nick word line mask full regexp matchcase&quot;);</span>
+<a name="723"><span class="lineNum">     723 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     724 </span>            : 
+<a name="725"><span class="lineNum">     725 </span><span class="lineCov">          1 : void hilight_text_deinit(void)</span></a>
+<span class="lineNum">     726 </span>            : {
+<span class="lineNum">     727 </span><span class="lineCov">          1 :         hilights_destroy_all();</span>
+<span class="lineNum">     728 </span><span class="lineCov">          1 :         nickmatch_deinit(nickmatch);</span>
+<a name="729"><span class="lineNum">     729 </span>            : </a>
+<span class="lineNum">     730 </span><span class="lineCov">          1 :         signal_remove(&quot;print text&quot;, (SIGNAL_FUNC) sig_print_text);</span>
+<span class="lineNum">     731 </span><span class="lineCov">          1 :         signal_remove(&quot;setup reread&quot;, (SIGNAL_FUNC) read_hilight_config);</span>
+<span class="lineNum">     732 </span><span class="lineCov">          1 :         signal_remove(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<a name="733"><span class="lineNum">     733 </span>            : </a>
+<span class="lineNum">     734 </span><span class="lineCov">          1 :         command_unbind(&quot;hilight&quot;, (SIGNAL_FUNC) cmd_hilight);</span>
+<span class="lineNum">     735 </span><span class="lineCov">          1 :         command_unbind(&quot;dehilight&quot;, (SIGNAL_FUNC) cmd_dehilight);</span>
+<span class="lineNum">     736 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

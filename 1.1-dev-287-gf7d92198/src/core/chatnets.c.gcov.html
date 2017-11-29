@@ -1,0 +1,270 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/chatnets.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - chatnets.c<span style="font-size: 80%;"> (source / <a href="chatnets.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">55</td>
+            <td class="headerCovTableEntry">94</td>
+            <td class="headerCovTableEntryLo">58.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntryLo">54.5 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  chatnets.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;network.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;special-vars.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;lib-config/iconfig.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;chat-protocols.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;chatnets.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      31 </span>            : 
+<a name="32"><span class="lineNum">      32 </span>            : GSList *chatnets; /* list of available chat networks */</a>
+<a name="33"><span class="lineNum">      33 </span>            : </a>
+<span class="lineNum">      34 </span><span class="lineNoCov">          0 : static void chatnet_config_save(CHATNET_REC *chatnet)</span>
+<span class="lineNum">      35 </span>            : {
+<span class="lineNum">      36 </span>            :         CONFIG_NODE *node;
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span><span class="lineNoCov">          0 :         node = iconfig_node_traverse(&quot;chatnets&quot;, TRUE);</span>
+<span class="lineNum">      39 </span><span class="lineNoCov">          0 :         node = iconfig_node_section(node, chatnet-&gt;name, NODE_TYPE_BLOCK);</span>
+<span class="lineNum">      40 </span><span class="lineNoCov">          0 :         iconfig_node_clear(node);</span>
+<a name="41"><span class="lineNum">      41 </span>            : </a>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 :         iconfig_node_set_str(node, &quot;type&quot;, chat_protocol_find_id(chatnet-&gt;chat_type)-&gt;name);</span>
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :         iconfig_node_set_str(node, &quot;nick&quot;, chatnet-&gt;nick);</span>
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :         iconfig_node_set_str(node, &quot;username&quot;, chatnet-&gt;username);</span>
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :         iconfig_node_set_str(node, &quot;realname&quot;, chatnet-&gt;realname);</span></a>
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :         iconfig_node_set_str(node, &quot;host&quot;, chatnet-&gt;own_host);</span>
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :         iconfig_node_set_str(node, &quot;autosendcmd&quot;, chatnet-&gt;autosendcmd);</span>
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :         signal_emit(&quot;chatnet saved&quot;, 2, chatnet, node);</span></a>
+<a name="50"><span class="lineNum">      50 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 : static void chatnet_config_remove(CHATNET_REC *chatnet)</span>
+<a name="53"><span class="lineNum">      53 </span>            : {</a>
+<span class="lineNum">      54 </span>            :         CONFIG_NODE *node;
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :         node = iconfig_node_traverse(&quot;chatnets&quot;, FALSE);</span>
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :         if (node != NULL) iconfig_node_set_str(node, chatnet-&gt;name, NULL);</span></a>
+<a name="58"><span class="lineNum">      58 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 : void chatnet_create(CHATNET_REC *chatnet)</span>
+<a name="61"><span class="lineNum">      61 </span>            : {</a>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :         g_return_if_fail(chatnet != NULL);</span>
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :         chatnet-&gt;type = module_get_uniq_id(&quot;CHATNET&quot;, 0);</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 :         if (g_slist_find(chatnets, chatnet) == NULL)</span></a>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :                 chatnets = g_slist_append(chatnets, chatnet);</span>
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :         chatnet_config_save(chatnet);</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :         signal_emit(&quot;chatnet created&quot;, 1, chatnet);</span></a>
+<a name="70"><span class="lineNum">      70 </span>            : }</a>
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 : void chatnet_remove(CHATNET_REC *chatnet)</span>
+<a name="73"><span class="lineNum">      73 </span>            : {</a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_CHATNET(chatnet));</span>
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         signal_emit(&quot;chatnet removed&quot;, 1, chatnet);</span>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         chatnet_config_remove(chatnet);</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         chatnet_destroy(chatnet);</span>
+<a name="80"><span class="lineNum">      80 </span>            : }</a>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<span class="lineNum">      82 </span><span class="lineCov">         13 : void chatnet_destroy(CHATNET_REC *chatnet)</span>
+<span class="lineNum">      83 </span>            : {
+<span class="lineNum">      84 </span><span class="lineCov">         13 :         g_return_if_fail(IS_CHATNET(chatnet));</span>
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<span class="lineNum">      86 </span><span class="lineCov">         13 :         chatnets = g_slist_remove(chatnets, chatnet);</span>
+<span class="lineNum">      87 </span><span class="lineCov">         13 :         signal_emit(&quot;chatnet destroyed&quot;, 1, chatnet);</span>
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineCov">         13 :         g_free_not_null(chatnet-&gt;nick);</span></a>
+<span class="lineNum">      90 </span><span class="lineCov">         13 :         g_free_not_null(chatnet-&gt;username);</span>
+<span class="lineNum">      91 </span><span class="lineCov">         13 :         g_free_not_null(chatnet-&gt;realname);</span>
+<span class="lineNum">      92 </span><span class="lineCov">         13 :         g_free_not_null(chatnet-&gt;own_host);</span>
+<a name="93"><span class="lineNum">      93 </span><span class="lineCov">         13 :         g_free_not_null(chatnet-&gt;autosendcmd);</span></a>
+<span class="lineNum">      94 </span><span class="lineCov">         13 :         g_free(chatnet-&gt;name);</span>
+<span class="lineNum">      95 </span><span class="lineCov">         13 :         g_free(chatnet);</span>
+<span class="lineNum">      96 </span>            : }
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span>            : /* Find the chat network by name */
+<span class="lineNum">      99 </span><span class="lineCov">         24 : CHATNET_REC *chatnet_find(const char *name)</span>
+<span class="lineNum">     100 </span>            : {
+<a name="101"><span class="lineNum">     101 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineCov">         24 :         g_return_val_if_fail(name != NULL, NULL);</span>
+<span class="lineNum">     104 </span>            : 
+<a name="105"><span class="lineNum">     105 </span><span class="lineCov">        169 :         for (tmp = chatnets; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     106 </span><span class="lineCov">        169 :                 CHATNET_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineCov">        169 :                 if (g_ascii_strcasecmp(rec-&gt;name, name) == 0)</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineCov">         24 :                         return rec;</span></a>
+<span class="lineNum">     110 </span>            :         }
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="113"><span class="lineNum">     113 </span>            : }</a>
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 : static void sig_connected(SERVER_REC *server)</span>
+<span class="lineNum">     116 </span>            : {
+<a name="117"><span class="lineNum">     117 </span>            :         CHATNET_REC *rec;</a>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_SERVER(server));</span>
+<span class="lineNum">     120 </span>            : 
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :         if (server-&gt;connrec-&gt;chatnet == NULL || server-&gt;session_reconnect)</span></a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         rec = chatnet_find(server-&gt;connrec-&gt;chatnet);</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :         if (!server-&gt;connrec-&gt;no_autosendcmd &amp;&amp; rec != NULL &amp;&amp; rec-&gt;autosendcmd)</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :                 eval_special_string(rec-&gt;autosendcmd, &quot;&quot;, server, NULL);</span>
+<a name="127"><span class="lineNum">     127 </span>            : }</a>
+<span class="lineNum">     128 </span>            : 
+<a name="129"><span class="lineNum">     129 </span><span class="lineCov">         14 : static void chatnet_read(CONFIG_NODE *node)</span></a>
+<span class="lineNum">     130 </span>            : {
+<span class="lineNum">     131 </span>            :         CHAT_PROTOCOL_REC *proto;
+<span class="lineNum">     132 </span>            :         CHATNET_REC *rec;
+<a name="133"><span class="lineNum">     133 </span>            :         char *type;</a>
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span><span class="lineCov">         14 :         if (node == NULL || node-&gt;key == NULL || !is_node_list(node))</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<span class="lineNum">     138 </span><span class="lineCov">         14 :         type = config_node_get_str(node, &quot;type&quot;, NULL);</span>
+<span class="lineNum">     139 </span><span class="lineCov">         14 :         proto = type == NULL ? NULL : chat_protocol_find(type);</span>
+<span class="lineNum">     140 </span><span class="lineCov">         14 :         if (proto == NULL) {</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineCov">          1 :                 proto = type == NULL ? chat_protocol_get_default() :</span></a>
+<span class="lineNum">     142 </span>            :                         chat_protocol_get_unknown(type);
+<span class="lineNum">     143 </span>            :         }
+<span class="lineNum">     144 </span>            : 
+<a name="145"><span class="lineNum">     145 </span><span class="lineCov">         14 :         if (type == NULL)</span></a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                 iconfig_node_set_str(node, &quot;type&quot;, proto-&gt;name);</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineCov">         14 :         rec = proto-&gt;create_chatnet();</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineCov">         14 :         rec-&gt;type = module_get_uniq_id(&quot;CHATNET&quot;, 0);</span></a>
+<span class="lineNum">     150 </span><span class="lineCov">         14 :         rec-&gt;chat_type = proto-&gt;id;</span>
+<span class="lineNum">     151 </span><span class="lineCov">         14 :         rec-&gt;name = g_strdup(node-&gt;key);</span>
+<span class="lineNum">     152 </span><span class="lineCov">         14 :         rec-&gt;nick = g_strdup(config_node_get_str(node, &quot;nick&quot;, NULL));</span>
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">         14 :         rec-&gt;username = g_strdup(config_node_get_str(node, &quot;username&quot;, NULL));</span></a>
+<span class="lineNum">     154 </span><span class="lineCov">         14 :         rec-&gt;realname = g_strdup(config_node_get_str(node, &quot;realname&quot;, NULL));</span>
+<span class="lineNum">     155 </span><span class="lineCov">         14 :         rec-&gt;own_host = g_strdup(config_node_get_str(node, &quot;host&quot;, NULL));</span>
+<span class="lineNum">     156 </span><span class="lineCov">         14 :         rec-&gt;autosendcmd = g_strdup(config_node_get_str(node, &quot;autosendcmd&quot;, NULL));</span>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span><span class="lineCov">         14 :         chatnets = g_slist_append(chatnets, rec);</span>
+<span class="lineNum">     159 </span><span class="lineCov">         14 :         signal_emit(&quot;chatnet read&quot;, 2, rec, node);</span>
+<a name="160"><span class="lineNum">     160 </span>            : }</a>
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<span class="lineNum">     162 </span><span class="lineCov">          1 : static void read_chatnets(void)</span>
+<span class="lineNum">     163 </span>            : {
+<span class="lineNum">     164 </span>            :         CONFIG_NODE *node;
+<a name="165"><span class="lineNum">     165 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineCov">          2 :         while (chatnets != NULL)</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                 chatnet_destroy(chatnets-&gt;data);</span>
+<a name="169"><span class="lineNum">     169 </span>            : </a>
+<span class="lineNum">     170 </span><span class="lineCov">          1 :         node = iconfig_node_traverse(&quot;chatnets&quot;, FALSE);</span>
+<span class="lineNum">     171 </span><span class="lineCov">          1 :         if (node != NULL) {</span>
+<span class="lineNum">     172 </span><span class="lineCov">          1 :                 tmp = config_node_first(node-&gt;value);</span>
+<a name="173"><span class="lineNum">     173 </span><span class="lineCov">         15 :                 for (; tmp != NULL; tmp = config_node_next(tmp))</span></a>
+<span class="lineNum">     174 </span><span class="lineCov">         14 :                         chatnet_read(tmp-&gt;data);</span>
+<span class="lineNum">     175 </span>            :         }
+<a name="176"><span class="lineNum">     176 </span><span class="lineCov">          1 : }</span></a>
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineCov">          1 : void chatnets_init(void)</span>
+<span class="lineNum">     179 </span>            : {
+<span class="lineNum">     180 </span><span class="lineCov">          1 :         chatnets = NULL;</span>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineCov">          1 :         signal_add_first(&quot;event connected&quot;, (SIGNAL_FUNC) sig_connected);</span>
+<span class="lineNum">     183 </span><span class="lineCov">          1 :         signal_add(&quot;setup reread&quot;, (SIGNAL_FUNC) read_chatnets);</span>
+<span class="lineNum">     184 </span><span class="lineCov">          1 :         signal_add_first(&quot;irssi init read settings&quot;, (SIGNAL_FUNC) read_chatnets);</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineCov">          1 : void chatnets_deinit(void)</span>
+<span class="lineNum">     188 </span>            : {
+<a name="189"><span class="lineNum">     189 </span><span class="lineCov">          1 :         module_uniq_destroy(&quot;CHATNET&quot;);</span></a>
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineCov">          1 :         signal_remove(&quot;event connected&quot;, (SIGNAL_FUNC) sig_connected);</span>
+<span class="lineNum">     192 </span><span class="lineCov">          1 :         signal_remove(&quot;setup reread&quot;, (SIGNAL_FUNC) read_chatnets);</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineCov">          1 :         signal_remove(&quot;irssi init read settings&quot;, (SIGNAL_FUNC) read_chatnets);</span></a>
+<span class="lineNum">     194 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

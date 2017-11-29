@@ -1,0 +1,513 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/irc/core/netsplit.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/irc/core</a> - netsplit.c<span style="font-size: 80%;"> (source / <a href="netsplit.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">19</td>
+            <td class="headerCovTableEntry">201</td>
+            <td class="headerCovTableEntryLo">9.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">19</td>
+            <td class="headerCovTableEntryLo">15.8 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  netsplit.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;misc.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : </a>
+<span class="lineNum">      26 </span>            : #include &quot;irc-servers.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;irc-channels.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;netsplit.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<span class="lineNum">      30 </span>            : /* How long to keep netsplits in memory (seconds) */
+<span class="lineNum">      31 </span>            : #define NETSPLIT_MAX_REMEMBER (60*60)
+<span class="lineNum">      32 </span>            : 
+<a name="33"><span class="lineNum">      33 </span>            : static int split_tag;</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span><span class="lineNoCov">          0 : static NETSPLIT_SERVER_REC *netsplit_server_find(IRC_SERVER_REC *server,</span>
+<span class="lineNum">      36 </span>            :                                                  const char *servername,
+<a name="37"><span class="lineNum">      37 </span>            :                                                  const char *destserver)</a>
+<span class="lineNum">      38 </span>            : {
+<span class="lineNum">      39 </span>            :         GSList *tmp;
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_IRC_SERVER(server), NULL);</span></a>
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :         for (tmp = server-&gt;split_servers; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :                 NETSPLIT_SERVER_REC *rec = tmp-&gt;data;</span>
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :                 if (g_ascii_strcasecmp(rec-&gt;server, servername) == 0 &amp;&amp;</span>
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :                     g_ascii_strcasecmp(rec-&gt;destserver, destserver) == 0)</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :                         return rec;</span>
+<a name="49"><span class="lineNum">      49 </span>            :         }</a>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="52"><span class="lineNum">      52 </span>            : }</a>
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 : static NETSPLIT_SERVER_REC *netsplit_server_create(IRC_SERVER_REC *server,</span>
+<span class="lineNum">      55 </span>            :                                                    const char *servername,
+<span class="lineNum">      56 </span>            :                                                    const char *destserver)
+<a name="57"><span class="lineNum">      57 </span>            : {</a>
+<span class="lineNum">      58 </span>            :         NETSPLIT_SERVER_REC *rec;
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_IRC_SERVER(server), NULL);</span>
+<a name="61"><span class="lineNum">      61 </span>            : </a>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :         rec = netsplit_server_find(server, servername, destserver);</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :         if (rec != NULL) {</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 rec-&gt;last = time(NULL);</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 :                 return rec;</span></a>
+<span class="lineNum">      66 </span>            :         }
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :         rec = g_new0(NETSPLIT_SERVER_REC, 1);</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :         rec-&gt;last = time(NULL);</span></a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :         rec-&gt;server = g_strdup(servername);</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :         rec-&gt;destserver = g_strdup(destserver);</span>
+<span class="lineNum">      72 </span>            : 
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :         server-&gt;split_servers = g_slist_append(server-&gt;split_servers, rec);</span></a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         signal_emit(&quot;netsplit server new&quot;, 2, server, rec);</span>
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         return rec;</span>
+<a name="77"><span class="lineNum">      77 </span>            : }</a>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 : static void netsplit_server_destroy(IRC_SERVER_REC *server,</span>
+<span class="lineNum">      80 </span>            :                                     NETSPLIT_SERVER_REC *rec)
+<a name="81"><span class="lineNum">      81 </span>            : {</a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_IRC_SERVER(server));</span>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         server-&gt;split_servers = g_slist_remove(server-&gt;split_servers, rec);</span>
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         signal_emit(&quot;netsplit server remove&quot;, 2, server, rec);</span>
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         g_free(rec-&gt;server);</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         g_free(rec-&gt;destserver);</span></a>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :         g_free(rec);</span>
+<a name="91"><span class="lineNum">      91 </span>            : }</a>
+<span class="lineNum">      92 </span>            : 
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 : static NETSPLIT_REC *netsplit_add(IRC_SERVER_REC *server, const char *nick,</span></a>
+<span class="lineNum">      94 </span>            :                                   const char *address, const char *servers)
+<span class="lineNum">      95 </span>            : {
+<span class="lineNum">      96 </span>            :         NETSPLIT_REC *rec;
+<a name="97"><span class="lineNum">      97 </span>            :         NETSPLIT_CHAN_REC *splitchan;</a>
+<span class="lineNum">      98 </span>            :         NICK_REC *nickrec;
+<span class="lineNum">      99 </span>            :         GSList *tmp;
+<span class="lineNum">     100 </span>            :         char *p, *dupservers;
+<a name="101"><span class="lineNum">     101 </span>            : </a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_IRC_SERVER(server), NULL);</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, NULL);</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(address != NULL, NULL);</span>
+<a name="105"><span class="lineNum">     105 </span>            : </a>
+<span class="lineNum">     106 </span>            :         /* get splitted servers */
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         dupservers = g_strdup(servers);</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         p = strchr(dupservers, ' ');</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :         if (p == NULL) {</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 g_free(dupservers);</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 g_warning(&quot;netsplit_add() : only one server found&quot;);</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<a name="113"><span class="lineNum">     113 </span>            :         }</a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :         *p++ = '\0';</span>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :         rec = g_new0(NETSPLIT_REC, 1);</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :         rec-&gt;nick = g_strdup(nick);</span></a>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :         rec-&gt;address = g_strdup(address);</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :         rec-&gt;destroy = time(NULL)+NETSPLIT_MAX_REMEMBER;</span>
+<span class="lineNum">     120 </span>            : 
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :         rec-&gt;server = netsplit_server_create(server, dupservers, p);</span></a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :         rec-&gt;server-&gt;count++;</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :         g_free(dupservers);</span>
+<span class="lineNum">     124 </span>            : 
+<a name="125"><span class="lineNum">     125 </span>            :         /* copy the channel nick records.. */</a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :         for (tmp = server-&gt;channels; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                 CHANNEL_REC *channel = tmp-&gt;data;</span>
+<span class="lineNum">     128 </span>            : 
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 nickrec = nicklist_find(channel, nick);</span></a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 if (nickrec == NULL)</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     132 </span>            : 
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :                 splitchan = g_new0(NETSPLIT_CHAN_REC, 1);</span></a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                 splitchan-&gt;name = g_strdup(channel-&gt;visible_name);</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 splitchan-&gt;op = nickrec-&gt;op;</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                 splitchan-&gt;halfop = nickrec-&gt;halfop;</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 splitchan-&gt;voice = nickrec-&gt;voice;</span></a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 memcpy(splitchan-&gt;prefixes, nickrec-&gt;prefixes, sizeof(splitchan-&gt;prefixes));</span>
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 rec-&gt;channels = g_slist_append(rec-&gt;channels, splitchan);</span>
+<a name="141"><span class="lineNum">     141 </span>            :         }</a>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :         if (rec-&gt;channels == NULL)</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                 g_warning(&quot;netsplit_add(): nick '%s' not in any channels&quot;, nick);</span>
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         g_hash_table_insert(server-&gt;splits, rec-&gt;nick, rec);</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :         signal_emit(&quot;netsplit new&quot;, 1, rec);</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :         return rec;</span></a>
+<a name="150"><span class="lineNum">     150 </span>            : }</a>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 : static void netsplit_destroy(IRC_SERVER_REC *server, NETSPLIT_REC *rec)</span>
+<a name="153"><span class="lineNum">     153 </span>            : {</a>
+<span class="lineNum">     154 </span>            :         GSList *tmp;
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_IRC_SERVER(server));</span>
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 :         g_return_if_fail(rec != NULL);</span></a>
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         signal_emit(&quot;netsplit remove&quot;, 1, rec);</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :         for (tmp = rec-&gt;channels; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :                 NETSPLIT_CHAN_REC *rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                 g_free(rec-&gt;name);</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                 g_free(rec);</span>
+<a name="165"><span class="lineNum">     165 </span>            :         }</a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :         g_slist_free(rec-&gt;channels);</span>
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         if (--rec-&gt;server-&gt;count == 0)</span>
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :                 netsplit_server_destroy(server, rec-&gt;server);</span></a>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :         g_free(rec-&gt;nick);</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :         g_free(rec-&gt;address);</span>
+<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 :         g_free(rec);</span></a>
+<a name="174"><span class="lineNum">     174 </span>            : }</a>
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 : static void netsplit_destroy_hash(void *key, NETSPLIT_REC *rec,</span>
+<a name="177"><span class="lineNum">     177 </span>            :                                   IRC_SERVER_REC *server)</a>
+<span class="lineNum">     178 </span>            : {
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         netsplit_destroy(server, rec);</span>
+<a name="180"><span class="lineNum">     180 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 : NETSPLIT_REC *netsplit_find(IRC_SERVER_REC *server, const char *nick,</span>
+<span class="lineNum">     183 </span>            :                             const char *address)
+<span class="lineNum">     184 </span>            : {
+<a name="185"><span class="lineNum">     185 </span>            :         NETSPLIT_REC *rec;</a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_IRC_SERVER(server), NULL);</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, NULL);</span>
+<a name="189"><span class="lineNum">     189 </span>            : </a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(server-&gt;splits, nick);</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :         if (rec == NULL) return NULL;</span>
+<span class="lineNum">     192 </span>            : 
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :         return (address == NULL ||</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 g_ascii_strcasecmp(rec-&gt;address, address) == 0) ? rec : NULL;</span>
+<a name="195"><span class="lineNum">     195 </span>            : }</a>
+<span class="lineNum">     196 </span>            : 
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 : NETSPLIT_CHAN_REC *netsplit_find_channel(IRC_SERVER_REC *server,</span></a>
+<span class="lineNum">     198 </span>            :                                          const char *nick, const char *address,
+<span class="lineNum">     199 </span>            :                                          const char *channel)
+<span class="lineNum">     200 </span>            : {
+<a name="201"><span class="lineNum">     201 </span>            :         NETSPLIT_REC *rec;</a>
+<span class="lineNum">     202 </span>            :         GSList *tmp;
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_IRC_SERVER(server), NULL);</span>
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, NULL);</span></a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(channel != NULL, NULL);</span>
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :         rec = netsplit_find(server, nick, address);</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :         if (rec == NULL) return NULL;</span></a>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :         for (tmp = rec-&gt;channels; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 NETSPLIT_CHAN_REC *rec = tmp-&gt;data;</span>
+<a name="213"><span class="lineNum">     213 </span>            : </a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 if (g_ascii_strcasecmp(rec-&gt;name, channel) == 0)</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                         return rec;</span>
+<span class="lineNum">     216 </span>            :         }
+<a name="217"><span class="lineNum">     217 </span>            : </a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<span class="lineNum">     219 </span>            : }
+<a name="220"><span class="lineNum">     220 </span>            : </a>
+<a name="221"><span class="lineNum">     221 </span>            : /* check if quit message is a netsplit message */</a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 : int quitmsg_is_split(const char *msg)</span>
+<span class="lineNum">     223 </span>            : {
+<span class="lineNum">     224 </span>            :         const char *host2, *p;
+<a name="225"><span class="lineNum">     225 </span>            :         int prev, len, host1_dot, host2_dot;</a>
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(msg != NULL, FALSE);</span>
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span>            :         /* NOTE: there used to be some paranoia checks (some older IRC</a>
+<span class="lineNum">     230 </span>            :            clients have even more), but they're pretty useless nowadays,
+<span class="lineNum">     231 </span>            :            since IRC server prefixes the quit message with a space if it
+<span class="lineNum">     232 </span>            :            looks like a netsplit message.
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<span class="lineNum">     234 </span>            :            So, the check is currently just:
+<span class="lineNum">     235 </span>            :              - host1.domain1 host2.domain2
+<span class="lineNum">     236 </span>            :              - top-level domains have to be 2+ characters long,
+<a name="237"><span class="lineNum">     237 </span>            :                containing only alphabets</a>
+<span class="lineNum">     238 </span>            :              - only 1 space
+<span class="lineNum">     239 </span>            :              - no double-dots (&quot;..&quot; - probably useless check)
+<span class="lineNum">     240 </span>            :              - hosts/domains can't start or end with a dot
+<a name="241"><span class="lineNum">     241 </span>            :              - the two hosts can't be identical (probably useless check)</a>
+<span class="lineNum">     242 </span>            :              - can't contain ':' or '/' chars (some servers allow URLs)
+<span class="lineNum">     243 </span>            :            */
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         host2 = NULL;</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :         prev = '\0'; len = 0; host1_dot = host2_dot = 0;</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :         while (*msg != '\0') {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                 if (*msg == ' ') {</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :                         if (prev == '.' || prev == '\0') {</span>
+<a name="249"><span class="lineNum">     249 </span>            :                                 /* domains can't end with '.', space can't</a>
+<span class="lineNum">     250 </span>            :                                    be the first character in msg. */
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                                 return FALSE;</span>
+<span class="lineNum">     252 </span>            :                         }
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         if (host2 != NULL)</span></a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                                 return FALSE; /* only one space allowed */</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                         if (!host1_dot)</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                                 return FALSE; /* host1 didn't have domain */</span>
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :                         host2 = msg+1; len = -1;</span></a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 } else if (*msg == '.') {</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                         if (prev == '\0' || prev == ' ' || prev == '.') {</span>
+<span class="lineNum">     260 </span>            :                                 /* domains can't start with '.'
+<a name="261"><span class="lineNum">     261 </span>            :                                    and can't have &quot;..&quot; */</a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                                 return FALSE;</span>
+<span class="lineNum">     263 </span>            :                         }
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :                         if (host2 != NULL)</span></a>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :                                 host2_dot = TRUE;</span>
+<span class="lineNum">     267 </span>            :                         else
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                                 host1_dot = TRUE;</span>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 } else if (*msg == ':' || *msg == '/')</span></a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                         return FALSE;</span>
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                 prev = *msg;</span>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :                 msg++; len++;</span></a>
+<span class="lineNum">     274 </span>            :         }
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :         if (!host2_dot || prev == '.')</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :                 return FALSE;</span></a>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span>            :         /* top-domain1 must be 2+ chars long and contain only alphabets */
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :         p = host2-1;</span>
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :         while (p[-1] != '.') {</span></a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                 if (!i_isalpha(p[-1]))</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                         return FALSE;</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                 p--;</span>
+<a name="285"><span class="lineNum">     285 </span>            :         }</a>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :         if (host2-p-1 &lt; 2) return FALSE;</span>
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span>            :         /* top-domain2 must be 2+ chars long and contain only alphabets */
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :         p = host2+strlen(host2);</span></a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :         while (p[-1] != '.') {</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 if (!i_isalpha(p[-1]))</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                         return FALSE;</span>
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :                 p--;</span></a>
+<span class="lineNum">     294 </span>            :         }
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :         if (strlen(p) &lt; 2) return FALSE;</span>
+<span class="lineNum">     296 </span>            : 
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :         return TRUE;</span></a>
+<a name="298"><span class="lineNum">     298 </span>            : }</a>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 : static void split_set_timeout(void *key, NETSPLIT_REC *rec, NETSPLIT_REC *orig)</span>
+<a name="301"><span class="lineNum">     301 </span>            : {</a>
+<span class="lineNum">     302 </span>            :         /* same servers -&gt; split over -&gt; destroy old records sooner.. */
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         if (rec-&gt;server == orig-&gt;server)</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 rec-&gt;destroy = time(NULL)+60;</span>
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 : static void event_join(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">     308 </span>            :                        const char *nick, const char *address)
+<a name="309"><span class="lineNum">     309 </span>            : {</a>
+<span class="lineNum">     310 </span>            :         NETSPLIT_REC *rec;
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :         if (nick == NULL)</span>
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span>            :         /* check if split is over */
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(server-&gt;splits, nick);</span>
+<a name="317"><span class="lineNum">     317 </span>            : </a>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :         if (rec != NULL &amp;&amp; g_ascii_strcasecmp(rec-&gt;address, address) == 0) {</span>
+<span class="lineNum">     319 </span>            :                 /* yep, looks like it is. for same people that had the same
+<span class="lineNum">     320 </span>            :                    splitted servers set the timeout to one minute.
+<a name="321"><span class="lineNum">     321 </span>            : </a>
+<span class="lineNum">     322 </span>            :                    .. if the user just changed server, she can't use the
+<span class="lineNum">     323 </span>            :                    same nick (unless the server is broken) so don't bother
+<span class="lineNum">     324 </span>            :                    checking that the nick's server matches the split. */
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :                 g_hash_table_foreach(server-&gt;splits,</span></a>
+<span class="lineNum">     326 </span>            :                                      (GHFunc) split_set_timeout, rec);
+<span class="lineNum">     327 </span>            :         }
+<span class="lineNum">     328 </span>            : }
+<a name="329"><span class="lineNum">     329 </span>            : </a>
+<a name="330"><span class="lineNum">     330 </span>            : /* remove the nick from netsplit, but do it last so that other &quot;event join&quot;</a>
+<span class="lineNum">     331 </span>            :    signal handlers can check if the join was a netjoin */
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 : static void event_join_last(IRC_SERVER_REC *server, const char *data,</span>
+<a name="333"><span class="lineNum">     333 </span>            :                             const char *nick, const char *address)</a>
+<span class="lineNum">     334 </span>            : {
+<span class="lineNum">     335 </span>            :         NETSPLIT_REC *rec;
+<span class="lineNum">     336 </span>            : 
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :         if (nick == NULL)</span></a>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(server-&gt;splits, nick);</span>
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :         if (rec != NULL) {</span></a>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                 g_hash_table_remove(server-&gt;splits, rec-&gt;nick);</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                 netsplit_destroy(server, rec);</span>
+<span class="lineNum">     344 </span>            :         }
+<a name="345"><span class="lineNum">     345 </span>            : }</a>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 : static void event_quit(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">     348 </span>            :                        const char *nick, const char *address)
+<a name="349"><span class="lineNum">     349 </span>            : {</a>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :         if (*data == ':') data++;</span>
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(nick, server-&gt;nick) != 0 &amp;&amp; quitmsg_is_split(data)) {</span></a>
+<span class="lineNum">     354 </span>            :                 /* netsplit! */
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                 netsplit_add(server, nick, address, data);</span>
+<span class="lineNum">     356 </span>            :         }
+<a name="357"><span class="lineNum">     357 </span>            : }</a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 : static void event_nick(IRC_SERVER_REC *server, const char *data)</span>
+<span class="lineNum">     360 </span>            : {
+<a name="361"><span class="lineNum">     361 </span>            :         NETSPLIT_REC *rec;</a>
+<span class="lineNum">     362 </span>            :         char *params, *nick;
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 1, &amp;nick);</span>
+<a name="365"><span class="lineNum">     365 </span>            : </a>
+<span class="lineNum">     366 </span>            :         /* remove nick from split list when somebody changed
+<span class="lineNum">     367 </span>            :            nick to this one during split */
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(server-&gt;splits, nick);</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :         if (rec != NULL) {</span></a>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :                 g_hash_table_remove(server-&gt;splits, rec-&gt;nick);</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 netsplit_destroy(server, rec);</span>
+<span class="lineNum">     372 </span>            :         }
+<a name="373"><span class="lineNum">     373 </span>            : </a>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="375"><span class="lineNum">     375 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     376 </span>            : 
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 : static void sig_disconnected(IRC_SERVER_REC *server)</span></a>
+<span class="lineNum">     378 </span>            : {
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         g_return_if_fail(server != NULL);</span>
+<span class="lineNum">     380 </span>            : 
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER(server))</span></a>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :         g_hash_table_foreach(server-&gt;splits,</span>
+<a name="385"><span class="lineNum">     385 </span>            :                              (GHFunc) netsplit_destroy_hash, server);</a>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :         g_hash_table_destroy(server-&gt;splits);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :         server-&gt;splits = NULL;</span>
+<a name="388"><span class="lineNum">     388 </span>            : }</a>
+<a name="389"><span class="lineNum">     389 </span>            : </a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 : static int split_server_check(void *key, NETSPLIT_REC *rec,</span>
+<span class="lineNum">     391 </span>            :                               IRC_SERVER_REC *server)
+<span class="lineNum">     392 </span>            : {
+<a name="393"><span class="lineNum">     393 </span>            :         /* Check if this split record is too old.. */</a>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :         if (rec-&gt;destroy &gt; time(NULL))</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<span class="lineNum">     396 </span>            : 
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :         netsplit_destroy(server, rec);</span></a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :         return TRUE;</span>
+<a name="399"><span class="lineNum">     399 </span>            : }</a>
+<span class="lineNum">     400 </span>            : 
+<a name="401"><span class="lineNum">     401 </span><span class="lineCov">          1 : static int split_check_old(void)</span></a>
+<span class="lineNum">     402 </span>            : {
+<span class="lineNum">     403 </span>            :         GSList *tmp;
+<span class="lineNum">     404 </span>            : 
+<a name="405"><span class="lineNum">     405 </span><span class="lineCov">          1 :         for (tmp = servers; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                 IRC_SERVER_REC *server = tmp-&gt;data;</span>
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                 if (!IS_IRC_SERVER(server))</span>
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :                         continue;</span></a>
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :                 g_hash_table_foreach_remove(server-&gt;splits,</span>
+<span class="lineNum">     412 </span>            :                                             (GHRFunc) split_server_check,
+<a name="413"><span class="lineNum">     413 </span>            :                                             server);</a>
+<span class="lineNum">     414 </span>            :         }
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span><span class="lineCov">          1 :         return 1;</span>
+<a name="417"><span class="lineNum">     417 </span>            : }</a>
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineCov">          1 : void netsplit_init(void)</span>
+<span class="lineNum">     420 </span>            : {
+<a name="421"><span class="lineNum">     421 </span><span class="lineCov">          1 :         split_tag = g_timeout_add(1000, (GSourceFunc) split_check_old, NULL);</span></a>
+<span class="lineNum">     422 </span><span class="lineCov">          1 :         signal_add_first(&quot;event join&quot;, (SIGNAL_FUNC) event_join);</span>
+<span class="lineNum">     423 </span><span class="lineCov">          1 :         signal_add_last(&quot;event join&quot;, (SIGNAL_FUNC) event_join_last);</span>
+<span class="lineNum">     424 </span><span class="lineCov">          1 :         signal_add_first(&quot;event quit&quot;, (SIGNAL_FUNC) event_quit);</span>
+<a name="425"><span class="lineNum">     425 </span><span class="lineCov">          1 :         signal_add(&quot;event nick&quot;, (SIGNAL_FUNC) event_nick);</span></a>
+<span class="lineNum">     426 </span><span class="lineCov">          1 :         signal_add(&quot;server disconnected&quot;, (SIGNAL_FUNC) sig_disconnected);</span>
+<a name="427"><span class="lineNum">     427 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     428 </span>            : 
+<a name="429"><span class="lineNum">     429 </span><span class="lineCov">          1 : void netsplit_deinit(void)</span></a>
+<span class="lineNum">     430 </span>            : {
+<span class="lineNum">     431 </span><span class="lineCov">          1 :         g_source_remove(split_tag);</span>
+<span class="lineNum">     432 </span><span class="lineCov">          1 :         signal_remove(&quot;event join&quot;, (SIGNAL_FUNC) event_join);</span>
+<a name="433"><span class="lineNum">     433 </span><span class="lineCov">          1 :         signal_remove(&quot;event join&quot;, (SIGNAL_FUNC) event_join_last);</span></a>
+<span class="lineNum">     434 </span><span class="lineCov">          1 :         signal_remove(&quot;event quit&quot;, (SIGNAL_FUNC) event_quit);</span>
+<span class="lineNum">     435 </span><span class="lineCov">          1 :         signal_remove(&quot;event nick&quot;, (SIGNAL_FUNC) event_nick);</span>
+<span class="lineNum">     436 </span><span class="lineCov">          1 :         signal_remove(&quot;server disconnected&quot;, (SIGNAL_FUNC) sig_disconnected);</span>
+<a name="437"><span class="lineNum">     437 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

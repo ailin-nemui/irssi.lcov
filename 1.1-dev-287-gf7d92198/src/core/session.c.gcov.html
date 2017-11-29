@@ -1,0 +1,447 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/session.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - session.c<span style="font-size: 80%;"> (source / <a href="session.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">35</td>
+            <td class="headerCovTableEntry">191</td>
+            <td class="headerCovTableEntryLo">18.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntryLo">33.3 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  session.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;args.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;network.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;net-sendbuffer.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;pidwait.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;lib-config/iconfig.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<span class="lineNum">      30 </span>            : #include &quot;chat-protocols.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;servers-setup.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;channels.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;nicklist.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : static char *session_file;
+<a name="37"><span class="lineNum">      37 </span>            : char *irssi_binary = NULL;</a>
+<span class="lineNum">      38 </span>            : 
+<a name="39"><span class="lineNum">      39 </span>            : static char **session_args;</a>
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span><span class="lineCov">          1 : void session_set_binary(const char *path)</span></a>
+<span class="lineNum">      42 </span>            : {
+<span class="lineNum">      43 </span><span class="lineCov">          1 :         g_free_and_null(irssi_binary);</span>
+<span class="lineNum">      44 </span>            : 
+<a name="45"><span class="lineNum">      45 </span><span class="lineCov">          1 :         irssi_binary = g_find_program_in_path(path);</span></a>
+<a name="46"><span class="lineNum">      46 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span><span class="lineCov">          1 : void session_upgrade(void)</span>
+<a name="49"><span class="lineNum">      49 </span>            : {</a>
+<span class="lineNum">      50 </span><span class="lineCov">          1 :         if (session_args == NULL)</span>
+<span class="lineNum">      51 </span><span class="lineCov">          1 :                 return;</span>
+<span class="lineNum">      52 </span>            : 
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :         execv(session_args[0], session_args);</span></a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :         fprintf(stderr, &quot;exec failed: %s: %s\n&quot;,</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :                 session_args[0], g_strerror(errno));</span>
+<span class="lineNum">      56 </span>            : }
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<span class="lineNum">      58 </span>            : /* SYNTAX: UPGRADE [&lt;irssi binary path&gt;] */
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 : static void cmd_upgrade(const char *data)</span>
+<span class="lineNum">      60 </span>            : {
+<a name="61"><span class="lineNum">      61 </span>            :         CONFIG_REC *session;</a>
+<span class="lineNum">      62 </span>            :         char *session_file, *str;
+<span class="lineNum">      63 </span>            :         char *binary;
+<span class="lineNum">      64 </span>            : 
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 :         if (*data == '\0')</span></a>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :                 data = irssi_binary;</span>
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :         if ((binary = g_find_program_in_path(data)) == NULL)</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :                 cmd_return_error(CMDERR_PROGRAM_NOT_FOUND);</span></a>
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span>            :         /* save the session */
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :         session_file = g_strdup_printf(&quot;%s/session&quot;, get_irssi_dir());</span>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :         session = config_open(session_file, 0600);</span></a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         unlink(session_file);</span>
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         signal_emit(&quot;session save&quot;, 1, session);</span>
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :         config_write(session, NULL, -1);</span></a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         config_close(session);</span>
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            :         /* data may contain some other program as well, like
+<a name="81"><span class="lineNum">      81 </span>            :            /UPGRADE /usr/bin/screen irssi */</a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         str = g_strdup_printf(&quot;%s --noconnect --session=%s --home=%s --config=%s&quot;,</span>
+<span class="lineNum">      83 </span>            :                               binary, session_file, get_irssi_dir(), get_irssi_config());
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         g_free(binary);</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :         g_free(session_file);</span></a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         session_args = g_strsplit(str, &quot; &quot;, -1);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :         g_free(str);</span>
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         signal_emit(&quot;gui exit&quot;, 0);</span></a>
+<a name="90"><span class="lineNum">      90 </span>            : }</a>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 : static void session_save_nick(CHANNEL_REC *channel, NICK_REC *nick,</span>
+<a name="93"><span class="lineNum">      93 </span>            :                               CONFIG_REC *config, CONFIG_NODE *node)</a>
+<span class="lineNum">      94 </span>            : {
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         node = config_node_section(config, node, NULL, NODE_TYPE_BLOCK);</span>
+<span class="lineNum">      96 </span>            : 
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;nick&quot;, nick-&gt;nick);</span></a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         config_node_set_bool(config, node, &quot;op&quot;, nick-&gt;op);</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         config_node_set_bool(config, node, &quot;halfop&quot;, nick-&gt;halfop);</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :         config_node_set_bool(config, node, &quot;voice&quot;, nick-&gt;voice);</span>
+<a name="101"><span class="lineNum">     101 </span>            : </a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;prefixes&quot;, nick-&gt;prefixes);</span>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :         signal_emit(&quot;session save nick&quot;, 4, channel, nick, config, node);</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 : static void session_save_channel_nicks(CHANNEL_REC *channel, CONFIG_REC *config,</span>
+<span class="lineNum">     108 </span>            :                                        CONFIG_NODE *node)
+<a name="109"><span class="lineNum">     109 </span>            : {</a>
+<span class="lineNum">     110 </span>            :         GSList *tmp, *nicks;
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :         node = config_node_section(config, node, &quot;nicks&quot;, NODE_TYPE_LIST);</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :         nicks = nicklist_getnicks(channel);</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :         for (tmp = nicks; tmp != NULL; tmp = tmp-&gt;next)</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                 session_save_nick(channel, tmp-&gt;data, config, node);</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :         g_slist_free(nicks);</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 : static void session_save_channel(CHANNEL_REC *channel, CONFIG_REC *config,</span>
+<span class="lineNum">     120 </span>            :                                  CONFIG_NODE *node)
+<a name="121"><span class="lineNum">     121 </span>            : {</a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :         node = config_node_section(config, node, NULL, NODE_TYPE_BLOCK);</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;name&quot;, channel-&gt;name);</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;visible_name&quot;, channel-&gt;visible_name);</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;topic&quot;, channel-&gt;topic);</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;topic_by&quot;, channel-&gt;topic_by);</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :         config_node_set_int(config, node, &quot;topic_time&quot;, channel-&gt;topic_time);</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;key&quot;, channel-&gt;key);</span></a>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :         signal_emit(&quot;session save channel&quot;, 3, channel, config, node);</span>
+<a name="132"><span class="lineNum">     132 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="133"><span class="lineNum">     133 </span>            : </a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 : static void session_save_server_channels(SERVER_REC *server,</span>
+<span class="lineNum">     135 </span>            :                                          CONFIG_REC *config,
+<span class="lineNum">     136 </span>            :                                          CONFIG_NODE *node)
+<a name="137"><span class="lineNum">     137 </span>            : {</a>
+<span class="lineNum">     138 </span>            :         GSList *tmp;
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span>            :         /* save channels */
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :         node = config_node_section(config, node, &quot;channels&quot;, NODE_TYPE_LIST);</span></a>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :         for (tmp = server-&gt;channels; tmp != NULL; tmp = tmp-&gt;next)</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                 session_save_channel(tmp-&gt;data, config, node);</span>
+<a name="144"><span class="lineNum">     144 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 : static void session_save_server(SERVER_REC *server, CONFIG_REC *config,</span>
+<span class="lineNum">     147 </span>            :                                 CONFIG_NODE *node)
+<span class="lineNum">     148 </span>            : {
+<a name="149"><span class="lineNum">     149 </span>            :         int handle;</a>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         node = config_node_section(config, node, NULL, NODE_TYPE_BLOCK);</span>
+<span class="lineNum">     152 </span>            : 
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;chat_type&quot;, chat_protocol_find_id(server-&gt;chat_type)-&gt;name);</span></a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;address&quot;, server-&gt;connrec-&gt;address);</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :         config_node_set_int(config, node, &quot;port&quot;, server-&gt;connrec-&gt;port);</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;chatnet&quot;, server-&gt;connrec-&gt;chatnet);</span>
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;password&quot;, server-&gt;connrec-&gt;password);</span></a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;nick&quot;, server-&gt;nick);</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;version&quot;, server-&gt;version);</span>
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :         config_node_set_bool(config, node, &quot;use_tls&quot;, server-&gt;connrec-&gt;use_tls);</span></a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;tls_cert&quot;, server-&gt;connrec-&gt;tls_cert);</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;tls_pkey&quot;, server-&gt;connrec-&gt;tls_pkey);</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         config_node_set_bool(config, node, &quot;tls_verify&quot;, server-&gt;connrec-&gt;tls_verify);</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;tls_cafile&quot;, server-&gt;connrec-&gt;tls_cafile);</span></a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;tls_capath&quot;, server-&gt;connrec-&gt;tls_capath);</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;tls_ciphers&quot;, server-&gt;connrec-&gt;tls_ciphers);</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;tls_pinned_cert&quot;, server-&gt;connrec-&gt;tls_pinned_cert);</span>
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :         config_node_set_str(config, node, &quot;tls_pinned_pubkey&quot;, server-&gt;connrec-&gt;tls_pinned_pubkey);</span></a>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :         handle = g_io_channel_unix_get_fd(net_sendbuffer_handle(server-&gt;handle));</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :         config_node_set_int(config, node, &quot;handle&quot;, handle);</span>
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :         signal_emit(&quot;session save server&quot;, 3, server, config, node);</span>
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span>            :         /* fake the server disconnection */
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 :         g_io_channel_unref(net_sendbuffer_handle(server-&gt;handle));</span></a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         net_sendbuffer_destroy(server-&gt;handle, FALSE);</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         server-&gt;handle = NULL;</span>
+<span class="lineNum">     180 </span>            : 
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :         server-&gt;connection_lost = TRUE;</span></a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         server-&gt;no_reconnect = TRUE;</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         server_disconnect(server);</span>
+<a name="184"><span class="lineNum">     184 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 : static void session_restore_channel_nicks(CHANNEL_REC *channel,</span>
+<span class="lineNum">     187 </span>            :                                           CONFIG_NODE *node)
+<span class="lineNum">     188 </span>            : {
+<a name="189"><span class="lineNum">     189 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span>            :         /* restore nicks */
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :         node = config_node_section(NULL, node, &quot;nicks&quot;, -1);</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :         if (node != NULL &amp;&amp; node-&gt;type == NODE_TYPE_LIST) {</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 tmp = config_node_first(node-&gt;value);</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                 for (; tmp != NULL; tmp = config_node_next(tmp)) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;session restore nick&quot;, 2,</span>
+<a name="197"><span class="lineNum">     197 </span>            :                                     channel, tmp-&gt;data);</a>
+<span class="lineNum">     198 </span>            :                 }
+<span class="lineNum">     199 </span>            :         }
+<a name="200"><span class="lineNum">     200 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="201"><span class="lineNum">     201 </span>            : </a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 : static void session_restore_channel(SERVER_REC *server, CONFIG_NODE *node)</span>
+<span class="lineNum">     203 </span>            : {
+<span class="lineNum">     204 </span>            :         CHANNEL_REC *channel;
+<a name="205"><span class="lineNum">     205 </span>            :         const char *name, *visible_name;</a>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :         name = config_node_get_str(node, &quot;name&quot;, NULL);</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :         if (name == NULL)</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :         visible_name = config_node_get_str(node, &quot;visible_name&quot;, NULL);</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :         channel = CHAT_PROTOCOL(server)-&gt;channel_create(server, name, visible_name, TRUE);</span>
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :         channel-&gt;topic = g_strdup(config_node_get_str(node, &quot;topic&quot;, NULL));</span></a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :         channel-&gt;topic_by = g_strdup(config_node_get_str(node, &quot;topic_by&quot;, NULL));</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :         channel-&gt;topic_time = config_node_get_int(node, &quot;topic_time&quot;, 0);</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :         channel-&gt;key = g_strdup(config_node_get_str(node, &quot;key&quot;, NULL));</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :         channel-&gt;session_rejoin = TRUE;</span></a>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         signal_emit(&quot;session restore channel&quot;, 2, channel, node);</span>
+<a name="220"><span class="lineNum">     220 </span>            : }</a>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 : static void session_restore_server_channels(SERVER_REC *server,</span>
+<span class="lineNum">     223 </span>            :                                             CONFIG_NODE *node)
+<span class="lineNum">     224 </span>            : {
+<a name="225"><span class="lineNum">     225 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span>            :         /* restore channels */
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :         node = config_node_section(NULL, node, &quot;channels&quot;, -1);</span>
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :         if (node != NULL &amp;&amp; node-&gt;type == NODE_TYPE_LIST) {</span></a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 tmp = config_node_first(node-&gt;value);</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 for (; tmp != NULL; tmp = config_node_next(tmp))</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                         session_restore_channel(server, tmp-&gt;data);</span>
+<a name="233"><span class="lineNum">     233 </span>            :         }</a>
+<a name="234"><span class="lineNum">     234 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 : static void session_restore_server(CONFIG_NODE *node)</span>
+<a name="237"><span class="lineNum">     237 </span>            : {</a>
+<span class="lineNum">     238 </span>            :         CHAT_PROTOCOL_REC *proto;
+<span class="lineNum">     239 </span>            :         SERVER_CONNECT_REC *conn;
+<span class="lineNum">     240 </span>            :         SERVER_REC *server;
+<a name="241"><span class="lineNum">     241 </span>            :         const char *chat_type, *address, *chatnet, *password, *nick;</a>
+<span class="lineNum">     242 </span>            :         int port, handle;
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         chat_type = config_node_get_str(node, &quot;chat_type&quot;, NULL);</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :         address = config_node_get_str(node, &quot;address&quot;, NULL);</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :         port = config_node_get_int(node, &quot;port&quot;, 0);</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :         chatnet = config_node_get_str(node, &quot;chatnet&quot;, NULL);</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :         password = config_node_get_str(node, &quot;password&quot;, NULL);</span>
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :         nick = config_node_get_str(node, &quot;nick&quot;, NULL);</span></a>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :         handle = config_node_get_int(node, &quot;handle&quot;, -1);</span>
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :         if (chat_type == NULL || address == NULL || nick == NULL || handle &lt; 0)</span>
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :         proto = chat_protocol_find(chat_type);</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :         if (proto == NULL || proto-&gt;not_initialized) {</span>
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 if (handle &lt; 0) close(handle);</span></a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     259 </span>            :         }
+<span class="lineNum">     260 </span>            : 
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :         conn = server_create_conn(proto-&gt;id, address, port,</span></a>
+<span class="lineNum">     262 </span>            :                                   chatnet, password, nick);
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :         if (conn != NULL) {</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                 conn-&gt;reconnection = TRUE;</span>
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :                 conn-&gt;connect_handle = g_io_channel_new(handle);</span></a>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :                 server = proto-&gt;server_init_connect(conn);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                 server-&gt;version = g_strdup(config_node_get_str(node, &quot;version&quot;, NULL));</span>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 server-&gt;session_reconnect = TRUE;</span></a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;session restore server&quot;, 2, server, node);</span>
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                 proto-&gt;server_connect(server);</span>
+<a name="273"><span class="lineNum">     273 </span>            :         }</a>
+<a name="274"><span class="lineNum">     274 </span>            : }</a>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 : static void sig_session_save(CONFIG_REC *config)</span>
+<a name="277"><span class="lineNum">     277 </span>            : {</a>
+<span class="lineNum">     278 </span>            :         CONFIG_NODE *node;
+<span class="lineNum">     279 </span>            :         GSList *tmp;
+<span class="lineNum">     280 </span>            :         GString *str;
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<span class="lineNum">     282 </span>            :         /* save servers */
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         node = config_node_traverse(config, &quot;(servers&quot;, TRUE);</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :         while (servers != NULL)</span>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 session_save_server(servers-&gt;data, config, node);</span></a>
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span>            :         /* save pids */
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :         str = g_string_new(NULL);</span>
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :         for (tmp = pidwait_get_pids(); tmp != NULL; tmp = tmp-&gt;next)</span></a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 g_string_append_printf(str, &quot;%d &quot;, GPOINTER_TO_INT(tmp-&gt;data));</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :         config_node_set_str(config, config-&gt;mainnode, &quot;pids&quot;, str-&gt;str);</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :         g_string_free(str, TRUE);</span>
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 : static void sig_session_restore(CONFIG_REC *config)</span>
+<span class="lineNum">     296 </span>            : {
+<a name="297"><span class="lineNum">     297 </span>            :         CONFIG_NODE *node;</a>
+<span class="lineNum">     298 </span>            :         GSList *tmp;
+<span class="lineNum">     299 </span>            :         char **pids, **pid;
+<span class="lineNum">     300 </span>            : 
+<a name="301"><span class="lineNum">     301 </span>            :         /* restore servers */</a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         node = config_node_traverse(config, &quot;(servers&quot;, FALSE);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         if (node != NULL) {</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 tmp = config_node_first(node-&gt;value);</span>
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 for (; tmp != NULL; tmp = config_node_next(tmp))</span></a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                         session_restore_server(tmp-&gt;data);</span>
+<span class="lineNum">     307 </span>            :         }
+<span class="lineNum">     308 </span>            : 
+<a name="309"><span class="lineNum">     309 </span>            :         /* restore pids (so we don't leave zombies) */</a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :         pids = g_strsplit(config_node_get_str(config-&gt;mainnode, &quot;pids&quot;, &quot;&quot;), &quot; &quot;, -1);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :         for (pid = pids; *pid != NULL; pid++)</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                 pidwait_add(atoi(*pid));</span>
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :         g_strfreev(pids);</span></a>
+<a name="314"><span class="lineNum">     314 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineCov">          1 : static void sig_init_finished(void)</span>
+<a name="317"><span class="lineNum">     317 </span>            : {</a>
+<span class="lineNum">     318 </span>            :         CONFIG_REC *session;
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineCov">          1 :         if (session_file == NULL)</span>
+<a name="321"><span class="lineNum">     321 </span><span class="lineCov">          1 :                 return;</span></a>
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :         session = config_open(session_file, -1);</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :         if (session == NULL)</span>
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :         config_parse(session);</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :         signal_emit(&quot;session restore&quot;, 1, session);</span>
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :         config_close(session);</span></a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :         unlink(session_file);</span>
+<a name="332"><span class="lineNum">     332 </span>            : }</a>
+<a name="333"><span class="lineNum">     333 </span>            : </a>
+<span class="lineNum">     334 </span><span class="lineCov">          1 : void session_register_options(void)</span>
+<span class="lineNum">     335 </span>            : {
+<span class="lineNum">     336 </span>            :         static GOptionEntry options[] = {
+<a name="337"><span class="lineNum">     337 </span>            :                 { &quot;session&quot;, 0, G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING, &amp;session_file, &quot;Used by /UPGRADE command&quot;, &quot;PATH&quot; },</a>
+<span class="lineNum">     338 </span>            :                 { NULL }
+<span class="lineNum">     339 </span>            :         };
+<span class="lineNum">     340 </span>            : 
+<a name="341"><span class="lineNum">     341 </span><span class="lineCov">          1 :         session_file = NULL;</span></a>
+<span class="lineNum">     342 </span><span class="lineCov">          1 :         args_register(options);</span>
+<a name="343"><span class="lineNum">     343 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     344 </span>            : 
+<a name="345"><span class="lineNum">     345 </span><span class="lineCov">          1 : void session_init(void)</span></a>
+<span class="lineNum">     346 </span>            : {
+<span class="lineNum">     347 </span><span class="lineCov">          1 :         command_bind(&quot;upgrade&quot;, NULL, (SIGNAL_FUNC) cmd_upgrade);</span>
+<span class="lineNum">     348 </span>            : 
+<a name="349"><span class="lineNum">     349 </span><span class="lineCov">          1 :         signal_add(&quot;session save&quot;, (SIGNAL_FUNC) sig_session_save);</span></a>
+<span class="lineNum">     350 </span><span class="lineCov">          1 :         signal_add(&quot;session restore&quot;, (SIGNAL_FUNC) sig_session_restore);</span>
+<span class="lineNum">     351 </span><span class="lineCov">          1 :         signal_add(&quot;session save server&quot;, (SIGNAL_FUNC) session_save_server_channels);</span>
+<span class="lineNum">     352 </span><span class="lineCov">          1 :         signal_add(&quot;session restore server&quot;, (SIGNAL_FUNC) session_restore_server_channels);</span>
+<a name="353"><span class="lineNum">     353 </span><span class="lineCov">          1 :         signal_add(&quot;session save channel&quot;, (SIGNAL_FUNC) session_save_channel_nicks);</span></a>
+<span class="lineNum">     354 </span><span class="lineCov">          1 :         signal_add(&quot;session restore channel&quot;, (SIGNAL_FUNC) session_restore_channel_nicks);</span>
+<span class="lineNum">     355 </span><span class="lineCov">          1 :         signal_add(&quot;irssi init finished&quot;, (SIGNAL_FUNC) sig_init_finished);</span>
+<a name="356"><span class="lineNum">     356 </span><span class="lineCov">          1 : }</span></a>
+<a name="357"><span class="lineNum">     357 </span>            : </a>
+<span class="lineNum">     358 </span><span class="lineCov">          1 : void session_deinit(void)</span>
+<span class="lineNum">     359 </span>            : {
+<span class="lineNum">     360 </span><span class="lineCov">          1 :         g_free_not_null(irssi_binary);</span>
+<a name="361"><span class="lineNum">     361 </span>            : </a>
+<span class="lineNum">     362 </span><span class="lineCov">          1 :         command_unbind(&quot;upgrade&quot;, (SIGNAL_FUNC) cmd_upgrade);</span>
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span><span class="lineCov">          1 :         signal_remove(&quot;session save&quot;, (SIGNAL_FUNC) sig_session_save);</span>
+<a name="365"><span class="lineNum">     365 </span><span class="lineCov">          1 :         signal_remove(&quot;session restore&quot;, (SIGNAL_FUNC) sig_session_restore);</span></a>
+<span class="lineNum">     366 </span><span class="lineCov">          1 :         signal_remove(&quot;session save server&quot;, (SIGNAL_FUNC) session_save_server_channels);</span>
+<span class="lineNum">     367 </span><span class="lineCov">          1 :         signal_remove(&quot;session restore server&quot;, (SIGNAL_FUNC) session_restore_server_channels);</span>
+<span class="lineNum">     368 </span><span class="lineCov">          1 :         signal_remove(&quot;session save channel&quot;, (SIGNAL_FUNC) session_save_channel_nicks);</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineCov">          1 :         signal_remove(&quot;session restore channel&quot;, (SIGNAL_FUNC) session_restore_channel_nicks);</span></a>
+<span class="lineNum">     370 </span><span class="lineCov">          1 :         signal_remove(&quot;irssi init finished&quot;, (SIGNAL_FUNC) sig_init_finished);</span>
+<span class="lineNum">     371 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

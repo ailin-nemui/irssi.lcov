@@ -1,0 +1,693 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/log.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - log.c<span style="font-size: 80%;"> (source / <a href="log.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">120</td>
+            <td class="headerCovTableEntry">300</td>
+            <td class="headerCovTableEntryLo">40.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntry">26</td>
+            <td class="headerCovTableEntryLo">53.8 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  log.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;levels.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;misc.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;log.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;write-buffer.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #ifdef HAVE_CAPSICUM</a>
+<span class="lineNum">      30 </span>            : #include &quot;capsicum.h&quot;
+<span class="lineNum">      31 </span>            : #endif
+<span class="lineNum">      32 </span>            : 
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;lib-config/iconfig.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #define DEFAULT_LOG_FILE_CREATE_MODE 600
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span>            : GSList *logs;
+<span class="lineNum">      39 </span>            : int log_file_create_mode;
+<span class="lineNum">      40 </span>            : int log_dir_create_mode;
+<a name="41"><span class="lineNum">      41 </span>            : </a>
+<span class="lineNum">      42 </span>            : static const char *log_item_types[] = {
+<span class="lineNum">      43 </span>            :         &quot;target&quot;,
+<span class="lineNum">      44 </span>            :         &quot;window&quot;,
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span>            :         NULL
+<span class="lineNum">      47 </span>            : };
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span>            : static char *log_timestamp;</a>
+<a name="50"><span class="lineNum">      50 </span>            : static int rotate_tag;</a>
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span><span class="lineCov">          1 : static int log_item_str2type(const char *type)</span>
+<a name="53"><span class="lineNum">      53 </span>            : {</a>
+<span class="lineNum">      54 </span>            :         int n;
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span><span class="lineCov">          2 :         for (n = 0; log_item_types[n] != NULL; n++) {</span>
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">          2 :                 if (g_ascii_strcasecmp(log_item_types[n], type) == 0)</span></a>
+<span class="lineNum">      58 </span><span class="lineCov">          1 :                         return n;</span>
+<span class="lineNum">      59 </span>            :         }
+<span class="lineNum">      60 </span>            : 
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :         return -1;</span></a>
+<a name="62"><span class="lineNum">      62 </span>            : }</a>
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 : static void log_write_timestamp(int handle, const char *format,</span>
+<a name="65"><span class="lineNum">      65 </span>            :                                 const char *text, time_t stamp)</a>
+<span class="lineNum">      66 </span>            : {
+<span class="lineNum">      67 </span>            :         struct tm *tm;
+<span class="lineNum">      68 </span>            :         char str[256];
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :         g_return_if_fail(format != NULL);</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :         if (*format == '\0') return;</span>
+<span class="lineNum">      72 </span>            : 
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :         tm = localtime(&amp;stamp);</span></a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         if (strftime(str, sizeof(str), format, tm) &gt; 0)</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :                 write_buffer(handle, str, strlen(str));</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         if (text != NULL) write_buffer(handle, text, strlen(text));</span>
+<a name="77"><span class="lineNum">      77 </span>            : }</a>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 : static char *log_filename(LOG_REC *log)</span>
+<span class="lineNum">      80 </span>            : {
+<a name="81"><span class="lineNum">      81 </span>            :         char *str, fname[1024];</a>
+<span class="lineNum">      82 </span>            :         struct tm *tm;
+<span class="lineNum">      83 </span>            :         size_t ret;
+<span class="lineNum">      84 </span>            :         time_t now;
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         now = time(NULL);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :         tm = localtime(&amp;now);</span>
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         str = convert_home(log-&gt;fname);</span></a>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :         ret = strftime(fname, sizeof(fname), str, tm);</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :         g_free(str);</span>
+<span class="lineNum">      92 </span>            : 
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :         if (ret &lt;= 0) {</span></a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :                 g_warning(&quot;log_filename() : strftime() failed&quot;);</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">      96 </span>            :         }
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         return g_strdup(fname);</span>
+<a name="99"><span class="lineNum">      99 </span>            : }</a>
+<span class="lineNum">     100 </span>            : 
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 : int log_start_logging(LOG_REC *log)</span></a>
+<span class="lineNum">     102 </span>            : {
+<span class="lineNum">     103 </span>            :         char *dir;
+<span class="lineNum">     104 </span>            :         struct flock lock;
+<a name="105"><span class="lineNum">     105 </span>            : </a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(log != NULL, FALSE);</span>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         if (log-&gt;handle != -1)</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 return TRUE;</span></a>
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span>            :         /* Append/create log file */
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :         g_free_not_null(log-&gt;real_fname);</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :         log-&gt;real_fname = log_filename(log);</span></a>
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :         if (log-&gt;real_fname != NULL &amp;&amp;</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :             g_strcmp0(log-&gt;real_fname, log-&gt;fname) != 0) {</span>
+<a name="117"><span class="lineNum">     117 </span>            :                 /* path may contain variables (%time, $vars),</a>
+<span class="lineNum">     118 </span>            :                    make sure the directory is created */
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :                 dir = g_path_get_dirname(log-&gt;real_fname);</span>
+<span class="lineNum">     120 </span>            : #ifdef HAVE_CAPSICUM
+<a name="121"><span class="lineNum">     121 </span>            :                 capsicum_mkdir_with_parents_wrapper(dir, log_dir_create_mode);</a>
+<span class="lineNum">     122 </span>            : #else
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                 g_mkdir_with_parents(dir, log_dir_create_mode);</span>
+<span class="lineNum">     124 </span>            : #endif
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 g_free(dir);</span></a>
+<span class="lineNum">     126 </span>            :         }
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            : #ifdef HAVE_CAPSICUM
+<a name="129"><span class="lineNum">     129 </span>            :         log-&gt;handle = log-&gt;real_fname == NULL ? -1 :</a>
+<span class="lineNum">     130 </span>            :                 capsicum_open_wrapper(log-&gt;real_fname, O_WRONLY | O_APPEND | O_CREAT,
+<span class="lineNum">     131 </span>            :                      log_file_create_mode);
+<span class="lineNum">     132 </span>            : #else
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :         log-&gt;handle = log-&gt;real_fname == NULL ? -1 :</span></a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                 open(log-&gt;real_fname, O_WRONLY | O_APPEND | O_CREAT,</span>
+<span class="lineNum">     135 </span>            :                      log_file_create_mode);
+<span class="lineNum">     136 </span>            : #endif
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :         if (log-&gt;handle == -1) {</span></a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;log create failed&quot;, 1, log);</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                 log-&gt;failed = TRUE;</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<a name="141"><span class="lineNum">     141 </span>            :         }</a>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :         memset(&amp;lock, 0, sizeof(lock));</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :         lock.l_type = F_WRLCK;</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :         if (fcntl(log-&gt;handle, F_SETLK, &amp;lock) == -1 &amp;&amp; errno == EACCES) {</span>
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 :                 close(log-&gt;handle);</span></a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                 log-&gt;handle = -1;</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;log locked&quot;, 1, log);</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 log-&gt;failed = TRUE;</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :                 return FALSE;</span></a>
+<span class="lineNum">     150 </span>            :         }
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         lseek(log-&gt;handle, 0, SEEK_END);</span>
+<span class="lineNum">     152 </span>            : 
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">          0 :         log-&gt;opened = log-&gt;last = time(NULL);</span></a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         log_write_timestamp(log-&gt;handle,</span>
+<span class="lineNum">     155 </span>            :                             settings_get_str(&quot;log_open_string&quot;),
+<span class="lineNum">     156 </span>            :                             &quot;\n&quot;, log-&gt;last);
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         signal_emit(&quot;log started&quot;, 1, log);</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         log-&gt;failed = FALSE;</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :         return TRUE;</span>
+<a name="161"><span class="lineNum">     161 </span>            : }</a>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 : void log_stop_logging(LOG_REC *log)</span>
+<span class="lineNum">     164 </span>            : {
+<a name="165"><span class="lineNum">     165 </span>            :         struct flock lock;</a>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :         g_return_if_fail(log != NULL);</span>
+<span class="lineNum">     168 </span>            : 
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :         if (log-&gt;handle == -1)</span></a>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :         signal_emit(&quot;log stopped&quot;, 1, log);</span>
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :         log_write_timestamp(log-&gt;handle,</span>
+<span class="lineNum">     175 </span>            :                             settings_get_str(&quot;log_close_string&quot;),
+<span class="lineNum">     176 </span>            :                             &quot;\n&quot;, time(NULL));
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         memset(&amp;lock, 0, sizeof(lock));</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         lock.l_type = F_UNLCK;</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         fcntl(log-&gt;handle, F_SETLK, &amp;lock);</span>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         write_buffer_flush();</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         close(log-&gt;handle);</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         log-&gt;handle = -1;</span>
+<a name="185"><span class="lineNum">     185 </span>            : }</a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 : static void log_rotate_check(LOG_REC *log)</span>
+<span class="lineNum">     188 </span>            : {
+<a name="189"><span class="lineNum">     189 </span>            :         char *new_fname;</a>
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :         g_return_if_fail(log != NULL);</span>
+<span class="lineNum">     192 </span>            : 
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :         if (log-&gt;handle == -1 || log-&gt;real_fname == NULL)</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         new_fname = log_filename(log);</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :         if (g_strcmp0(new_fname, log-&gt;real_fname) != 0) {</span></a>
+<span class="lineNum">     198 </span>            :                 /* rotate log */
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                 log_stop_logging(log);</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;log rotated&quot;, 1, log);</span>
+<a name="201"><span class="lineNum">     201 </span>            : </a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 log_start_logging(log);</span>
+<span class="lineNum">     203 </span>            :         }
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :         g_free(new_fname);</span>
+<a name="205"><span class="lineNum">     205 </span>            : }</a>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineCov">          6 : void log_write_rec(LOG_REC *log, const char *str, int level)</span>
+<span class="lineNum">     208 </span>            : {
+<a name="209"><span class="lineNum">     209 </span>            :         char *colorstr;</a>
+<span class="lineNum">     210 </span>            :         struct tm *tm;
+<span class="lineNum">     211 </span>            :         time_t now;
+<span class="lineNum">     212 </span>            :         int hour, day;
+<a name="213"><span class="lineNum">     213 </span>            : </a>
+<span class="lineNum">     214 </span><span class="lineCov">         12 :         g_return_if_fail(log != NULL);</span>
+<span class="lineNum">     215 </span><span class="lineCov">          6 :         g_return_if_fail(str != NULL);</span>
+<span class="lineNum">     216 </span>            : 
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">          6 :         if (log-&gt;handle == -1)</span></a>
+<span class="lineNum">     218 </span><span class="lineCov">          6 :                 return;</span>
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :         now = time(NULL);</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :         tm = localtime(&amp;now);</span></a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         hour = tm-&gt;tm_hour;</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :         day = tm-&gt;tm_mday;</span>
+<span class="lineNum">     224 </span>            : 
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :         tm = localtime(&amp;log-&gt;last);</span></a>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :         day -= tm-&gt;tm_mday; /* tm breaks in log_rotate_check() .. */</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :         if (tm-&gt;tm_hour != hour) {</span>
+<span class="lineNum">     228 </span>            :                 /* hour changed, check if we need to rotate log file */
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 log_rotate_check(log);</span></a>
+<span class="lineNum">     230 </span>            :         }
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :         if (day != 0) {</span>
+<a name="233"><span class="lineNum">     233 </span>            :                 /* day changed */</a>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :                 log_write_timestamp(log-&gt;handle,</span>
+<span class="lineNum">     235 </span>            :                                     settings_get_str(&quot;log_day_changed&quot;),
+<span class="lineNum">     236 </span>            :                                     &quot;\n&quot;, now);
+<a name="237"><span class="lineNum">     237 </span>            :         }</a>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :         log-&gt;last = now;</span>
+<span class="lineNum">     240 </span>            : 
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :         if (log-&gt;colorizer == NULL)</span></a>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :                 colorstr = NULL;</span>
+<span class="lineNum">     243 </span>            :         else
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                 str = colorstr = log-&gt;colorizer(str);</span>
+<a name="245"><span class="lineNum">     245 </span>            : </a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :         if ((level &amp; MSGLEVEL_LASTLOG) == 0)</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                 log_write_timestamp(log-&gt;handle, log_timestamp, str, now);</span>
+<span class="lineNum">     248 </span>            :         else
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :                 write_buffer(log-&gt;handle, str, strlen(str));</span></a>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :         write_buffer(log-&gt;handle, &quot;\n&quot;, 1);</span>
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :         signal_emit(&quot;log written&quot;, 2, log, str);</span>
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :         g_free_not_null(colorstr);</span>
+<a name="255"><span class="lineNum">     255 </span>            : }</a>
+<span class="lineNum">     256 </span>            : 
+<a name="257"><span class="lineNum">     257 </span><span class="lineCov">          7 : static int itemcmp(const char *patt, const char *item)</span></a>
+<span class="lineNum">     258 </span>            : {
+<span class="lineNum">     259 </span>            :         /* returns 0 on match, nonzero otherwise */
+<span class="lineNum">     260 </span>            : 
+<a name="261"><span class="lineNum">     261 </span><span class="lineCov">          7 :         if (!g_strcmp0(patt, &quot;*&quot;))</span></a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     263 </span><span class="lineCov">          7 :         return item ? g_ascii_strcasecmp(patt, item) : 1;</span>
+<a name="264"><span class="lineNum">     264 </span>            : }</a>
+<a name="265"><span class="lineNum">     265 </span>            : </a>
+<span class="lineNum">     266 </span><span class="lineCov">          7 : LOG_ITEM_REC *log_item_find(LOG_REC *log, int type, const char *item,</span>
+<span class="lineNum">     267 </span>            :                             const char *servertag)
+<span class="lineNum">     268 </span>            : {
+<a name="269"><span class="lineNum">     269 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span><span class="lineCov">          7 :         g_return_val_if_fail(log != NULL, NULL);</span>
+<span class="lineNum">     272 </span>            : 
+<a name="273"><span class="lineNum">     273 </span><span class="lineCov">          8 :         for (tmp = log-&gt;items; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     274 </span><span class="lineCov">          7 :                 LOG_ITEM_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineCov">         13 :                 if (rec-&gt;type == type &amp;&amp; itemcmp(rec-&gt;name, item) == 0 &amp;&amp;</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineCov">          6 :                     (rec-&gt;servertag == NULL || (servertag != NULL &amp;&amp;</span></a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                     g_ascii_strcasecmp(rec-&gt;servertag, servertag) == 0)))</span>
+<span class="lineNum">     279 </span><span class="lineCov">          6 :                         return rec;</span>
+<span class="lineNum">     280 </span>            :         }
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<span class="lineNum">     282 </span><span class="lineCov">          1 :         return NULL;</span>
+<a name="283"><span class="lineNum">     283 </span>            : }</a>
+<span class="lineNum">     284 </span>            : 
+<a name="285"><span class="lineNum">     285 </span><span class="lineCov">          6 : void log_file_write(const char *server_tag, const char *item, int level,</span></a>
+<span class="lineNum">     286 </span>            :                     const char *str, int no_fallbacks)
+<span class="lineNum">     287 </span>            : {
+<span class="lineNum">     288 </span>            :         GSList *tmp, *fallbacks;
+<a name="289"><span class="lineNum">     289 </span>            :         char *tmpstr;</a>
+<span class="lineNum">     290 </span>            :         int found;
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">          6 :         g_return_if_fail(str != NULL);</span>
+<a name="293"><span class="lineNum">     293 </span>            : </a>
+<span class="lineNum">     294 </span><span class="lineCov">          6 :         if (logs == NULL)</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     296 </span>            : 
+<a name="297"><span class="lineNum">     297 </span><span class="lineCov">          6 :         fallbacks = NULL; found = FALSE;</span></a>
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineCov">         12 :         for (tmp = logs; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     300 </span><span class="lineCov">          6 :                 LOG_REC *rec = tmp-&gt;data;</span>
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<span class="lineNum">     302 </span><span class="lineCov">          6 :                 if (rec-&gt;handle == -1)</span>
+<span class="lineNum">     303 </span><span class="lineCov">          6 :                         continue; /* log not opened yet */</span>
+<span class="lineNum">     304 </span>            : 
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 if ((level &amp; rec-&gt;level) == 0)</span></a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 if (rec-&gt;items == NULL)</span>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :                         fallbacks = g_slist_append(fallbacks, rec);</span></a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 else if (log_item_find(rec, LOG_ITEM_TARGET, item,</span>
+<span class="lineNum">     311 </span>            :                                        server_tag) != NULL)
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                         log_write_rec(rec, str, level);</span>
+<a name="313"><span class="lineNum">     313 </span>            :         }</a>
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span><span class="lineCov">          6 :         if (!found &amp;&amp; !no_fallbacks &amp;&amp; fallbacks != NULL) {</span>
+<span class="lineNum">     316 </span>            :                 /* not found from any items, so write it to all main logs */
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :                 tmpstr = (level &amp; MSGLEVEL_PUBLIC) &amp;&amp; item != NULL ?</span></a>
+<span class="lineNum">     318 </span>            :                         g_strconcat(item, &quot;: &quot;, str, NULL) :
+<span class="lineNum">     319 </span>            :                         g_strdup(str);
+<span class="lineNum">     320 </span>            : 
+<a name="321"><span class="lineNum">     321 </span><span class="lineNoCov">          0 :                 for (tmp = fallbacks; tmp != NULL; tmp = tmp-&gt;next)</span></a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                         log_write_rec(tmp-&gt;data, tmpstr, level);</span>
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                 g_free(tmpstr);</span>
+<a name="325"><span class="lineNum">     325 </span>            :         }</a>
+<span class="lineNum">     326 </span><span class="lineCov">          6 :         g_slist_free(fallbacks);</span>
+<a name="327"><span class="lineNum">     327 </span>            : }</a>
+<span class="lineNum">     328 </span>            : 
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 : LOG_REC *log_find(const char *fname)</span></a>
+<span class="lineNum">     330 </span>            : {
+<span class="lineNum">     331 </span>            :         GSList *tmp;
+<span class="lineNum">     332 </span>            : 
+<a name="333"><span class="lineNum">     333 </span><span class="lineNoCov">          0 :         for (tmp = logs; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :                 LOG_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                 if (g_strcmp0(rec-&gt;fname, fname) == 0)</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :                         return rec;</span></a>
+<span class="lineNum">     338 </span>            :         }
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="341"><span class="lineNum">     341 </span>            : }</a>
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 : static void log_items_update_config(LOG_REC *log, CONFIG_NODE *parent)</span>
+<span class="lineNum">     344 </span>            : {
+<a name="345"><span class="lineNum">     345 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     346 </span>            :         CONFIG_NODE *node;
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :         parent = iconfig_node_section(parent, &quot;items&quot;, NODE_TYPE_LIST);</span>
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :         for (tmp = log-&gt;items; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                 LOG_ITEM_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :                 node = iconfig_node_section(parent, NULL, NODE_TYPE_BLOCK);</span>
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :                 iconfig_node_set_str(node, &quot;type&quot;, log_item_types[rec-&gt;type]);</span></a>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                 iconfig_node_set_str(node, &quot;name&quot;, rec-&gt;name);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                 iconfig_node_set_str(node, &quot;server&quot;, rec-&gt;servertag);</span>
+<span class="lineNum">     356 </span>            :         }
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 : static void log_update_config(LOG_REC *log)</span>
+<span class="lineNum">     360 </span>            : {
+<a name="361"><span class="lineNum">     361 </span>            :         CONFIG_NODE *node;</a>
+<span class="lineNum">     362 </span>            :         char *levelstr;
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         if (log-&gt;temp)</span>
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :         node = iconfig_node_traverse(&quot;logs&quot;, TRUE);</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         node = iconfig_node_section(node, log-&gt;fname, NODE_TYPE_BLOCK);</span>
+<a name="369"><span class="lineNum">     369 </span>            : </a>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :         if (log-&gt;autoopen)</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 iconfig_node_set_bool(node, &quot;auto_open&quot;, TRUE);</span>
+<span class="lineNum">     372 </span>            :         else
+<a name="373"><span class="lineNum">     373 </span><span class="lineNoCov">          0 :                 iconfig_node_set_str(node, &quot;auto_open&quot;, NULL);</span></a>
+<span class="lineNum">     374 </span>            : 
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :         levelstr = bits2level(log-&gt;level);</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :         iconfig_node_set_str(node, &quot;level&quot;, levelstr);</span>
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 :         g_free(levelstr);</span></a>
+<span class="lineNum">     378 </span>            : 
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         iconfig_node_set_str(node, &quot;items&quot;, NULL);</span>
+<span class="lineNum">     380 </span>            : 
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :         if (log-&gt;items != NULL)</span></a>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 log_items_update_config(log, node);</span>
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :         signal_emit(&quot;log config save&quot;, 2, log, node);</span>
+<a name="385"><span class="lineNum">     385 </span>            : }</a>
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span><span class="lineCov">          1 : static void log_remove_config(LOG_REC *log)</span>
+<span class="lineNum">     388 </span>            : {
+<a name="389"><span class="lineNum">     389 </span><span class="lineCov">          1 :         iconfig_set_str(&quot;logs&quot;, log-&gt;fname, NULL);</span></a>
+<a name="390"><span class="lineNum">     390 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 : LOG_REC *log_create_rec(const char *fname, int level)</span>
+<a name="393"><span class="lineNum">     393 </span>            : {</a>
+<span class="lineNum">     394 </span>            :         LOG_REC *rec;
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(fname != NULL, NULL);</span>
+<a name="397"><span class="lineNum">     397 </span>            : </a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :         rec = log_find(fname);</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :         if (rec == NULL) {</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                 rec = g_new0(LOG_REC, 1);</span>
+<a name="401"><span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 rec-&gt;fname = g_strdup(fname);</span></a>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :                 rec-&gt;real_fname = log_filename(rec);</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :                 rec-&gt;handle = -1;</span>
+<span class="lineNum">     404 </span>            :         }
+<a name="405"><span class="lineNum">     405 </span>            : </a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :         rec-&gt;level = level;</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :         return rec;</span>
+<a name="408"><span class="lineNum">     408 </span>            : }</a>
+<a name="409"><span class="lineNum">     409 </span>            : </a>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 : void log_item_add(LOG_REC *log, int type, const char *name,</span>
+<span class="lineNum">     411 </span>            :                   const char *servertag)
+<span class="lineNum">     412 </span>            : {
+<a name="413"><span class="lineNum">     413 </span>            :         LOG_ITEM_REC *rec;</a>
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :         g_return_if_fail(log != NULL);</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :         g_return_if_fail(name != NULL);</span>
+<a name="417"><span class="lineNum">     417 </span>            : </a>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :         if (log_item_find(log, type, name, servertag))</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     420 </span>            : 
+<a name="421"><span class="lineNum">     421 </span><span class="lineNoCov">          0 :         rec = g_new0(LOG_ITEM_REC, 1);</span></a>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :         rec-&gt;type = type;</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :         rec-&gt;name = g_strdup(name);</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :         rec-&gt;servertag = g_strdup(servertag);</span>
+<a name="425"><span class="lineNum">     425 </span>            : </a>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :         log-&gt;items = g_slist_append(log-&gt;items, rec);</span>
+<a name="427"><span class="lineNum">     427 </span>            : }</a>
+<span class="lineNum">     428 </span>            : 
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 : void log_update(LOG_REC *log)</span></a>
+<span class="lineNum">     430 </span>            : {
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         g_return_if_fail(log != NULL);</span>
+<span class="lineNum">     432 </span>            : 
+<a name="433"><span class="lineNum">     433 </span><span class="lineNoCov">          0 :         if (log_find(log-&gt;fname) == NULL) {</span></a>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                 logs = g_slist_append(logs, log);</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                 log-&gt;handle = -1;</span>
+<span class="lineNum">     436 </span>            :         }
+<a name="437"><span class="lineNum">     437 </span>            : </a>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :         log_update_config(log);</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :         signal_emit(&quot;log new&quot;, 1, log);</span>
+<a name="440"><span class="lineNum">     440 </span>            : }</a>
+<a name="441"><span class="lineNum">     441 </span>            : </a>
+<span class="lineNum">     442 </span><span class="lineCov">          1 : void log_item_destroy(LOG_REC *log, LOG_ITEM_REC *item)</span>
+<span class="lineNum">     443 </span>            : {
+<span class="lineNum">     444 </span><span class="lineCov">          1 :         log-&gt;items = g_slist_remove(log-&gt;items, item);</span>
+<a name="445"><span class="lineNum">     445 </span>            : </a>
+<span class="lineNum">     446 </span><span class="lineCov">          1 :         g_free(item-&gt;name);</span>
+<span class="lineNum">     447 </span><span class="lineCov">          1 :         g_free_not_null(item-&gt;servertag);</span>
+<span class="lineNum">     448 </span><span class="lineCov">          1 :         g_free(item);</span>
+<a name="449"><span class="lineNum">     449 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     450 </span>            : 
+<span class="lineNum">     451 </span><span class="lineCov">          1 : static void log_destroy(LOG_REC *log)</span>
+<span class="lineNum">     452 </span>            : {
+<a name="453"><span class="lineNum">     453 </span><span class="lineCov">          1 :         g_return_if_fail(log != NULL);</span></a>
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineCov">          1 :         if (log-&gt;handle != -1)</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :                 log_stop_logging(log);</span>
+<a name="457"><span class="lineNum">     457 </span>            : </a>
+<span class="lineNum">     458 </span><span class="lineCov">          1 :         logs = g_slist_remove(logs, log);</span>
+<span class="lineNum">     459 </span><span class="lineCov">          1 :         signal_emit(&quot;log remove&quot;, 1, log);</span>
+<span class="lineNum">     460 </span>            : 
+<a name="461"><span class="lineNum">     461 </span><span class="lineCov">          3 :         while (log-&gt;items != NULL)</span></a>
+<span class="lineNum">     462 </span><span class="lineCov">          1 :                 log_item_destroy(log, log-&gt;items-&gt;data);</span>
+<span class="lineNum">     463 </span><span class="lineCov">          1 :         g_free(log-&gt;fname);</span>
+<span class="lineNum">     464 </span><span class="lineCov">          1 :         g_free_not_null(log-&gt;real_fname);</span>
+<a name="465"><span class="lineNum">     465 </span><span class="lineCov">          1 :         g_free(log);</span></a>
+<a name="466"><span class="lineNum">     466 </span>            : }</a>
+<span class="lineNum">     467 </span>            : 
+<span class="lineNum">     468 </span><span class="lineCov">          1 : void log_close(LOG_REC *log)</span>
+<a name="469"><span class="lineNum">     469 </span>            : {</a>
+<span class="lineNum">     470 </span><span class="lineCov">          1 :         g_return_if_fail(log != NULL);</span>
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span><span class="lineCov">          1 :         log_remove_config(log);</span>
+<a name="473"><span class="lineNum">     473 </span><span class="lineCov">          1 :         log_destroy(log);</span></a>
+<a name="474"><span class="lineNum">     474 </span>            : }</a>
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 : static int sig_rotate_check(void)</span>
+<a name="477"><span class="lineNum">     477 </span>            : {</a>
+<span class="lineNum">     478 </span>            :         static int last_hour = -1;
+<span class="lineNum">     479 </span>            :         struct tm tm;
+<span class="lineNum">     480 </span>            :         time_t now;
+<a name="481"><span class="lineNum">     481 </span>            : </a>
+<span class="lineNum">     482 </span>            :         /* don't do anything until hour is changed */
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :         now = time(NULL);</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :         memcpy(&amp;tm, localtime(&amp;now), sizeof(tm));</span>
+<a name="485"><span class="lineNum">     485 </span><span class="lineNoCov">          0 :         if (tm.tm_hour != last_hour) {</span></a>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                 last_hour = tm.tm_hour;</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                 g_slist_foreach(logs, (GFunc) log_rotate_check, NULL);</span>
+<span class="lineNum">     488 </span>            :         }
+<a name="489"><span class="lineNum">     489 </span><span class="lineNoCov">          0 :         return 1;</span></a>
+<a name="490"><span class="lineNum">     490 </span>            : }</a>
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span><span class="lineCov">          1 : static void log_items_read_config(CONFIG_NODE *node, LOG_REC *log)</span>
+<a name="493"><span class="lineNum">     493 </span>            : {</a>
+<span class="lineNum">     494 </span>            :         LOG_ITEM_REC *rec;
+<span class="lineNum">     495 </span>            :         GSList *tmp;
+<span class="lineNum">     496 </span>            :         char *item;
+<a name="497"><span class="lineNum">     497 </span>            :         int type;</a>
+<span class="lineNum">     498 </span>            : 
+<span class="lineNum">     499 </span><span class="lineCov">          1 :         tmp = config_node_first(node-&gt;value);</span>
+<span class="lineNum">     500 </span><span class="lineCov">          2 :         for (; tmp != NULL; tmp = config_node_next(tmp)) {</span>
+<a name="501"><span class="lineNum">     501 </span><span class="lineCov">          1 :                 node = tmp-&gt;data;</span></a>
+<span class="lineNum">     502 </span>            : 
+<span class="lineNum">     503 </span><span class="lineCov">          1 :                 if (node-&gt;type != NODE_TYPE_BLOCK)</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                         continue;</span>
+<a name="505"><span class="lineNum">     505 </span>            : </a>
+<span class="lineNum">     506 </span><span class="lineCov">          1 :                 item = config_node_get_str(node, &quot;name&quot;, NULL);</span>
+<span class="lineNum">     507 </span><span class="lineCov">          1 :                 type = log_item_str2type(config_node_get_str(node, &quot;type&quot;, NULL));</span>
+<span class="lineNum">     508 </span><span class="lineCov">          1 :                 if (item == NULL || type == -1)</span>
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :                         continue;</span></a>
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineCov">          1 :                 rec = g_new0(LOG_ITEM_REC, 1);</span>
+<span class="lineNum">     512 </span><span class="lineCov">          1 :                 rec-&gt;type = type;</span>
+<a name="513"><span class="lineNum">     513 </span><span class="lineCov">          1 :                 rec-&gt;name = g_strdup(item);</span></a>
+<span class="lineNum">     514 </span><span class="lineCov">          1 :                 rec-&gt;servertag = g_strdup(config_node_get_str(node, &quot;server&quot;, NULL));</span>
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span><span class="lineCov">          1 :                 log-&gt;items = g_slist_append(log-&gt;items, rec);</span>
+<a name="517"><span class="lineNum">     517 </span>            :         }</a>
+<a name="518"><span class="lineNum">     518 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     519 </span>            : 
+<span class="lineNum">     520 </span><span class="lineCov">          1 : static void log_read_config(void)</span>
+<a name="521"><span class="lineNum">     521 </span>            : {</a>
+<span class="lineNum">     522 </span>            :         CONFIG_NODE *node;
+<span class="lineNum">     523 </span>            :         LOG_REC *log;
+<span class="lineNum">     524 </span>            :         GSList *tmp, *next, *fnames;
+<a name="525"><span class="lineNum">     525 </span>            : </a>
+<span class="lineNum">     526 </span>            :         /* close old logs, save list of open logs */
+<span class="lineNum">     527 </span><span class="lineCov">          1 :         fnames = NULL;</span>
+<span class="lineNum">     528 </span><span class="lineCov">          1 :         for (tmp = logs; tmp != NULL; tmp = next) {</span>
+<a name="529"><span class="lineNum">     529 </span><span class="lineNoCov">          0 :                 log = tmp-&gt;data;</span></a>
+<span class="lineNum">     530 </span>            : 
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :                 if (log-&gt;temp)</span>
+<a name="533"><span class="lineNum">     533 </span><span class="lineNoCov">          0 :                         continue;</span></a>
+<span class="lineNum">     534 </span>            : 
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :                 if (log-&gt;handle != -1)</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :                         fnames = g_slist_append(fnames, g_strdup(log-&gt;fname));</span>
+<a name="537"><span class="lineNum">     537 </span><span class="lineNoCov">          0 :                 log_destroy(log);</span></a>
+<span class="lineNum">     538 </span>            :         }
+<span class="lineNum">     539 </span>            : 
+<span class="lineNum">     540 </span><span class="lineCov">          1 :         node = iconfig_node_traverse(&quot;logs&quot;, FALSE);</span>
+<a name="541"><span class="lineNum">     541 </span><span class="lineCov">          1 :         if (node == NULL) return;</span></a>
+<span class="lineNum">     542 </span>            : 
+<span class="lineNum">     543 </span><span class="lineCov">          1 :         tmp = config_node_first(node-&gt;value);</span>
+<span class="lineNum">     544 </span><span class="lineCov">          2 :         for (; tmp != NULL; tmp = config_node_next(tmp)) {</span>
+<a name="545"><span class="lineNum">     545 </span><span class="lineCov">          1 :                 node = tmp-&gt;data;</span></a>
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineCov">          1 :                 if (node-&gt;type != NODE_TYPE_BLOCK)</span>
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :                         continue;</span>
+<a name="549"><span class="lineNum">     549 </span>            : </a>
+<span class="lineNum">     550 </span><span class="lineCov">          1 :                 log = g_new0(LOG_REC, 1);</span>
+<span class="lineNum">     551 </span><span class="lineCov">          1 :                 logs = g_slist_append(logs, log);</span>
+<span class="lineNum">     552 </span>            : 
+<a name="553"><span class="lineNum">     553 </span><span class="lineCov">          1 :                 log-&gt;handle = -1;</span></a>
+<span class="lineNum">     554 </span><span class="lineCov">          1 :                 log-&gt;fname = g_strdup(node-&gt;key);</span>
+<span class="lineNum">     555 </span><span class="lineCov">          1 :                 log-&gt;autoopen = config_node_get_bool(node, &quot;auto_open&quot;, FALSE);</span>
+<span class="lineNum">     556 </span><span class="lineCov">          1 :                 log-&gt;level = level2bits(config_node_get_str(node, &quot;level&quot;, 0), NULL);</span>
+<a name="557"><span class="lineNum">     557 </span>            : </a>
+<span class="lineNum">     558 </span><span class="lineCov">          1 :                 signal_emit(&quot;log config read&quot;, 2, log, node);</span>
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span><span class="lineCov">          1 :                 node = iconfig_node_section(node, &quot;items&quot;, -1);</span>
+<a name="561"><span class="lineNum">     561 </span><span class="lineCov">          1 :                 if (node != NULL)</span></a>
+<span class="lineNum">     562 </span><span class="lineCov">          1 :                         log_items_read_config(node, log);</span>
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineCov">          1 :                 if (log-&gt;autoopen || gslist_find_string(fnames, log-&gt;fname))</span>
+<a name="565"><span class="lineNum">     565 </span><span class="lineNoCov">          0 :                         log_start_logging(log);</span></a>
+<span class="lineNum">     566 </span>            :         }
+<span class="lineNum">     567 </span>            : 
+<span class="lineNum">     568 </span><span class="lineCov">          1 :         g_slist_foreach(fnames, (GFunc) g_free, NULL);</span>
+<a name="569"><span class="lineNum">     569 </span><span class="lineCov">          1 :         g_slist_free(fnames);</span></a>
+<a name="570"><span class="lineNum">     570 </span>            : }</a>
+<span class="lineNum">     571 </span>            : 
+<span class="lineNum">     572 </span><span class="lineCov">          1 : static void read_settings(void)</span>
+<a name="573"><span class="lineNum">     573 </span>            : {</a>
+<span class="lineNum">     574 </span><span class="lineCov">          1 :         g_free_not_null(log_timestamp);</span>
+<span class="lineNum">     575 </span><span class="lineCov">          1 :         log_timestamp = g_strdup(settings_get_str(&quot;log_timestamp&quot;));</span>
+<span class="lineNum">     576 </span>            : 
+<a name="577"><span class="lineNum">     577 </span><span class="lineCov">          1 :         log_file_create_mode = octal2dec(settings_get_int(&quot;log_create_mode&quot;));</span></a>
+<span class="lineNum">     578 </span><span class="lineCov">          1 :         log_dir_create_mode = log_file_create_mode;</span>
+<span class="lineNum">     579 </span><span class="lineCov">          1 :         if (log_file_create_mode &amp; 0400) log_dir_create_mode |= 0100;</span>
+<span class="lineNum">     580 </span><span class="lineCov">          1 :         if (log_file_create_mode &amp; 0040) log_dir_create_mode |= 0010;</span>
+<a name="581"><span class="lineNum">     581 </span><span class="lineCov">          1 :         if (log_file_create_mode &amp; 0004) log_dir_create_mode |= 0001;</span></a>
+<a name="582"><span class="lineNum">     582 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     583 </span>            : 
+<span class="lineNum">     584 </span><span class="lineCov">          1 : void log_init(void)</span>
+<a name="585"><span class="lineNum">     585 </span>            : {</a>
+<span class="lineNum">     586 </span><span class="lineCov">          1 :         rotate_tag = g_timeout_add(60000, (GSourceFunc) sig_rotate_check, NULL);</span>
+<span class="lineNum">     587 </span><span class="lineCov">          1 :         logs = NULL;</span>
+<span class="lineNum">     588 </span>            : 
+<a name="589"><span class="lineNum">     589 </span><span class="lineCov">          1 :         settings_add_int(&quot;log&quot;, &quot;log_create_mode&quot;,</span></a>
+<span class="lineNum">     590 </span>            :                          DEFAULT_LOG_FILE_CREATE_MODE);
+<span class="lineNum">     591 </span><span class="lineCov">          1 :         settings_add_str(&quot;log&quot;, &quot;log_timestamp&quot;, &quot;%H:%M &quot;);</span>
+<span class="lineNum">     592 </span><span class="lineCov">          1 :         settings_add_str(&quot;log&quot;, &quot;log_open_string&quot;,</span>
+<a name="593"><span class="lineNum">     593 </span>            :                          &quot;--- Log opened %a %b %d %H:%M:%S %Y&quot;);</a>
+<span class="lineNum">     594 </span><span class="lineCov">          1 :         settings_add_str(&quot;log&quot;, &quot;log_close_string&quot;,</span>
+<span class="lineNum">     595 </span>            :                          &quot;--- Log closed %a %b %d %H:%M:%S %Y&quot;);
+<span class="lineNum">     596 </span><span class="lineCov">          1 :         settings_add_str(&quot;log&quot;, &quot;log_day_changed&quot;,</span>
+<a name="597"><span class="lineNum">     597 </span>            :                          &quot;--- Day changed %a %b %d %Y&quot;);</a>
+<span class="lineNum">     598 </span>            : 
+<span class="lineNum">     599 </span><span class="lineCov">          1 :         read_settings();</span>
+<span class="lineNum">     600 </span><span class="lineCov">          1 :         signal_add(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<a name="601"><span class="lineNum">     601 </span><span class="lineCov">          1 :         signal_add(&quot;setup reread&quot;, (SIGNAL_FUNC) log_read_config);</span></a>
+<span class="lineNum">     602 </span><span class="lineCov">          1 :         signal_add(&quot;irssi init finished&quot;, (SIGNAL_FUNC) log_read_config);</span>
+<a name="603"><span class="lineNum">     603 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     604 </span>            : 
+<a name="605"><span class="lineNum">     605 </span><span class="lineCov">          1 : void log_deinit(void)</span></a>
+<span class="lineNum">     606 </span>            : {
+<span class="lineNum">     607 </span><span class="lineCov">          1 :         g_source_remove(rotate_tag);</span>
+<span class="lineNum">     608 </span>            : 
+<a name="609"><span class="lineNum">     609 </span><span class="lineCov">          3 :         while (logs != NULL)</span></a>
+<span class="lineNum">     610 </span><span class="lineCov">          1 :                 log_close(logs-&gt;data);</span>
+<span class="lineNum">     611 </span>            : 
+<span class="lineNum">     612 </span><span class="lineCov">          1 :         g_free_not_null(log_timestamp);</span>
+<a name="613"><span class="lineNum">     613 </span>            : </a>
+<span class="lineNum">     614 </span><span class="lineCov">          1 :         signal_remove(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<span class="lineNum">     615 </span><span class="lineCov">          1 :         signal_remove(&quot;setup reread&quot;, (SIGNAL_FUNC) log_read_config);</span>
+<span class="lineNum">     616 </span><span class="lineCov">          1 :         signal_remove(&quot;irssi init finished&quot;, (SIGNAL_FUNC) log_read_config);</span>
+<a name="617"><span class="lineNum">     617 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

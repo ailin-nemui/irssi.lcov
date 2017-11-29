@@ -1,0 +1,570 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/irc/fe-events.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/irc</a> - fe-events.c<span style="font-size: 80%;"> (source / <a href="fe-events.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">50</td>
+            <td class="headerCovTableEntry">222</td>
+            <td class="headerCovTableEntryLo">22.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">25</td>
+            <td class="headerCovTableEntryLo">8.0 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  fe-events.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;misc.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;settings.h&quot;</a>
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : #include &quot;levels.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;servers.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;servers-redirect.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;servers-reconnect.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;queries.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;ignore.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;recode.h&quot;</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &quot;irc-servers.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;irc-channels.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : #include &quot;irc-nicklist.h&quot;</a>
+<span class="lineNum">      38 </span>            : #include &quot;irc-masks.h&quot;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : #include &quot;printtext.h&quot;
+<a name="41"><span class="lineNum">      41 </span>            : #include &quot;fe-queries.h&quot;</a>
+<span class="lineNum">      42 </span>            : #include &quot;fe-windows.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;fe-irc-server.h&quot;
+<a name="44"><span class="lineNum">      44 </span>            : #include &quot;fe-irc-channels.h&quot;</a>
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 : static void event_privmsg(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">      47 </span>            :                           const char *nick, const char *addr)
+<span class="lineNum">      48 </span>            : {
+<a name="49"><span class="lineNum">      49 </span>            :         char *params, *target, *msg, *recoded;</a>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">      52 </span>            : 
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2 | PARAM_FLAG_GETREST, &amp;target, &amp;msg);</span></a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :         if (nick == NULL) nick = server-&gt;real_address;</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :         if (addr == NULL) addr = &quot;&quot;;</span>
+<span class="lineNum">      56 </span>            : 
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :         if (fe_channel_is_opchannel(server, target)) {</span></a>
+<span class="lineNum">      58 </span>            :                 /* Hybrid 6 feature, send msg to all ops in channel */
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :                 const char *cleantarget = fe_channel_skip_prefix(server, target);</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :                 recoded = recode_in(SERVER(server), msg, cleantarget);</span>
+<a name="61"><span class="lineNum">      61 </span>            : </a>
+<span class="lineNum">      62 </span>            :                 /* pass the original target to the signal, with the @+ here
+<span class="lineNum">      63 </span>            :                  * the other one is only needed for recode_in*/
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;message irc op_public&quot;, 5,</span>
+<a name="65"><span class="lineNum">      65 </span>            :                             server, recoded, nick, addr, target);</a>
+<span class="lineNum">      66 </span>            :         } else {
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :                 recoded = recode_in(SERVER(server), msg, server_ischannel(SERVER(server), target) ? target : nick);</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :                 signal_emit(server_ischannel(SERVER(server), target) ?</span>
+<a name="69"><span class="lineNum">      69 </span>            :                             &quot;message public&quot; : &quot;message private&quot;, 5,</a>
+<span class="lineNum">      70 </span>            :                             server, recoded, nick, addr,
+<span class="lineNum">      71 </span>            :                             get_visible_target(server, target));
+<span class="lineNum">      72 </span>            :         }
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         g_free(recoded);</span>
+<a name="76"><span class="lineNum">      76 </span>            : }</a>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 : static void ctcp_action(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">      79 </span>            :                         const char *nick, const char *addr,
+<span class="lineNum">      80 </span>            :                         const char *target)
+<a name="81"><span class="lineNum">      81 </span>            : {</a>
+<span class="lineNum">      82 </span>            :         char *recoded;
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :         recoded = recode_in(SERVER(server), data, target);</span></a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         signal_emit(&quot;message irc action&quot;, 5,</span>
+<span class="lineNum">      87 </span>            :                     server, recoded, nick, addr,
+<span class="lineNum">      88 </span>            :                     get_visible_target(server, target));
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         g_free(recoded);</span></a>
+<a name="90"><span class="lineNum">      90 </span>            : }</a>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 : static void event_notice(IRC_SERVER_REC *server, const char *data,</span>
+<a name="93"><span class="lineNum">      93 </span>            :                          const char *nick, const char *addr)</a>
+<span class="lineNum">      94 </span>            : {
+<span class="lineNum">      95 </span>            :         char *params, *target, *msg, *recoded;
+<span class="lineNum">      96 </span>            : 
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span></a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2 | PARAM_FLAG_GETREST, &amp;target, &amp;msg);</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :         recoded = recode_in(SERVER(server), msg, target);</span>
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :         if (nick == NULL) {</span></a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                 nick = server-&gt;real_address == NULL ?</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :                         server-&gt;connrec-&gt;address :</span>
+<span class="lineNum">     104 </span>            :                         server-&gt;real_address;
+<a name="105"><span class="lineNum">     105 </span>            :         }</a>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         signal_emit(&quot;message irc notice&quot;, 5, server, recoded, nick, addr,</span>
+<span class="lineNum">     108 </span>            :                     get_visible_target(server, target));
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :         g_free(params);</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :         g_free(recoded);</span>
+<a name="111"><span class="lineNum">     111 </span>            : }</a>
+<span class="lineNum">     112 </span>            : 
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 : static void event_join(IRC_SERVER_REC *server, const char *data,</span></a>
+<span class="lineNum">     114 </span>            :                        const char *nick, const char *addr)
+<span class="lineNum">     115 </span>            : {
+<span class="lineNum">     116 </span>            :         char *params, *channel, *tmp;
+<a name="117"><span class="lineNum">     117 </span>            : </a>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 1, &amp;channel);</span>
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :         tmp = strchr(channel, 7); /* ^G does something weird.. */</span></a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :         if (tmp != NULL) *tmp = '\0';</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         signal_emit(&quot;message join&quot;, 4, server,</span>
+<a name="125"><span class="lineNum">     125 </span>            :                     get_visible_target(server, channel), nick, addr);</a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="127"><span class="lineNum">     127 </span>            : }</a>
+<span class="lineNum">     128 </span>            : 
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 : static void event_part(IRC_SERVER_REC *server, const char *data,</span></a>
+<span class="lineNum">     130 </span>            :                        const char *nick, const char *addr)
+<span class="lineNum">     131 </span>            : {
+<span class="lineNum">     132 </span>            :         char *params, *channel, *reason, *recoded;
+<a name="133"><span class="lineNum">     133 </span>            : </a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2 | PARAM_FLAG_GETREST,</span>
+<a name="137"><span class="lineNum">     137 </span>            :                                   &amp;channel, &amp;reason);</a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :         recoded = recode_in(SERVER(server), reason, channel);</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :         signal_emit(&quot;message part&quot;, 5, server,</span>
+<span class="lineNum">     140 </span>            :                     get_visible_target(server, channel), nick, addr, recoded);
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :         g_free(params);</span></a>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :         g_free(recoded);</span>
+<a name="143"><span class="lineNum">     143 </span>            : }</a>
+<span class="lineNum">     144 </span>            : 
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 : static void event_quit(IRC_SERVER_REC *server, const char *data,</span></a>
+<span class="lineNum">     146 </span>            :                        const char *nick, const char *addr)
+<span class="lineNum">     147 </span>            : {
+<span class="lineNum">     148 </span>            :         char *recoded;
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :         if (*data == ':') data++; /* quit message */</span>
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">          0 :         recoded = recode_in(SERVER(server), data, nick);</span></a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         signal_emit(&quot;message quit&quot;, 4, server, nick, addr, recoded);</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :         g_free(recoded);</span>
+<a name="156"><span class="lineNum">     156 </span>            : }</a>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 : static void event_kick(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">     159 </span>            :                        const char *kicker, const char *addr)
+<span class="lineNum">     160 </span>            : {
+<a name="161"><span class="lineNum">     161 </span>            :         char *params, *channel, *nick, *reason, *recoded;</a>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     164 </span>            : 
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 3 | PARAM_FLAG_GETREST,</span></a>
+<span class="lineNum">     166 </span>            :                                   &amp;channel, &amp;nick, &amp;reason);
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :         recoded = recode_in(SERVER(server), reason, channel);</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         signal_emit(&quot;message kick&quot;, 6,</span>
+<a name="169"><span class="lineNum">     169 </span>            :                     server, get_visible_target(server, channel),</a>
+<span class="lineNum">     170 </span>            :                     nick, kicker, addr, recoded);
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :         g_free(recoded);</span>
+<a name="173"><span class="lineNum">     173 </span>            : }</a>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 : static void event_kill(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">     176 </span>            :                        const char *nick, const char *addr)
+<a name="177"><span class="lineNum">     177 </span>            : {</a>
+<span class="lineNum">     178 </span>            :         char *params, *path, *reason;
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2 | PARAM_FLAG_GETREST,</span>
+<span class="lineNum">     183 </span>            :                                   NULL, &amp;path);
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         reason = strstr(path, &quot; (&quot;);</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineNoCov">          0 :         if (reason == NULL || reason[strlen(reason)-1] != ')') {</span></a>
+<span class="lineNum">     186 </span>            :                 /* weird server, maybe it didn't give path */
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                 reason = path;</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 path = &quot;&quot;;</span>
+<a name="189"><span class="lineNum">     189 </span>            :         } else {</a>
+<span class="lineNum">     190 </span>            :                 /* reason inside (...) */
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :                 *reason = '\0';</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :                 reason += 2;</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :                 reason[strlen(reason)-1] = '\0';</span></a>
+<span class="lineNum">     194 </span>            :         }
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         if (addr != NULL) {</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :                 printformat(server, NULL, MSGLEVEL_CRAP, IRCTXT_KILL,</span></a>
+<span class="lineNum">     198 </span>            :                             nick, addr, reason, path);
+<span class="lineNum">     199 </span>            :         } else {
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 printformat(server, NULL, MSGLEVEL_CRAP, IRCTXT_KILL_SERVER,</span>
+<a name="201"><span class="lineNum">     201 </span>            :                             nick, reason, path);</a>
+<span class="lineNum">     202 </span>            :         }
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="205"><span class="lineNum">     205 </span>            : }</a>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 : static void event_nick(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">     208 </span>            :                        const char *sender, const char *addr)
+<a name="209"><span class="lineNum">     209 </span>            : {</a>
+<span class="lineNum">     210 </span>            :         char *params, *newnick;
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="213"><span class="lineNum">     213 </span>            : </a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 1, &amp;newnick);</span>
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span>            :         /* NOTE: server-&gt;nick was already changed in irc/core/irc-nicklist.c */
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :         signal_emit(g_ascii_strcasecmp(newnick, server-&gt;nick) == 0 ?</span></a>
+<span class="lineNum">     218 </span>            :                     &quot;message own_nick&quot; : &quot;message nick&quot;, 4,
+<span class="lineNum">     219 </span>            :                     server, newnick, sender, addr);
+<span class="lineNum">     220 </span>            : 
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :         g_free(params);</span></a>
+<a name="222"><span class="lineNum">     222 </span>            : }</a>
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 : static void event_mode(IRC_SERVER_REC *server, const char *data,</span>
+<a name="225"><span class="lineNum">     225 </span>            :                        const char *nick, const char *addr)</a>
+<span class="lineNum">     226 </span>            : {
+<span class="lineNum">     227 </span>            :         char *params, *channel, *mode;
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span></a>
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2 | PARAM_FLAG_GETREST,</span>
+<span class="lineNum">     232 </span>            :                                   &amp;channel, &amp;mode);
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         signal_emit(&quot;message irc mode&quot;, 5,</span>
+<span class="lineNum">     235 </span>            :                     server, get_visible_target(server, channel),
+<span class="lineNum">     236 </span>            :                     nick, addr, g_strchomp(mode));
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 :         g_free(params);</span></a>
+<a name="238"><span class="lineNum">     238 </span>            : }</a>
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 : static void event_pong(IRC_SERVER_REC *server, const char *data, const char *nick)</span>
+<a name="241"><span class="lineNum">     241 </span>            : {</a>
+<span class="lineNum">     242 </span>            :         char *params, *host, *reply;
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :         if (nick == NULL) nick = server-&gt;real_address;</span></a>
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2 | PARAM_FLAG_GETREST, &amp;host, &amp;reply);</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :         printformat(server, NULL, MSGLEVEL_CRAP, IRCTXT_PONG, host, reply);</span>
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :         g_free(params);</span></a>
+<a name="250"><span class="lineNum">     250 </span>            : }</a>
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 : static void event_invite(IRC_SERVER_REC *server, const char *data,</span>
+<a name="253"><span class="lineNum">     253 </span>            :                          const char *nick, const char *addr)</a>
+<span class="lineNum">     254 </span>            : {
+<span class="lineNum">     255 </span>            :         char *params, *channel;
+<span class="lineNum">     256 </span>            : 
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span></a>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2, NULL, &amp;channel);</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :         signal_emit(&quot;message invite&quot;, 4,</span>
+<a name="261"><span class="lineNum">     261 </span>            :                     server, get_visible_target(server, channel), nick, addr);</a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="263"><span class="lineNum">     263 </span>            : }</a>
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 : static void event_topic(IRC_SERVER_REC *server, const char *data,</span></a>
+<span class="lineNum">     266 </span>            :                         const char *nick, const char *addr)
+<span class="lineNum">     267 </span>            : {
+<span class="lineNum">     268 </span>            :         char *params, *channel, *topic, *recoded;
+<a name="269"><span class="lineNum">     269 </span>            : </a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2 | PARAM_FLAG_GETREST,</span>
+<a name="273"><span class="lineNum">     273 </span>            :                                   &amp;channel, &amp;topic);</a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :         recoded = recode_in(SERVER(server), topic, channel);</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :         signal_emit(&quot;message topic&quot;, 5, server,</span>
+<span class="lineNum">     276 </span>            :                     get_visible_target(server, channel), recoded, nick, addr);
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :         g_free(params);</span></a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :         g_free(recoded);</span>
+<a name="279"><span class="lineNum">     279 </span>            : }</a>
+<span class="lineNum">     280 </span>            : 
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 : static void event_error(IRC_SERVER_REC *server, const char *data)</span></a>
+<span class="lineNum">     282 </span>            : {
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     284 </span>            : 
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :         if (*data == ':') data++;</span></a>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :         printformat(server, NULL, MSGLEVEL_CRAP, IRCTXT_ERROR, data);</span>
+<a name="287"><span class="lineNum">     287 </span>            : }</a>
+<span class="lineNum">     288 </span>            : 
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 : static void event_wallops(IRC_SERVER_REC *server, const char *data, const char *nick, const char *addr)</span></a>
+<span class="lineNum">     290 </span>            : {
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     292 </span>            : 
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :         if (*data == ':') data++;</span></a>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :         if (ignore_check(SERVER(server), nick, addr, NULL, data, MSGLEVEL_WALLOPS))</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     296 </span>            : 
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :         if (g_ascii_strncasecmp(data, &quot;\001ACTION &quot;, 8) != 0)</span></a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 printformat(server, NULL, MSGLEVEL_WALLOPS, IRCTXT_WALLOPS, nick, data);</span>
+<span class="lineNum">     299 </span>            :         else {
+<span class="lineNum">     300 </span>            :                 /* Action in WALLOP */
+<a name="301"><span class="lineNum">     301 </span>            :                 int len;</a>
+<span class="lineNum">     302 </span>            :                 char *tmp;
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 tmp = g_strdup(data+8);</span>
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :                 len = strlen(tmp);</span></a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 if (len &gt;= 1 &amp;&amp; tmp[len-1] == 1) tmp[len-1] = '\0';</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 printformat(server, NULL, MSGLEVEL_WALLOPS, IRCTXT_ACTION_WALLOPS, nick, tmp);</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 g_free(tmp);</span>
+<a name="309"><span class="lineNum">     309 </span>            :         }</a>
+<a name="310"><span class="lineNum">     310 </span>            : }</a>
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 : static void event_silence(IRC_SERVER_REC *server, const char *data, const char *nick, const char *addr)</span>
+<a name="313"><span class="lineNum">     313 </span>            : {</a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         g_return_if_fail(*data == '+' || *data == '-');</span>
+<a name="317"><span class="lineNum">     317 </span>            : </a>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :         printformat(server, NULL, MSGLEVEL_CRAP, *data == '+' ? IRCTXT_SILENCED : IRCTXT_UNSILENCED, data+1);</span>
+<a name="319"><span class="lineNum">     319 </span>            : }</a>
+<span class="lineNum">     320 </span>            : 
+<a name="321"><span class="lineNum">     321 </span><span class="lineNoCov">          0 : static void channel_sync(CHANNEL_REC *channel)</span></a>
+<span class="lineNum">     322 </span>            : {
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :         g_return_if_fail(channel != NULL);</span>
+<span class="lineNum">     324 </span>            : 
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :         printformat(channel-&gt;server, channel-&gt;visible_name,</span></a>
+<span class="lineNum">     326 </span>            :                     MSGLEVEL_CLIENTNOTICE|MSGLEVEL_NO_ACT,
+<span class="lineNum">     327 </span>            :                     IRCTXT_CHANNEL_SYNCED, channel-&gt;visible_name,
+<span class="lineNum">     328 </span>            :                     (long) (time(NULL)-channel-&gt;createtime));
+<a name="329"><span class="lineNum">     329 </span>            : }</a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 : static void event_connected(IRC_SERVER_REC *server)</span>
+<span class="lineNum">     332 </span>            : {
+<a name="333"><span class="lineNum">     333 </span>            :         const char *nick;</a>
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :         g_return_if_fail(server != NULL);</span>
+<span class="lineNum">     336 </span>            : 
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :         nick = server-&gt;connrec-&gt;nick;</span></a>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(server-&gt;nick, nick) == 0)</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     340 </span>            : 
+<a name="341"><span class="lineNum">     341 </span>            :         /* someone has our nick, find out who. */</a>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :         server_redirect_event(server, &quot;whois&quot;, 1, nick, TRUE, NULL,</span>
+<span class="lineNum">     343 </span>            :                               &quot;event 311&quot;, &quot;nickfind event whois&quot;,
+<span class="lineNum">     344 </span>            :                               &quot;&quot;, &quot;event empty&quot;, NULL);
+<a name="345"><span class="lineNum">     345 </span><span class="lineNoCov">          0 :         irc_send_cmdv(server, &quot;WHOIS %s&quot;, nick);</span></a>
+<a name="346"><span class="lineNum">     346 </span>            : }</a>
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 : static void event_nickfind_whois(IRC_SERVER_REC *server, const char *data)</span>
+<a name="349"><span class="lineNum">     349 </span>            : {</a>
+<span class="lineNum">     350 </span>            :         char *params, *nick, *user, *host, *realname;
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="353"><span class="lineNum">     353 </span>            : </a>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 6, NULL, &amp;nick, &amp;user, &amp;host, NULL, &amp;realname);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :         printformat(server, NULL, MSGLEVEL_CLIENTNOTICE, IRCTXT_YOUR_NICK_OWNED, nick, user, host, realname);</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="357"><span class="lineNum">     357 </span>            : }</a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 : static void event_ban_type_changed(void *ban_typep)</span>
+<span class="lineNum">     360 </span>            : {
+<a name="361"><span class="lineNum">     361 </span>            :         GString *str;</a>
+<span class="lineNum">     362 </span>            :         int ban_type;
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         ban_type = GPOINTER_TO_INT(ban_typep);</span>
+<a name="365"><span class="lineNum">     365 </span>            : </a>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :         if (ban_type == 0) {</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTERROR,</span>
+<span class="lineNum">     368 </span>            :                             IRCTXT_BANTYPE, &quot;Error, using Normal&quot;);
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     370 </span>            :         }
+<span class="lineNum">     371 </span>            : 
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :         if (ban_type == (IRC_MASK_USER|IRC_MASK_DOMAIN)) {</span>
+<a name="373"><span class="lineNum">     373 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTNOTICE,</span></a>
+<span class="lineNum">     374 </span>            :                             IRCTXT_BANTYPE, &quot;Normal&quot;);
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :         } else if (ban_type == (IRC_MASK_HOST|IRC_MASK_DOMAIN)) {</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTNOTICE,</span>
+<a name="377"><span class="lineNum">     377 </span>            :                             IRCTXT_BANTYPE, &quot;Host&quot;);</a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         } else if (ban_type == IRC_MASK_DOMAIN) {</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     380 </span>            :                             IRCTXT_BANTYPE, &quot;Domain&quot;);
+<a name="381"><span class="lineNum">     381 </span>            :         } else {</a>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 str = g_string_new(&quot;Custom:&quot;);</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :                 if (ban_type &amp; IRC_MASK_NICK)</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :                         g_string_append(str, &quot; Nick&quot;);</span>
+<a name="385"><span class="lineNum">     385 </span><span class="lineNoCov">          0 :                 if (ban_type &amp; IRC_MASK_USER)</span></a>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                         g_string_append(str, &quot; User&quot;);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                 if (ban_type &amp; IRC_MASK_HOST)</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :                         g_string_append(str, &quot; Host&quot;);</span>
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 :                 if (ban_type &amp; IRC_MASK_DOMAIN)</span></a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                         g_string_append(str, &quot; Domain&quot;);</span>
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTNOTICE,</span>
+<a name="393"><span class="lineNum">     393 </span>            :                             IRCTXT_BANTYPE, str-&gt;str);</a>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 g_string_free(str, TRUE);</span>
+<span class="lineNum">     395 </span>            :         }
+<a name="396"><span class="lineNum">     396 </span>            : }</a>
+<a name="397"><span class="lineNum">     397 </span>            : </a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 : static void sig_whois_event_not_found(IRC_SERVER_REC *server, const char *data)</span>
+<span class="lineNum">     399 </span>            : {
+<span class="lineNum">     400 </span>            :         char *params, *nick;
+<a name="401"><span class="lineNum">     401 </span>            : </a>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2, NULL, &amp;nick);</span>
+<a name="405"><span class="lineNum">     405 </span><span class="lineNoCov">          0 :         printformat(server, nick, MSGLEVEL_CRAP, IRCTXT_WHOIS_NOT_FOUND, nick);</span></a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="407"><span class="lineNum">     407 </span>            : }</a>
+<span class="lineNum">     408 </span>            : 
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 : static void sig_whowas_event_end(IRC_SERVER_REC *server, const char *data,</span></a>
+<span class="lineNum">     410 </span>            :                                  const char *sender, const char *addr)
+<span class="lineNum">     411 </span>            : {
+<span class="lineNum">     412 </span>            :         char *params, *nick;
+<a name="413"><span class="lineNum">     413 </span>            : </a>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :         if (server-&gt;whowas_found) {</span>
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;event 369&quot;, 4, server, data, sender, addr);</span></a>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     419 </span>            :         }
+<span class="lineNum">     420 </span>            : 
+<a name="421"><span class="lineNum">     421 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2, NULL, &amp;nick);</span></a>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :         printformat(server, nick, MSGLEVEL_CRAP, IRCTXT_WHOIS_NOT_FOUND, nick);</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="424"><span class="lineNum">     424 </span>            : }</a>
+<a name="425"><span class="lineNum">     425 </span>            : </a>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 : static void event_received(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">     427 </span>            :                            const char *nick, const char *addr)
+<span class="lineNum">     428 </span>            : {
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 :         if (!i_isdigit(*data)) {</span></a>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                 printtext(server, NULL, MSGLEVEL_CRAP, &quot;%s&quot;, data);</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     432 </span>            :         }
+<a name="433"><span class="lineNum">     433 </span>            : </a>
+<span class="lineNum">     434 </span>            :         /* numeric event. */
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :         signal_emit(&quot;default event numeric&quot;, 4, server, data, nick, addr);</span>
+<a name="436"><span class="lineNum">     436 </span>            : }</a>
+<a name="437"><span class="lineNum">     437 </span>            : </a>
+<span class="lineNum">     438 </span><span class="lineCov">          1 : void fe_events_init(void)</span>
+<span class="lineNum">     439 </span>            : {
+<span class="lineNum">     440 </span><span class="lineCov">          1 :         signal_add(&quot;event privmsg&quot;, (SIGNAL_FUNC) event_privmsg);</span>
+<a name="441"><span class="lineNum">     441 </span><span class="lineCov">          1 :         signal_add(&quot;ctcp action&quot;, (SIGNAL_FUNC) ctcp_action);</span></a>
+<span class="lineNum">     442 </span><span class="lineCov">          1 :         signal_add(&quot;event notice&quot;, (SIGNAL_FUNC) event_notice);</span>
+<span class="lineNum">     443 </span><span class="lineCov">          1 :         signal_add(&quot;event join&quot;, (SIGNAL_FUNC) event_join);</span>
+<span class="lineNum">     444 </span><span class="lineCov">          1 :         signal_add(&quot;event part&quot;, (SIGNAL_FUNC) event_part);</span>
+<a name="445"><span class="lineNum">     445 </span><span class="lineCov">          1 :         signal_add(&quot;event quit&quot;, (SIGNAL_FUNC) event_quit);</span></a>
+<span class="lineNum">     446 </span><span class="lineCov">          1 :         signal_add(&quot;event kick&quot;, (SIGNAL_FUNC) event_kick);</span>
+<span class="lineNum">     447 </span><span class="lineCov">          1 :         signal_add(&quot;event kill&quot;, (SIGNAL_FUNC) event_kill);</span>
+<span class="lineNum">     448 </span><span class="lineCov">          1 :         signal_add(&quot;event nick&quot;, (SIGNAL_FUNC) event_nick);</span>
+<a name="449"><span class="lineNum">     449 </span><span class="lineCov">          1 :         signal_add(&quot;event mode&quot;, (SIGNAL_FUNC) event_mode);</span></a>
+<span class="lineNum">     450 </span><span class="lineCov">          1 :         signal_add(&quot;event pong&quot;, (SIGNAL_FUNC) event_pong);</span>
+<span class="lineNum">     451 </span><span class="lineCov">          1 :         signal_add(&quot;event invite&quot;, (SIGNAL_FUNC) event_invite);</span>
+<span class="lineNum">     452 </span><span class="lineCov">          1 :         signal_add(&quot;event topic&quot;, (SIGNAL_FUNC) event_topic);</span>
+<a name="453"><span class="lineNum">     453 </span><span class="lineCov">          1 :         signal_add(&quot;event error&quot;, (SIGNAL_FUNC) event_error);</span></a>
+<span class="lineNum">     454 </span><span class="lineCov">          1 :         signal_add(&quot;event wallops&quot;, (SIGNAL_FUNC) event_wallops);</span>
+<span class="lineNum">     455 </span><span class="lineCov">          1 :         signal_add(&quot;event silence&quot;, (SIGNAL_FUNC) event_silence);</span>
+<span class="lineNum">     456 </span>            : 
+<a name="457"><span class="lineNum">     457 </span><span class="lineCov">          1 :         signal_add(&quot;default event&quot;, (SIGNAL_FUNC) event_received);</span></a>
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineCov">          1 :         signal_add(&quot;channel sync&quot;, (SIGNAL_FUNC) channel_sync);</span>
+<span class="lineNum">     460 </span><span class="lineCov">          1 :         signal_add(&quot;event connected&quot;, (SIGNAL_FUNC) event_connected);</span>
+<a name="461"><span class="lineNum">     461 </span><span class="lineCov">          1 :         signal_add(&quot;nickfind event whois&quot;, (SIGNAL_FUNC) event_nickfind_whois);</span></a>
+<span class="lineNum">     462 </span><span class="lineCov">          1 :         signal_add(&quot;ban type changed&quot;, (SIGNAL_FUNC) event_ban_type_changed);</span>
+<span class="lineNum">     463 </span><span class="lineCov">          1 :         signal_add(&quot;whois event not found&quot;, (SIGNAL_FUNC) sig_whois_event_not_found);</span>
+<span class="lineNum">     464 </span><span class="lineCov">          1 :         signal_add(&quot;whowas event end&quot;, (SIGNAL_FUNC) sig_whowas_event_end);</span>
+<a name="465"><span class="lineNum">     465 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     466 </span>            : 
+<span class="lineNum">     467 </span><span class="lineCov">          1 : void fe_events_deinit(void)</span>
+<span class="lineNum">     468 </span>            : {
+<a name="469"><span class="lineNum">     469 </span><span class="lineCov">          1 :         signal_remove(&quot;event privmsg&quot;, (SIGNAL_FUNC) event_privmsg);</span></a>
+<span class="lineNum">     470 </span><span class="lineCov">          1 :         signal_remove(&quot;ctcp action&quot;, (SIGNAL_FUNC) ctcp_action);</span>
+<span class="lineNum">     471 </span><span class="lineCov">          1 :         signal_remove(&quot;event notice&quot;, (SIGNAL_FUNC) event_notice);</span>
+<span class="lineNum">     472 </span><span class="lineCov">          1 :         signal_remove(&quot;event join&quot;, (SIGNAL_FUNC) event_join);</span>
+<a name="473"><span class="lineNum">     473 </span><span class="lineCov">          1 :         signal_remove(&quot;event part&quot;, (SIGNAL_FUNC) event_part);</span></a>
+<span class="lineNum">     474 </span><span class="lineCov">          1 :         signal_remove(&quot;event quit&quot;, (SIGNAL_FUNC) event_quit);</span>
+<span class="lineNum">     475 </span><span class="lineCov">          1 :         signal_remove(&quot;event kick&quot;, (SIGNAL_FUNC) event_kick);</span>
+<span class="lineNum">     476 </span><span class="lineCov">          1 :         signal_remove(&quot;event kill&quot;, (SIGNAL_FUNC) event_kill);</span>
+<a name="477"><span class="lineNum">     477 </span><span class="lineCov">          1 :         signal_remove(&quot;event nick&quot;, (SIGNAL_FUNC) event_nick);</span></a>
+<span class="lineNum">     478 </span><span class="lineCov">          1 :         signal_remove(&quot;event mode&quot;, (SIGNAL_FUNC) event_mode);</span>
+<span class="lineNum">     479 </span><span class="lineCov">          1 :         signal_remove(&quot;event pong&quot;, (SIGNAL_FUNC) event_pong);</span>
+<span class="lineNum">     480 </span><span class="lineCov">          1 :         signal_remove(&quot;event invite&quot;, (SIGNAL_FUNC) event_invite);</span>
+<a name="481"><span class="lineNum">     481 </span><span class="lineCov">          1 :         signal_remove(&quot;event topic&quot;, (SIGNAL_FUNC) event_topic);</span></a>
+<span class="lineNum">     482 </span><span class="lineCov">          1 :         signal_remove(&quot;event error&quot;, (SIGNAL_FUNC) event_error);</span>
+<span class="lineNum">     483 </span><span class="lineCov">          1 :         signal_remove(&quot;event wallops&quot;, (SIGNAL_FUNC) event_wallops);</span>
+<span class="lineNum">     484 </span><span class="lineCov">          1 :         signal_remove(&quot;event silence&quot;, (SIGNAL_FUNC) event_silence);</span>
+<a name="485"><span class="lineNum">     485 </span>            : </a>
+<span class="lineNum">     486 </span><span class="lineCov">          1 :         signal_remove(&quot;default event&quot;, (SIGNAL_FUNC) event_received);</span>
+<span class="lineNum">     487 </span>            : 
+<span class="lineNum">     488 </span><span class="lineCov">          1 :         signal_remove(&quot;channel sync&quot;, (SIGNAL_FUNC) channel_sync);</span>
+<a name="489"><span class="lineNum">     489 </span><span class="lineCov">          1 :         signal_remove(&quot;event connected&quot;, (SIGNAL_FUNC) event_connected);</span></a>
+<span class="lineNum">     490 </span><span class="lineCov">          1 :         signal_remove(&quot;nickfind event whois&quot;, (SIGNAL_FUNC) event_nickfind_whois);</span>
+<span class="lineNum">     491 </span><span class="lineCov">          1 :         signal_remove(&quot;ban type changed&quot;, (SIGNAL_FUNC) event_ban_type_changed);</span>
+<span class="lineNum">     492 </span><span class="lineCov">          1 :         signal_remove(&quot;whois event not found&quot;, (SIGNAL_FUNC) sig_whois_event_not_found);</span>
+<a name="493"><span class="lineNum">     493 </span><span class="lineCov">          1 :         signal_remove(&quot;whowas event end&quot;, (SIGNAL_FUNC) sig_whowas_event_end);</span></a>
+<span class="lineNum">     494 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

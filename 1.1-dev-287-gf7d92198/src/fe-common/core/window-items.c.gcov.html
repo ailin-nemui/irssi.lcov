@@ -1,0 +1,431 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/core/window-items.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/core</a> - window-items.c<span style="font-size: 80%;"> (source / <a href="window-items.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">158</td>
+            <td class="headerCovTableEntryLo">6.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntryLo">11.8 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  window-items.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;modules.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;signals.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;servers.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;channels.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      28 </span>            : 
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;levels.h&quot;</a>
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;fe-windows.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;window-items.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;printtext.h&quot;</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span><span class="lineNoCov">          0 : static void window_item_add_signal(WINDOW_REC *window, WI_ITEM_REC *item, int automatic, int send_signal)</span>
+<span class="lineNum">      36 </span>            : {
+<a name="37"><span class="lineNum">      37 </span><span class="lineNoCov">          0 :         g_return_if_fail(window != NULL);</span></a>
+<span class="lineNum">      38 </span><span class="lineNoCov">          0 :         g_return_if_fail(item != NULL);</span>
+<span class="lineNum">      39 </span><span class="lineNoCov">          0 :         g_return_if_fail(item-&gt;window == NULL);</span>
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span><span class="lineNoCov">          0 :         item-&gt;window = window;</span></a>
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :         if (window-&gt;items == NULL) {</span>
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :                 window-&gt;active = item;</span>
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :                 window-&gt;active_server = item-&gt;server;</span></a>
+<span class="lineNum">      46 </span>            :         }
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :         if (!automatic || settings_get_bool(&quot;window_auto_change&quot;)) {</span>
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :                 if (automatic)</span></a>
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;window changed automatic&quot;, 1, window);</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :                 window_set_active(window);</span>
+<span class="lineNum">      52 </span>            :         }
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :         window-&gt;items = g_slist_append(window-&gt;items, item);</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :         if (send_signal)</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;window item new&quot;, 2, window, item);</span>
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :         if (g_slist_length(window-&gt;items) == 1 ||</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :             (!automatic &amp;&amp; settings_get_bool(&quot;autofocus_new_items&quot;))) {</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :                 window-&gt;active = NULL;</span>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :                 window_item_set_active(window, item);</span></a>
+<span class="lineNum">      62 </span>            :         }
+<a name="63"><span class="lineNum">      63 </span>            : }</a>
+<span class="lineNum">      64 </span>            : 
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 : void window_item_add(WINDOW_REC *window, WI_ITEM_REC *item, int automatic)</span></a>
+<span class="lineNum">      66 </span>            : {
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :         window_item_add_signal(window, item, automatic, TRUE);</span>
+<a name="68"><span class="lineNum">      68 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 : static void window_item_remove_signal(WI_ITEM_REC *item, int emit_signal)</span>
+<span class="lineNum">      71 </span>            : {
+<span class="lineNum">      72 </span>            :         WINDOW_REC *window;
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         g_return_if_fail(item != NULL);</span>
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         window = window_item_window(item);</span>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         if (window == NULL)</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">      80 </span>            : 
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :         item-&gt;window = NULL;</span></a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         window-&gt;items = g_slist_remove(window-&gt;items, item);</span>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         if (window-&gt;active == item) {</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :                 window_item_set_active(window, window-&gt;items == NULL ? NULL :</span></a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                                        window-&gt;items-&gt;data);</span>
+<span class="lineNum">      87 </span>            :         }
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         if (emit_signal)</span></a>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;window item remove&quot;, 2, window, item);</span>
+<a name="91"><span class="lineNum">      91 </span>            : }</a>
+<span class="lineNum">      92 </span>            : 
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 : void window_item_remove(WI_ITEM_REC *item)</span></a>
+<span class="lineNum">      94 </span>            : {
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         window_item_remove_signal(item, TRUE);</span>
+<a name="96"><span class="lineNum">      96 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 : void window_item_destroy(WI_ITEM_REC *item)</span>
+<span class="lineNum">      99 </span>            : {
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :         window_item_remove(item);</span>
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :         item-&gt;destroy(item);</span></a>
+<a name="102"><span class="lineNum">     102 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 : void window_item_change_server(WI_ITEM_REC *item, void *server)</span>
+<a name="105"><span class="lineNum">     105 </span>            : {</a>
+<span class="lineNum">     106 </span>            :         WINDOW_REC *window;
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         g_return_if_fail(item != NULL);</span>
+<a name="109"><span class="lineNum">     109 </span>            : </a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :         window = window_item_window(item);</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :         item-&gt;server = server;</span>
+<span class="lineNum">     112 </span>            : 
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :         signal_emit(&quot;window item server changed&quot;, 2, window, item);</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :         if (window-&gt;active == item) window_change_server(window, item-&gt;server);</span>
+<a name="115"><span class="lineNum">     115 </span>            : }</a>
+<span class="lineNum">     116 </span>            : 
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 : void window_item_set_active(WINDOW_REC *window, WI_ITEM_REC *item)</span></a>
+<span class="lineNum">     118 </span>            : {
+<span class="lineNum">     119 </span>            :                 WINDOW_REC *old_window;
+<span class="lineNum">     120 </span>            : 
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :         g_return_if_fail(window != NULL);</span></a>
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :         if (item != NULL) {</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :             old_window = window_item_window(item);</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 if (old_window != window) {</span></a>
+<span class="lineNum">     126 </span>            :                 /* move item to different window */
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                 window_item_remove_signal(item, FALSE);</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                 window_item_add_signal(window, item, FALSE, FALSE);</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;window item moved&quot;, 3, window, item, old_window);</span></a>
+<span class="lineNum">     130 </span>            :                 }
+<span class="lineNum">     131 </span>            :         }
+<span class="lineNum">     132 </span>            : 
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :         if (window-&gt;active != item) {</span></a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                 window-&gt;active = item;</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 if (item != NULL &amp;&amp; window-&gt;active_server != item-&gt;server)</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                         window_change_server(window, item-&gt;server);</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;window item changed&quot;, 2, window, item);</span></a>
+<span class="lineNum">     138 </span>            :         }
+<span class="lineNum">     139 </span>            : }
+<span class="lineNum">     140 </span>            : 
+<a name="141"><span class="lineNum">     141 </span>            : /* Return TRUE if `item' is the active window item in the window.</a>
+<span class="lineNum">     142 </span>            :    `item' can be NULL. */
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 : int window_item_is_active(WI_ITEM_REC *item)</span>
+<span class="lineNum">     144 </span>            : {
+<a name="145"><span class="lineNum">     145 </span>            :         WINDOW_REC *window;</a>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :         if (item == NULL)</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :         window = window_item_window(item);</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         if (window == NULL)</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<a name="153"><span class="lineNum">     153 </span>            : </a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         return window-&gt;active == item;</span>
+<a name="155"><span class="lineNum">     155 </span>            : }</a>
+<span class="lineNum">     156 </span>            : 
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 : void window_item_prev(WINDOW_REC *window)</span></a>
+<span class="lineNum">     158 </span>            : {
+<span class="lineNum">     159 </span>            :         WI_ITEM_REC *last;
+<span class="lineNum">     160 </span>            :         GSList *tmp;
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         g_return_if_fail(window != NULL);</span>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         last = NULL;</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :         for (tmp = window-&gt;items; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                 WI_ITEM_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                 if (rec != window-&gt;active)</span>
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :                         last = rec;</span></a>
+<span class="lineNum">     170 </span>            :                 else {
+<span class="lineNum">     171 </span>            :                         /* current channel. did we find anything?
+<span class="lineNum">     172 </span>            :                            if not, go to the last channel */
+<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 :                         if (last != NULL) break;</span></a>
+<span class="lineNum">     174 </span>            :                 }
+<span class="lineNum">     175 </span>            :         }
+<span class="lineNum">     176 </span>            : 
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 :         if (last != NULL)</span></a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                 window_item_set_active(window, last);</span>
+<a name="179"><span class="lineNum">     179 </span>            : }</a>
+<span class="lineNum">     180 </span>            : 
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 : void window_item_next(WINDOW_REC *window)</span></a>
+<span class="lineNum">     182 </span>            : {
+<span class="lineNum">     183 </span>            :         WI_ITEM_REC *next;
+<span class="lineNum">     184 </span>            :         GSList *tmp;
+<a name="185"><span class="lineNum">     185 </span>            :         int gone;</a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :         g_return_if_fail(window != NULL);</span>
+<span class="lineNum">     188 </span>            : 
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :         next = NULL; gone = FALSE;</span></a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :         for (tmp = window-&gt;items; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :                 WI_ITEM_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     192 </span>            : 
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :                 if (rec == window-&gt;active)</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                         gone = TRUE;</span>
+<span class="lineNum">     195 </span>            :                 else {
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                         if (gone) {</span>
+<a name="197"><span class="lineNum">     197 </span>            :                                 /* found the next channel */</a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                                 next = rec;</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     200 </span>            :                         }
+<a name="201"><span class="lineNum">     201 </span>            : </a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                         if (next == NULL)</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                                 next = rec; /* fallback to first channel */</span>
+<span class="lineNum">     204 </span>            :                 }
+<a name="205"><span class="lineNum">     205 </span>            :         }</a>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :         if (next != NULL)</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                 window_item_set_active(window, next);</span>
+<a name="209"><span class="lineNum">     209 </span>            : }</a>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 : WI_ITEM_REC *window_item_find_window(WINDOW_REC *window,</span>
+<span class="lineNum">     212 </span>            :                                      void *server, const char *name)
+<a name="213"><span class="lineNum">     213 </span>            : {</a>
+<span class="lineNum">     214 </span>            :         GSList *tmp;
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :         for (tmp = window-&gt;items; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :                 WI_ITEM_REC *rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                 if ((server == NULL || rec-&gt;server == server) &amp;&amp;</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                     (g_ascii_strcasecmp(name, rec-&gt;visible_name) == 0</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :                      || (rec-&gt;name &amp;&amp; g_ascii_strcasecmp(name, rec-&gt;name) == 0)))</span></a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                         return rec;</span>
+<span class="lineNum">     223 </span>            :         }
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="225"><span class="lineNum">     225 </span>            : }</a>
+<a name="226"><span class="lineNum">     226 </span>            : </a>
+<span class="lineNum">     227 </span>            : /* Find wanted window item by name. `server' can be NULL. */
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 : WI_ITEM_REC *window_item_find(void *server, const char *name)</span>
+<a name="229"><span class="lineNum">     229 </span>            : {</a>
+<span class="lineNum">     230 </span>            :         WI_ITEM_REC *item;
+<span class="lineNum">     231 </span>            :         GSList *tmp;
+<span class="lineNum">     232 </span>            : 
+<a name="233"><span class="lineNum">     233 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(name != NULL, NULL);</span></a>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :         for (tmp = windows; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                 WINDOW_REC *rec = tmp-&gt;data;</span>
+<a name="237"><span class="lineNum">     237 </span>            : </a>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :                 item = window_item_find_window(rec, server, name);</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :                 if (item != NULL) return item;</span>
+<span class="lineNum">     240 </span>            :         }
+<a name="241"><span class="lineNum">     241 </span>            : </a>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="243"><span class="lineNum">     243 </span>            : }</a>
+<span class="lineNum">     244 </span>            : 
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 : static int window_bind_has_sticky(WINDOW_REC *window)</span></a>
+<span class="lineNum">     246 </span>            : {
+<span class="lineNum">     247 </span>            :         GSList *tmp;
+<span class="lineNum">     248 </span>            : 
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :         for (tmp = window-&gt;bound_items; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                 WINDOW_BIND_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                 if (rec-&gt;sticky)</span>
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         return TRUE;</span></a>
+<span class="lineNum">     254 </span>            :         }
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :         return FALSE;</span>
+<a name="257"><span class="lineNum">     257 </span>            : }</a>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 : void window_item_create(WI_ITEM_REC *item, int automatic)</span>
+<span class="lineNum">     260 </span>            : {
+<a name="261"><span class="lineNum">     261 </span>            :         WINDOW_REC *window;</a>
+<span class="lineNum">     262 </span>            :         WINDOW_BIND_REC *bind;
+<span class="lineNum">     263 </span>            :         GSList *tmp, *sorted;
+<span class="lineNum">     264 </span>            :         int clear_waiting, reuse_unused_windows;
+<a name="265"><span class="lineNum">     265 </span>            : </a>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :         g_return_if_fail(item != NULL);</span>
+<span class="lineNum">     267 </span>            : 
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         reuse_unused_windows = settings_get_bool(&quot;reuse_unused_windows&quot;);</span>
+<a name="269"><span class="lineNum">     269 </span>            : </a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :         clear_waiting = TRUE;</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         window = NULL;</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :         sorted = windows_get_sorted();</span>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :         for (tmp = sorted; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                 WINDOW_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span>            :                 /* is item bound to this window? */
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :                 if (item-&gt;server != NULL) {</span></a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                         bind = window_bind_find(rec, item-&gt;server-&gt;tag,</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                                                 item-&gt;visible_name);</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :                         if (bind != NULL) {</span>
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :                                 if (!bind-&gt;sticky)</span></a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                                         window_bind_destroy(rec, bind);</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                                 window = rec;</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                                 clear_waiting = FALSE;</span>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :                                 break;</span></a>
+<span class="lineNum">     286 </span>            :                         }
+<span class="lineNum">     287 </span>            :                 }
+<span class="lineNum">     288 </span>            : 
+<a name="289"><span class="lineNum">     289 </span>            :                 /* use this window IF:</a>
+<span class="lineNum">     290 </span>            :                      - reuse_unused_windows is ON
+<span class="lineNum">     291 </span>            :                      - window has no existing items
+<span class="lineNum">     292 </span>            :                      - window has no name
+<a name="293"><span class="lineNum">     293 </span>            :                      - window has no sticky binds (/LAYOUT SAVEd)</a>
+<span class="lineNum">     294 </span>            :                      - we already haven't found &quot;good enough&quot; window,
+<span class="lineNum">     295 </span>            :                        except if
+<span class="lineNum">     296 </span>            :                          - this is the active window
+<a name="297"><span class="lineNum">     297 </span>            :                          - old window had some temporary bounds and this</a>
+<span class="lineNum">     298 </span>            :                            one doesn't
+<span class="lineNum">     299 </span>            :                      */
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :                 if (reuse_unused_windows &amp;&amp; rec-&gt;items == NULL &amp;&amp;</span>
+<a name="301"><span class="lineNum">     301 </span><span class="lineNoCov">          0 :                     rec-&gt;name == NULL &amp;&amp; !window_bind_has_sticky(rec) &amp;&amp;</span></a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :                     (window == NULL || rec == active_win ||</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                      window-&gt;bound_items != NULL))</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                         window = rec;</span>
+<a name="305"><span class="lineNum">     305 </span>            :         }</a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :         g_slist_free(sorted);</span>
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :         if (window == NULL &amp;&amp; !settings_get_bool(&quot;autocreate_windows&quot;)) {</span>
+<a name="309"><span class="lineNum">     309 </span>            :                 /* never create new windows automatically */</a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 window = active_win;</span>
+<span class="lineNum">     311 </span>            :         }
+<span class="lineNum">     312 </span>            : 
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :         if (window == NULL) {</span></a>
+<span class="lineNum">     314 </span>            :                 /* create new window to use */
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                 if (settings_get_bool(&quot;autocreate_split_windows&quot;)) {</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;gui window create override&quot;, 1,</span>
+<a name="317"><span class="lineNum">     317 </span>            :                                     GINT_TO_POINTER(0));</a>
+<span class="lineNum">     318 </span>            :                 }
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :                 window = window_create(item, automatic);</span>
+<span class="lineNum">     320 </span>            :         } else {
+<a name="321"><span class="lineNum">     321 </span>            :                 /* use existing window */</a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                 window_item_add(window, item, automatic);</span>
+<span class="lineNum">     323 </span>            :         }
+<span class="lineNum">     324 </span>            : 
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :         if (clear_waiting)</span></a>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                 window_bind_remove_unsticky(window);</span>
+<a name="327"><span class="lineNum">     327 </span>            : }</a>
+<span class="lineNum">     328 </span>            : 
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 : static void signal_window_item_changed(WINDOW_REC *window, WI_ITEM_REC *item)</span></a>
+<span class="lineNum">     330 </span>            : {
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :         g_return_if_fail(window != NULL);</span>
+<span class="lineNum">     332 </span>            : 
+<a name="333"><span class="lineNum">     333 </span><span class="lineNoCov">          0 :         if (g_slist_length(window-&gt;items) &gt; 1) {</span></a>
+<span class="lineNum">     334 </span>            :                 /* default to printing &quot;talking with ...&quot;,
+<span class="lineNum">     335 </span>            :                    you can override it it you wish */
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                 printformat(item-&gt;server, item-&gt;visible_name,</span>
+<a name="337"><span class="lineNum">     337 </span>            :                             MSGLEVEL_CLIENTNOTICE,</a>
+<span class="lineNum">     338 </span>            :                             TXT_TALKING_WITH, item-&gt;visible_name);
+<span class="lineNum">     339 </span>            :         }
+<a name="340"><span class="lineNum">     340 </span>            : }</a>
+<a name="341"><span class="lineNum">     341 </span>            : </a>
+<span class="lineNum">     342 </span><span class="lineCov">          1 : void window_items_init(void)</span>
+<span class="lineNum">     343 </span>            : {
+<span class="lineNum">     344 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;reuse_unused_windows&quot;, FALSE);</span>
+<a name="345"><span class="lineNum">     345 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;autocreate_windows&quot;, TRUE);</span></a>
+<span class="lineNum">     346 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;autocreate_split_windows&quot;, FALSE);</span>
+<span class="lineNum">     347 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;autofocus_new_items&quot;, TRUE);</span>
+<span class="lineNum">     348 </span>            : 
+<a name="349"><span class="lineNum">     349 </span><span class="lineCov">          1 :         signal_add_last(&quot;window item changed&quot;, (SIGNAL_FUNC) signal_window_item_changed);</span></a>
+<a name="350"><span class="lineNum">     350 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineCov">          1 : void window_items_deinit(void)</span>
+<a name="353"><span class="lineNum">     353 </span>            : {</a>
+<span class="lineNum">     354 </span><span class="lineCov">          1 :         signal_remove(&quot;window item changed&quot;, (SIGNAL_FUNC) signal_window_item_changed);</span>
+<span class="lineNum">     355 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

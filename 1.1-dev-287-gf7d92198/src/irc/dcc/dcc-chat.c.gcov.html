@@ -1,0 +1,949 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/irc/dcc/dcc-chat.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/irc/dcc</a> - dcc-chat.c<span style="font-size: 80%;"> (source / <a href="dcc-chat.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">39</td>
+            <td class="headerCovTableEntry">410</td>
+            <td class="headerCovTableEntryLo">9.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">30</td>
+            <td class="headerCovTableEntryLo">6.7 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  dcc-chat.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;recode.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;network.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;net-sendbuffer.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;settings.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<span class="lineNum">      30 </span>            : #include &quot;irc-servers.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;irc-queries.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;masks.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : </a>
+<a name="34"><span class="lineNum">      34 </span>            : #include &quot;dcc-chat.h&quot;</a>
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span><span class="lineNoCov">          0 : static char *dcc_chat_get_new_id(const char *nick)</span>
+<a name="37"><span class="lineNum">      37 </span>            : {</a>
+<span class="lineNum">      38 </span>            :         char *id;
+<span class="lineNum">      39 </span>            :         int num;
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, NULL);</span></a>
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :         if (dcc_chat_find_id(nick) == NULL) {</span>
+<span class="lineNum">      44 </span>            :                 /* same as nick, good */
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :                 return g_strdup(nick);</span></a>
+<span class="lineNum">      46 </span>            :         }
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            :         /* keep adding numbers after nick until some of them isn't found */
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :         for (num = 2;; num++) {</span></a>
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :                 id = g_strdup_printf(&quot;%s%d&quot;, nick, num);</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :                 if (dcc_chat_find_id(id) == NULL)</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :                         return id;</span>
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :                 g_free(id);</span></a>
+<span class="lineNum">      54 </span>            :         }
+<a name="55"><span class="lineNum">      55 </span>            : }</a>
+<span class="lineNum">      56 </span>            : 
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 : CHAT_DCC_REC *dcc_chat_create(IRC_SERVER_REC *server,</span></a>
+<span class="lineNum">      58 </span>            :                                      CHAT_DCC_REC *chat,
+<span class="lineNum">      59 </span>            :                                      const char *nick, const char *arg)
+<span class="lineNum">      60 </span>            : {
+<a name="61"><span class="lineNum">      61 </span>            :         CHAT_DCC_REC *dcc;</a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :         dcc = g_new0(CHAT_DCC_REC, 1);</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :         dcc-&gt;orig_type = dcc-&gt;type = DCC_CHAT_TYPE;</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 :         dcc-&gt;mirc_ctcp = settings_get_bool(&quot;dcc_mirc_ctcp&quot;);</span></a>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :         dcc-&gt;id = dcc_chat_get_new_id(nick);</span>
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :         dcc_init_rec(DCC(dcc), server, chat, nick, arg);</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :         if (dcc-&gt;module_data == NULL) {</span></a>
+<span class="lineNum">      70 </span>            :                 /* failed to successfully init; TODO: change init_rec API */
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                 g_free(dcc-&gt;id);</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :                 g_free(dcc);</span>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :                 return NULL;</span></a>
+<span class="lineNum">      74 </span>            :         }
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         return dcc;</span>
+<a name="77"><span class="lineNum">      77 </span>            : }</a>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 : static void dcc_remove_chat_refs(CHAT_DCC_REC *dcc)</span>
+<span class="lineNum">      80 </span>            : {
+<a name="81"><span class="lineNum">      81 </span>            :         GSList *tmp;</a>
+<span class="lineNum">      82 </span>            : 
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :         g_return_if_fail(dcc != NULL);</span>
+<span class="lineNum">      84 </span>            : 
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :         for (tmp = dcc_conns; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                 DCC_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :                 if (rec-&gt;chat == dcc)</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :                         rec-&gt;chat = NULL;</span></a>
+<span class="lineNum">      90 </span>            :         }
+<a name="91"><span class="lineNum">      91 </span>            : }</a>
+<span class="lineNum">      92 </span>            : 
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 : static void sig_dcc_destroyed(CHAT_DCC_REC *dcc)</span></a>
+<span class="lineNum">      94 </span>            : {
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         if (!IS_DCC_CHAT(dcc)) return;</span>
+<span class="lineNum">      96 </span>            : 
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :         dcc_remove_chat_refs(dcc);</span></a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         if (dcc-&gt;sendbuf != NULL) net_sendbuffer_destroy(dcc-&gt;sendbuf, FALSE);</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :         g_free(dcc-&gt;id);</span>
+<a name="101"><span class="lineNum">     101 </span>            : }</a>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 : CHAT_DCC_REC *dcc_chat_find_id(const char *id)</span>
+<span class="lineNum">     104 </span>            : {
+<a name="105"><span class="lineNum">     105 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(id != NULL, NULL);</span>
+<span class="lineNum">     108 </span>            : 
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :         for (tmp = dcc_conns; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 CHAT_DCC_REC *dcc = tmp-&gt;data;</span>
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                 if (IS_DCC_CHAT(dcc) &amp;&amp; dcc-&gt;id != NULL &amp;&amp;</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :                     g_ascii_strcasecmp(dcc-&gt;id, id) == 0)</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :                         return dcc;</span>
+<span class="lineNum">     115 </span>            :         }
+<span class="lineNum">     116 </span>            : 
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :         return NULL;</span></a>
+<a name="118"><span class="lineNum">     118 </span>            : }</a>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 : static CHAT_DCC_REC *dcc_chat_find_nick(IRC_SERVER_REC *server,</span>
+<a name="121"><span class="lineNum">     121 </span>            :                                         const char *nick)</a>
+<span class="lineNum">     122 </span>            : {
+<span class="lineNum">     123 </span>            :         GSList *tmp;
+<span class="lineNum">     124 </span>            : 
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, NULL);</span></a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :         for (tmp = dcc_conns; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                 CHAT_DCC_REC *dcc = tmp-&gt;data;</span>
+<a name="129"><span class="lineNum">     129 </span>            : </a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 if (IS_DCC_CHAT(dcc) &amp;&amp; dcc-&gt;server == server &amp;&amp;</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                     g_ascii_strcasecmp(dcc-&gt;nick, nick) == 0)</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                         return dcc;</span>
+<a name="133"><span class="lineNum">     133 </span>            :         }</a>
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<span class="lineNum">     136 </span>            : }
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<span class="lineNum">     138 </span>            : /* Send `data' to dcc chat. */
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 : void dcc_chat_send(CHAT_DCC_REC *dcc, const char *data)</span>
+<span class="lineNum">     140 </span>            : {
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_DCC_CHAT(dcc));</span></a>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :         g_return_if_fail(dcc-&gt;sendbuf != NULL);</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     144 </span>            : 
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 :         net_sendbuffer_send(dcc-&gt;sendbuf, data, strlen(data));</span></a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         net_sendbuffer_send(dcc-&gt;sendbuf, &quot;\n&quot;, 1);</span>
+<span class="lineNum">     147 </span>            : }
+<span class="lineNum">     148 </span>            : 
+<a name="149"><span class="lineNum">     149 </span>            : /* Send a CTCP message/notify to target.</a>
+<span class="lineNum">     150 </span>            :    Send the CTCP via DCC chat if `chat' is specified. */
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 : void dcc_ctcp_message(IRC_SERVER_REC *server, const char *target,</span>
+<span class="lineNum">     152 </span>            :                       CHAT_DCC_REC *chat, int notice, const char *msg)
+<a name="153"><span class="lineNum">     153 </span>            : {</a>
+<span class="lineNum">     154 </span>            :         char *str;
+<span class="lineNum">     155 </span>            :         char *recoded;
+<span class="lineNum">     156 </span>            : 
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 :         if (chat != NULL &amp;&amp; chat-&gt;sendbuf != NULL) {</span></a>
+<span class="lineNum">     158 </span>            :                 /* send it via open DCC chat */
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                 recoded = recode_out(SERVER(server), msg, chat-&gt;nick);</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :                 str = g_strdup_printf(&quot;%s\001%s\001&quot;, chat-&gt;mirc_ctcp ? &quot;&quot; :</span>
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :                                       notice ? &quot;CTCP_REPLY &quot; :</span></a>
+<span class="lineNum">     162 </span>            :                                       &quot;CTCP_MESSAGE &quot;, recoded);
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                 dcc_chat_send(chat, str);</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                 g_free(str);</span>
+<a name="165"><span class="lineNum">     165 </span>            :         } else {</a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                 recoded = recode_out(SERVER(server), msg, target);</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :                 irc_send_cmdv(server, &quot;%s %s :\001%s\001&quot;,</span>
+<span class="lineNum">     168 </span>            :                               notice ? &quot;NOTICE&quot; : &quot;PRIVMSG&quot;, target, recoded);
+<a name="169"><span class="lineNum">     169 </span>            :         }</a>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :         g_free(recoded);</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 : }</span>
+<a name="172"><span class="lineNum">     172 </span>            : </a>
+<a name="173"><span class="lineNum">     173 </span>            : /* If `item' is a query of a =nick, return DCC chat record of nick */</a>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 : CHAT_DCC_REC *item_get_dcc(WI_ITEM_REC *item)</span>
+<span class="lineNum">     175 </span>            : {
+<span class="lineNum">     176 </span>            :         QUERY_REC *query;
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         query = IRC_QUERY(item);</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         if (query == NULL || *query-&gt;name != '=')</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         return dcc_chat_find_id(query-&gt;name+1);</span>
+<span class="lineNum">     183 </span>            : }
+<a name="184"><span class="lineNum">     184 </span>            : </a>
+<a name="185"><span class="lineNum">     185 </span>            : /* Send text to DCC chat */</a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 : static void cmd_msg(const char *data, SERVER_REC *server, WI_ITEM_REC *item)</span>
+<span class="lineNum">     187 </span>            : {
+<span class="lineNum">     188 </span>            :         CHAT_DCC_REC *dcc;
+<a name="189"><span class="lineNum">     189 </span>            :         GHashTable *optlist;</a>
+<span class="lineNum">     190 </span>            :         char *text, *target;
+<span class="lineNum">     191 </span>            :         void *free_arg;
+<span class="lineNum">     192 </span>            : 
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span></a>
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 2 | PARAM_FLAG_UNKNOWN_OPTIONS |</span>
+<span class="lineNum">     196 </span>            :                             PARAM_FLAG_OPTIONS | PARAM_FLAG_GETREST, &quot;msg&quot;,
+<a name="197"><span class="lineNum">     197 </span>            :                             &amp;optlist, &amp;target, &amp;text))</a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span>            :         /* handle only DCC messages */
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :         if (g_strcmp0(target, &quot;*&quot;) == 0)</span></a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 dcc = item_get_dcc(item);</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :         else if (*target == '=')</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                 dcc = dcc_chat_find_id(target+1);</span>
+<a name="205"><span class="lineNum">     205 </span>            :         else</a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :                 dcc = NULL;</span>
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :         if (dcc != NULL &amp;&amp; dcc-&gt;sendbuf != NULL) {</span>
+<a name="209"><span class="lineNum">     209 </span>            :                 char *recoded;</a>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 recoded = recode_out(server, text, dcc-&gt;nick);</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 dcc_chat_send(dcc, recoded);</span>
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 g_free(recoded);</span></a>
+<span class="lineNum">     214 </span>            :         }
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :         if (dcc != NULL || *target == '=')</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :                 signal_stop();</span></a>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<a name="220"><span class="lineNum">     220 </span>            : }</a>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 : static void cmd_me(const char *data, IRC_SERVER_REC *server, WI_ITEM_REC *item)</span>
+<span class="lineNum">     223 </span>            : {
+<span class="lineNum">     224 </span>            :         CHAT_DCC_REC *dcc;
+<a name="225"><span class="lineNum">     225 </span>            :         char *str;</a>
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :         dcc = item_get_dcc(item);</span></a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :         if (dcc == NULL) return;</span>
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :         str = g_strconcat(&quot;ACTION &quot;, data, NULL);</span>
+<a name="233"><span class="lineNum">     233 </span><span class="lineNoCov">          0 :         dcc_ctcp_message(server, dcc-&gt;nick, dcc, FALSE, str);</span></a>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         g_free(str);</span>
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :         signal_stop();</span>
+<a name="237"><span class="lineNum">     237 </span>            : }</a>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 : static void cmd_action(const char *data, IRC_SERVER_REC *server)</span>
+<span class="lineNum">     240 </span>            : {
+<a name="241"><span class="lineNum">     241 </span>            :         CHAT_DCC_REC *dcc;</a>
+<span class="lineNum">     242 </span>            :         char *target, *text, *str;
+<span class="lineNum">     243 </span>            :         void *free_arg;
+<span class="lineNum">     244 </span>            : 
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span></a>
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :         if (*data != '=') {</span>
+<span class="lineNum">     248 </span>            :                 /* handle only DCC actions */
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     250 </span>            :         }
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 2 | PARAM_FLAG_GETREST,</span>
+<a name="253"><span class="lineNum">     253 </span>            :                             &amp;target, &amp;text))</a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :         if (*target == '\0' || *text == '\0')</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                 cmd_param_error(CMDERR_NOT_ENOUGH_PARAMS);</span>
+<a name="257"><span class="lineNum">     257 </span>            : </a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         dcc = dcc_chat_find_id(target+1);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :         if (dcc != NULL) {</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :                 str = g_strconcat(&quot;ACTION &quot;, text, NULL);</span>
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :                 dcc_ctcp_message(server, dcc-&gt;nick, dcc, FALSE, str);</span></a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                 g_free(str);</span>
+<span class="lineNum">     263 </span>            :         }
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :         signal_stop();</span>
+<a name="267"><span class="lineNum">     267 </span>            : }</a>
+<span class="lineNum">     268 </span>            : 
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 : static void cmd_ctcp(const char *data, IRC_SERVER_REC *server)</span></a>
+<span class="lineNum">     270 </span>            : {
+<span class="lineNum">     271 </span>            :         CHAT_DCC_REC *dcc;
+<span class="lineNum">     272 </span>            :         char *target, *ctcpcmd, *ctcpdata, *str;
+<a name="273"><span class="lineNum">     273 </span>            :         void *free_arg;</a>
+<span class="lineNum">     274 </span>            : 
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     276 </span>            : 
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 3 | PARAM_FLAG_GETREST,</span></a>
+<span class="lineNum">     278 </span>            :                             &amp;target, &amp;ctcpcmd, &amp;ctcpdata))
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :         if (*target == '\0' || *ctcpcmd == '\0')</span>
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :                 cmd_param_error(CMDERR_NOT_ENOUGH_PARAMS);</span></a>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         if (*target != '=') {</span>
+<span class="lineNum">     284 </span>            :                 /* handle only DCC CTCPs */
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     287 </span>            :         }
+<span class="lineNum">     288 </span>            : 
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :         dcc = dcc_chat_find_id(target+1);</span></a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :         if (dcc != NULL) {</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 ascii_strup(ctcpcmd);</span>
+<span class="lineNum">     292 </span>            : 
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :                 str = g_strconcat(ctcpcmd, &quot; &quot;, ctcpdata, NULL);</span></a>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :                 dcc_ctcp_message(server, dcc-&gt;nick, dcc, FALSE, str);</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                 g_free(str);</span>
+<span class="lineNum">     296 </span>            :         }
+<a name="297"><span class="lineNum">     297 </span>            : </a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :         signal_stop();</span>
+<span class="lineNum">     300 </span>            : }
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<span class="lineNum">     302 </span>            : /* input function: DCC CHAT received some data.. */
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 : void dcc_chat_input(CHAT_DCC_REC *dcc)</span>
+<span class="lineNum">     304 </span>            : {
+<a name="305"><span class="lineNum">     305 </span>            :         char *str;</a>
+<span class="lineNum">     306 </span>            :         int ret;
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_DCC_CHAT(dcc));</span>
+<a name="309"><span class="lineNum">     309 </span>            : </a>
+<span class="lineNum">     310 </span>            :         do {
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                 ret = net_sendbuffer_receive_line(dcc-&gt;sendbuf, &amp;str, 1);</span>
+<span class="lineNum">     312 </span>            : 
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :                 if (ret == -1) {</span></a>
+<span class="lineNum">     314 </span>            :                         /* connection lost */
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                         dcc-&gt;connection_lost = TRUE;</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                         dcc_close(DCC(dcc));</span>
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     318 </span>            :                 }
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                 if (ret &gt; 0) {</span>
+<a name="321"><span class="lineNum">     321 </span>            :                         char *recoded;</a>
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                         dcc-&gt;transfd += ret;</span>
+<span class="lineNum">     324 </span>            : 
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :                         recoded = recode_in(SERVER(dcc-&gt;server), str, dcc-&gt;nick);</span></a>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;dcc chat message&quot;, 2, dcc, recoded);</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                         g_free(recoded);</span>
+<span class="lineNum">     328 </span>            :                 }
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :         } while (ret &gt; 0);</span></a>
+<span class="lineNum">     330 </span>            : }
+<a name="331"><span class="lineNum">     331 </span>            : </a>
+<span class="lineNum">     332 </span>            : /* input function: DCC CHAT - someone tried to connect to our socket */
+<a name="333"><span class="lineNum">     333 </span><span class="lineNoCov">          0 : static void dcc_chat_listen(CHAT_DCC_REC *dcc)</span></a>
+<span class="lineNum">     334 </span>            : {
+<span class="lineNum">     335 </span>            :         IPADDR ip;
+<span class="lineNum">     336 </span>            :         GIOChannel *handle;
+<a name="337"><span class="lineNum">     337 </span>            :         int port;</a>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_DCC_CHAT(dcc));</span>
+<span class="lineNum">     340 </span>            : 
+<a name="341"><span class="lineNum">     341 </span>            :         /* accept connection */</a>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :         handle = net_accept(dcc-&gt;handle, &amp;ip, &amp;port);</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :         if (handle == NULL)</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="345"><span class="lineNum">     345 </span>            : </a>
+<span class="lineNum">     346 </span>            :         /* TODO: add paranoia check - see dcc-files.c */
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :         net_disconnect(dcc-&gt;handle);</span>
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :         g_source_remove(dcc-&gt;tagconn);</span></a>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :         dcc-&gt;tagconn = -1;</span>
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :         dcc-&gt;starttime = time(NULL);</span>
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :         dcc-&gt;handle = handle;</span></a>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :         dcc-&gt;sendbuf = net_sendbuffer_create(handle, 0);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :         memcpy(&amp;dcc-&gt;addr, &amp;ip, sizeof(IPADDR));</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :         net_ip2host(&amp;dcc-&gt;addr, dcc-&gt;addrstr);</span>
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 :         dcc-&gt;port = port;</span></a>
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :         dcc-&gt;tagread = g_input_add(handle, G_INPUT_READ,</span>
+<span class="lineNum">     359 </span>            :                                    (GInputFunction) dcc_chat_input, dcc);
+<span class="lineNum">     360 </span>            : 
+<a name="361"><span class="lineNum">     361 </span><span class="lineNoCov">          0 :         signal_emit(&quot;dcc connected&quot;, 1, dcc);</span></a>
+<span class="lineNum">     362 </span>            : }
+<a name="363"><span class="lineNum">     363 </span>            : </a>
+<span class="lineNum">     364 </span>            : /* callback: DCC CHAT - net_connect_nonblock() finished */
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 : static void sig_chat_connected(CHAT_DCC_REC *dcc)</span></a>
+<span class="lineNum">     366 </span>            : {
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_DCC_CHAT(dcc));</span>
+<span class="lineNum">     368 </span>            : 
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :         if (net_geterror(dcc-&gt;handle) != 0) {</span></a>
+<span class="lineNum">     370 </span>            :                 /* error connecting */
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;dcc error connect&quot;, 1, dcc);</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                 dcc_destroy(DCC(dcc));</span>
+<a name="373"><span class="lineNum">     373 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     374 </span>            :         }
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span>            :         /* connect ok. */
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 :         g_source_remove(dcc-&gt;tagconn);</span></a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         dcc-&gt;tagconn = -1;</span>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :         dcc-&gt;starttime = time(NULL);</span>
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :         dcc-&gt;sendbuf = net_sendbuffer_create(dcc-&gt;handle, 0);</span></a>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :         dcc-&gt;tagread = g_input_add(dcc-&gt;handle, G_INPUT_READ,</span>
+<span class="lineNum">     383 </span>            :                                    (GInputFunction) dcc_chat_input, dcc);
+<span class="lineNum">     384 </span>            : 
+<a name="385"><span class="lineNum">     385 </span><span class="lineNoCov">          0 :         signal_emit(&quot;dcc connected&quot;, 1, dcc);</span></a>
+<a name="386"><span class="lineNum">     386 </span>            : }</a>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 : static void dcc_chat_connect(CHAT_DCC_REC *dcc)</span>
+<a name="389"><span class="lineNum">     389 </span>            : {</a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_DCC_CHAT(dcc));</span>
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :         if (dcc-&gt;addrstr[0] == '\0' ||</span>
+<a name="393"><span class="lineNum">     393 </span><span class="lineNoCov">          0 :             dcc-&gt;starttime != 0 || dcc-&gt;handle != NULL) {</span></a>
+<span class="lineNum">     394 </span>            :                 /* already sent a chat request / already chatting */
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     396 </span>            :         }
+<a name="397"><span class="lineNum">     397 </span>            : </a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :         dcc-&gt;handle = dcc_connect_ip(&amp;dcc-&gt;addr, dcc-&gt;port);</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :         if (dcc-&gt;handle != NULL) {</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                 dcc-&gt;tagconn = g_input_add(dcc-&gt;handle,</span>
+<a name="401"><span class="lineNum">     401 </span>            :                                            G_INPUT_WRITE | G_INPUT_READ,</a>
+<span class="lineNum">     402 </span>            :                                            (GInputFunction) sig_chat_connected, dcc);
+<span class="lineNum">     403 </span>            :         } else {
+<span class="lineNum">     404 </span>            :                 /* error connecting */
+<a name="405"><span class="lineNum">     405 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;dcc error connect&quot;, 1, dcc);</span></a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                 dcc_destroy(DCC(dcc));</span>
+<span class="lineNum">     407 </span>            :         }
+<a name="408"><span class="lineNum">     408 </span>            : }</a>
+<a name="409"><span class="lineNum">     409 </span>            : </a>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 : static void dcc_chat_passive(CHAT_DCC_REC *dcc)</span>
+<span class="lineNum">     411 </span>            : {
+<span class="lineNum">     412 </span>            :         IPADDR own_ip;
+<a name="413"><span class="lineNum">     413 </span>            :         int port;</a>
+<span class="lineNum">     414 </span>            :         GIOChannel *handle;
+<span class="lineNum">     415 </span>            :         char host[MAX_IP_LEN];
+<span class="lineNum">     416 </span>            : 
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_DCC_CHAT(dcc));</span></a>
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :         if (dcc-&gt;addrstr[0] == '\0' ||</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :             dcc-&gt;starttime != 0 || dcc-&gt;handle != NULL) {</span>
+<a name="421"><span class="lineNum">     421 </span>            :                 /* already sent a chat request / already chatting */</a>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     423 </span>            :         }
+<span class="lineNum">     424 </span>            : 
+<a name="425"><span class="lineNum">     425 </span><span class="lineNoCov">          0 :         handle = dcc_listen(net_sendbuffer_handle(dcc-&gt;server-&gt;handle),</span></a>
+<span class="lineNum">     426 </span>            :                             &amp;own_ip, &amp;port);
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :         if (handle == NULL)</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                 cmd_return_error(CMDERR_ERRNO);</span>
+<a name="429"><span class="lineNum">     429 </span>            : </a>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :         dcc-&gt;handle = handle;</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         dcc-&gt;tagconn = g_input_add(dcc-&gt;handle, G_INPUT_READ,</span>
+<span class="lineNum">     432 </span>            :                                    (GInputFunction) dcc_chat_listen, dcc);
+<a name="433"><span class="lineNum">     433 </span>            : </a>
+<span class="lineNum">     434 </span>            :         /* Let's send the reply to the other client! */
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :         dcc_ip2str(&amp;own_ip, host);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :         irc_send_cmdv(dcc-&gt;server, &quot;PRIVMSG %s :\001DCC CHAT CHAT %s %d %d\001&quot;,</span>
+<a name="437"><span class="lineNum">     437 </span>            :                       dcc-&gt;nick, host, port, dcc-&gt;pasv_id);</a>
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span>            : }
+<a name="440"><span class="lineNum">     440 </span>            : </a>
+<a name="441"><span class="lineNum">     441 </span>            : /* SYNTAX: DCC CHAT [-passive] [&lt;nick&gt;] */</a>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 : static void cmd_dcc_chat(const char *data, IRC_SERVER_REC *server)</span>
+<span class="lineNum">     443 </span>            : {
+<span class="lineNum">     444 </span>            :         void *free_arg;
+<a name="445"><span class="lineNum">     445 </span>            :         CHAT_DCC_REC *dcc;</a>
+<span class="lineNum">     446 </span>            :         IPADDR own_ip;
+<span class="lineNum">     447 </span>            :         GIOChannel *handle;
+<span class="lineNum">     448 </span>            :         GHashTable *optlist;
+<a name="449"><span class="lineNum">     449 </span>            :         int p_id;</a>
+<span class="lineNum">     450 </span>            :         char *nick, host[MAX_IP_LEN];
+<span class="lineNum">     451 </span>            :         int port;
+<span class="lineNum">     452 </span>            : 
+<a name="453"><span class="lineNum">     453 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span></a>
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1 | PARAM_FLAG_OPTIONS,</span>
+<span class="lineNum">     456 </span>            :                             &quot;dcc chat&quot;, &amp;optlist, &amp;nick))
+<a name="457"><span class="lineNum">     457 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :         if (*nick == '\0') {</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 dcc = DCC_CHAT(dcc_find_request_latest(DCC_CHAT_TYPE));</span>
+<a name="461"><span class="lineNum">     461 </span><span class="lineNoCov">          0 :                 if (dcc != NULL) {</span></a>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :                         if (!dcc_is_passive(dcc))</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                                 dcc_chat_connect(dcc);</span>
+<span class="lineNum">     464 </span>            :                         else
+<a name="465"><span class="lineNum">     465 </span><span class="lineNoCov">          0 :                                 dcc_chat_passive(dcc);</span></a>
+<span class="lineNum">     466 </span>            :                 }
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :                 cmd_params_free(free_arg);</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="469"><span class="lineNum">     469 </span>            :         }</a>
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :         dcc = dcc_chat_find_id(nick);</span>
+<span class="lineNum">     472 </span><span class="lineNoCov">          0 :         if (dcc != NULL &amp;&amp; dcc_is_waiting_user(dcc)) {</span>
+<a name="473"><span class="lineNum">     473 </span><span class="lineNoCov">          0 :                 if (!dcc_is_passive(dcc)) {</span></a>
+<span class="lineNum">     474 </span>            :                         /* found from dcc chat requests,
+<span class="lineNum">     475 </span>            :                            we're the connecting side */
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 :                         dcc_chat_connect(dcc);</span>
+<a name="477"><span class="lineNum">     477 </span>            :                 } else {</a>
+<span class="lineNum">     478 </span>            :                         /* We are accepting a passive DCC CHAT. */
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :                         dcc_chat_passive(dcc);</span>
+<span class="lineNum">     480 </span>            :                 }
+<a name="481"><span class="lineNum">     481 </span><span class="lineNoCov">          0 :                 cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     483 </span>            :         }
+<span class="lineNum">     484 </span>            : 
+<a name="485"><span class="lineNum">     485 </span><span class="lineNoCov">          0 :         if (dcc != NULL &amp;&amp; dcc_is_listening(dcc) &amp;&amp;</span></a>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :             dcc-&gt;server == server) {</span>
+<span class="lineNum">     487 </span>            :                 /* sending request again even while old request is
+<span class="lineNum">     488 </span>            :                    still waiting, remove it. */
+<a name="489"><span class="lineNum">     489 </span><span class="lineNoCov">          0 :                 dcc_destroy(DCC(dcc));</span></a>
+<span class="lineNum">     490 </span>            :         }
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER(server) || !server-&gt;connected)</span>
+<a name="493"><span class="lineNum">     493 </span><span class="lineNoCov">          0 :                 cmd_param_error(CMDERR_NOT_CONNECTED);</span></a>
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :         dcc = dcc_chat_create(server, NULL, nick, &quot;chat&quot;);</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :         if (dcc == NULL) {</span>
+<a name="497"><span class="lineNum">     497 </span><span class="lineNoCov">          0 :                 cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :                 g_warn_if_reached();</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     500 </span>            :         }
+<a name="501"><span class="lineNum">     501 </span>            : </a>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;passive&quot;) == NULL) {</span>
+<span class="lineNum">     503 </span>            :                 /* Standard DCC CHAT... let's listen for incoming connections */
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                 handle = dcc_listen(net_sendbuffer_handle(server-&gt;handle),</span>
+<a name="505"><span class="lineNum">     505 </span>            :                                     &amp;own_ip, &amp;port);</a>
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 :                 if (handle == NULL)</span>
+<span class="lineNum">     507 </span><span class="lineNoCov">          0 :                         cmd_param_error(CMDERR_ERRNO);</span>
+<span class="lineNum">     508 </span>            : 
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :                 dcc-&gt;handle = handle;</span></a>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :                 dcc-&gt;tagconn =</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :                         g_input_add(dcc-&gt;handle, G_INPUT_READ,</span>
+<span class="lineNum">     512 </span>            :                                     (GInputFunction) dcc_chat_listen, dcc);
+<a name="513"><span class="lineNum">     513 </span>            : </a>
+<span class="lineNum">     514 </span>            :                 /* send the chat request */
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;dcc request send&quot;, 1, dcc);</span>
+<span class="lineNum">     516 </span>            : 
+<a name="517"><span class="lineNum">     517 </span><span class="lineNoCov">          0 :                 dcc_ip2str(&amp;own_ip, host);</span></a>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :                 irc_send_cmdv(server, &quot;PRIVMSG %s :\001DCC CHAT CHAT %s %d\001&quot;,</span>
+<span class="lineNum">     519 </span>            :                               nick, host, port);
+<span class="lineNum">     520 </span>            :         } else {
+<a name="521"><span class="lineNum">     521 </span>            :                 /* Passive protocol... we want the other side to listen */</a>
+<span class="lineNum">     522 </span>            :                 /* send the chat request */
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :                 dcc-&gt;port = 0;</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;dcc request send&quot;, 1, dcc);</span>
+<a name="525"><span class="lineNum">     525 </span>            : </a>
+<span class="lineNum">     526 </span>            :                 /* generate a random id */
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :                 p_id = rand() % 64;</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :                 dcc-&gt;pasv_id = p_id;</span>
+<a name="529"><span class="lineNum">     529 </span>            : </a>
+<span class="lineNum">     530 </span>            :                 /* 16843009 is the long format of 1.1.1.1, we use a fake IP
+<span class="lineNum">     531 </span>            :                    since the other side shouldn't care of it: they will send
+<span class="lineNum">     532 </span>            :                    the address for us to connect to in the reply */
+<a name="533"><span class="lineNum">     533 </span><span class="lineNoCov">          0 :                 irc_send_cmdv(server,</span></a>
+<span class="lineNum">     534 </span>            :                               &quot;PRIVMSG %s :\001DCC CHAT CHAT 16843009 0 %d\001&quot;,
+<span class="lineNum">     535 </span>            :                               nick, p_id);
+<span class="lineNum">     536 </span>            :         }
+<a name="537"><span class="lineNum">     537 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     538 </span>            : }
+<a name="539"><span class="lineNum">     539 </span>            : </a>
+<span class="lineNum">     540 </span>            : /* SYNTAX: MIRCDCC ON|OFF */
+<a name="541"><span class="lineNum">     541 </span><span class="lineNoCov">          0 : static void cmd_mircdcc(const char *data, SERVER_REC *server,</span></a>
+<span class="lineNum">     542 </span>            :                         QUERY_REC *item)
+<span class="lineNum">     543 </span>            : {
+<span class="lineNum">     544 </span>            :         CHAT_DCC_REC *dcc;
+<a name="545"><span class="lineNum">     545 </span>            : </a>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     547 </span>            : 
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :         dcc = item_get_dcc((WI_ITEM_REC *) item);</span>
+<a name="549"><span class="lineNum">     549 </span><span class="lineNoCov">          0 :         if (dcc == NULL) return;</span></a>
+<span class="lineNum">     550 </span>            : 
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 :         dcc-&gt;mirc_ctcp = i_toupper(*data) != 'N' &amp;&amp;</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :                 g_ascii_strncasecmp(data, &quot;OF&quot;, 2) != 0;</span>
+<a name="553"><span class="lineNum">     553 </span>            : }</a>
+<span class="lineNum">     554 </span>            : 
+<a name="555"><span class="lineNum">     555 </span>            : /* DCC CLOSE CHAT &lt;nick&gt; - check only from chat_ids in open DCC chats,</a>
+<span class="lineNum">     556 </span>            :    the default handler will check from DCC chat requests */
+<a name="557"><span class="lineNum">     557 </span><span class="lineNoCov">          0 : static void cmd_dcc_close(char *data, SERVER_REC *server)</span></a>
+<span class="lineNum">     558 </span>            : {
+<span class="lineNum">     559 </span>            :         GSList *tmp, *next;
+<span class="lineNum">     560 </span>            :         char *nick;
+<a name="561"><span class="lineNum">     561 </span>            :         void *free_arg;</a>
+<span class="lineNum">     562 </span>            :         int found;
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="565"><span class="lineNum">     565 </span>            : </a>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :         if (g_ascii_strncasecmp(data, &quot;CHAT &quot;, 5) != 0 ||</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">          0 :             !cmd_get_params(data, &amp;free_arg, 2, NULL, &amp;nick))</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="569"><span class="lineNum">     569 </span>            : </a>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :         if (*nick == '\0') cmd_param_error(CMDERR_NOT_ENOUGH_PARAMS);</span>
+<span class="lineNum">     571 </span>            : 
+<span class="lineNum">     572 </span><span class="lineNoCov">          0 :         found = FALSE;</span>
+<a name="573"><span class="lineNum">     573 </span><span class="lineNoCov">          0 :         for (tmp = dcc_conns; tmp != NULL; tmp = next) {</span></a>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :                 CHAT_DCC_REC *dcc = tmp-&gt;data;</span>
+<span class="lineNum">     575 </span>            : 
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span>
+<a name="577"><span class="lineNum">     577 </span><span class="lineNoCov">          0 :                 if (IS_DCC_CHAT(dcc) &amp;&amp; dcc-&gt;id != NULL &amp;&amp;</span></a>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :                     g_ascii_strcasecmp(dcc-&gt;id, nick) == 0) {</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :                         found = TRUE;</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">          0 :                         if (!dcc_is_connected(dcc) &amp;&amp; IS_IRC_SERVER(server))</span>
+<a name="581"><span class="lineNum">     581 </span><span class="lineNoCov">          0 :                                 dcc_reject(DCC(dcc), IRC_SERVER(server));</span></a>
+<span class="lineNum">     582 </span>            :                         else {
+<span class="lineNum">     583 </span>            :                                 /* don't send DCC REJECT after DCC chat
+<span class="lineNum">     584 </span>            :                                    is already open */
+<a name="585"><span class="lineNum">     585 </span><span class="lineNoCov">          0 :                                 dcc_close(DCC(dcc));</span></a>
+<span class="lineNum">     586 </span>            :                         }
+<span class="lineNum">     587 </span>            :                 }
+<span class="lineNum">     588 </span>            :         }
+<a name="589"><span class="lineNum">     589 </span>            : </a>
+<span class="lineNum">     590 </span><span class="lineNoCov">          0 :         if (found) signal_stop();</span>
+<span class="lineNum">     591 </span>            : 
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<a name="593"><span class="lineNum">     593 </span>            : }</a>
+<span class="lineNum">     594 </span>            : 
+<span class="lineNum">     595 </span><span class="lineNoCov">          0 : static void cmd_whois(const char *data, SERVER_REC *server,</span>
+<span class="lineNum">     596 </span>            :                       WI_ITEM_REC *item)
+<a name="597"><span class="lineNum">     597 </span>            : {</a>
+<span class="lineNum">     598 </span>            :         CHAT_DCC_REC *dcc;
+<span class="lineNum">     599 </span>            : 
+<span class="lineNum">     600 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="601"><span class="lineNum">     601 </span>            : </a>
+<span class="lineNum">     602 </span>            :         /* /WHOIS without target in DCC CHAT query? */
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :         if (*data == '\0') {</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :                 dcc = item_get_dcc(item);</span>
+<a name="605"><span class="lineNum">     605 </span><span class="lineNoCov">          0 :                 if (dcc != NULL) {</span></a>
+<span class="lineNum">     606 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;command whois&quot;, 3,</span>
+<span class="lineNum">     607 </span>            :                                     dcc-&gt;nick, server, item);
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :                         signal_stop();</span>
+<a name="609"><span class="lineNum">     609 </span>            :                 }</a>
+<span class="lineNum">     610 </span>            :         }
+<span class="lineNum">     611 </span>            : }
+<span class="lineNum">     612 </span>            : 
+<a name="613"><span class="lineNum">     613 </span>            : #define DCC_AUTOACCEPT_PORT(dcc) \</a>
+<span class="lineNum">     614 </span>            :         ((dcc)-&gt;port &gt;= 1024 || settings_get_bool(&quot;dcc_autoaccept_lowports&quot;))
+<span class="lineNum">     615 </span>            : 
+<span class="lineNum">     616 </span>            : #define DCC_CHAT_AUTOACCEPT(dcc, server, nick, addr) \
+<a name="617"><span class="lineNum">     617 </span>            :         (DCC_AUTOACCEPT_PORT(dcc) &amp;&amp; \</a>
+<span class="lineNum">     618 </span>            :         masks_match(SERVER(server), \
+<span class="lineNum">     619 </span>            :                 settings_get_str(&quot;dcc_autochat_masks&quot;), (nick), (addr)))
+<span class="lineNum">     620 </span>            : 
+<a name="621"><span class="lineNum">     621 </span>            : </a>
+<span class="lineNum">     622 </span>            : /* CTCP: DCC CHAT */
+<span class="lineNum">     623 </span><span class="lineNoCov">          0 : static void ctcp_msg_dcc_chat(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">     624 </span>            :                               const char *nick, const char *addr,
+<a name="625"><span class="lineNum">     625 </span>            :                               const char *target, CHAT_DCC_REC *chat)</a>
+<span class="lineNum">     626 </span>            : {
+<span class="lineNum">     627 </span>            :         CHAT_DCC_REC *dcc;
+<span class="lineNum">     628 </span>            :         char **params;
+<a name="629"><span class="lineNum">     629 </span>            :         int paramcount;</a>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :         int passive, autoallow = FALSE;</span>
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span>            :         /* CHAT &lt;unused&gt; &lt;address&gt; &lt;port&gt; */
+<a name="633"><span class="lineNum">     633 </span>            :         /* CHAT &lt;unused&gt; &lt;address&gt; 0 &lt;id&gt; (DCC CHAT passive protocol) */</a>
+<span class="lineNum">     634 </span><span class="lineNoCov">          0 :         params = g_strsplit(data, &quot; &quot;, -1);</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :         paramcount = g_strv_length(params);</span>
+<span class="lineNum">     636 </span>            : 
+<a name="637"><span class="lineNum">     637 </span><span class="lineNoCov">          0 :         if (paramcount &lt; 3) {</span></a>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :                 g_strfreev(params);</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     640 </span>            :         }
+<a name="641"><span class="lineNum">     641 </span><span class="lineNoCov">          0 :         passive = paramcount == 4 &amp;&amp; g_strcmp0(params[2], &quot;0&quot;) == 0;</span></a>
+<span class="lineNum">     642 </span>            : 
+<span class="lineNum">     643 </span><span class="lineNoCov">          0 :         if (nick == NULL)</span>
+<span class="lineNum">     644 </span><span class="lineNoCov">          0 :                 nick = &quot;&quot;;</span>
+<a name="645"><span class="lineNum">     645 </span>            : </a>
+<span class="lineNum">     646 </span><span class="lineNoCov">          0 :         dcc = DCC_CHAT(dcc_find_request(DCC_CHAT_TYPE, nick, NULL));</span>
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 :         if (dcc != NULL) {</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :                 if (dcc_is_listening(dcc)) {</span>
+<a name="649"><span class="lineNum">     649 </span>            :                         /* we requested dcc chat, they requested</a>
+<span class="lineNum">     650 </span>            :                            dcc chat from us .. allow it. */
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :                         dcc_destroy(DCC(dcc));</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :                         autoallow = TRUE;</span>
+<a name="653"><span class="lineNum">     653 </span><span class="lineNoCov">          0 :                 } else if (!dcc_is_passive(dcc)) {</span></a>
+<span class="lineNum">     654 </span>            :                         /* we already have one dcc chat request
+<span class="lineNum">     655 </span>            :                            from this nick, remove it. */
+<span class="lineNum">     656 </span><span class="lineNoCov">          0 :                         dcc_destroy(DCC(dcc));</span>
+<a name="657"><span class="lineNum">     657 </span><span class="lineNoCov">          0 :                 } else if (passive) {</span></a>
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :                         if (dcc-&gt;pasv_id != atoi(params[3])) {</span>
+<span class="lineNum">     659 </span>            :                                 /* IDs don't match! */
+<span class="lineNum">     660 </span><span class="lineNoCov">          0 :                                 dcc_destroy(DCC(dcc));</span>
+<a name="661"><span class="lineNum">     661 </span>            :                         } else {</a>
+<span class="lineNum">     662 </span>            :                                 /* IDs are ok! Update address and port and
+<span class="lineNum">     663 </span>            :                                    connect! */
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 :                                 dcc-&gt;target = g_strdup(target);</span>
+<a name="665"><span class="lineNum">     665 </span><span class="lineNoCov">          0 :                                 dcc-&gt;port = atoi(params[2]);</span></a>
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :                                 dcc_str2ip(params[1], &amp;dcc-&gt;addr);</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :                                 net_ip2host(&amp;dcc-&gt;addr, dcc-&gt;addrstr);</span>
+<span class="lineNum">     668 </span>            : 
+<a name="669"><span class="lineNum">     669 </span><span class="lineNoCov">          0 :                                 dcc_chat_connect(dcc);</span></a>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :                                 g_strfreev(params);</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :                                 return;</span>
+<span class="lineNum">     672 </span>            :                         }
+<a name="673"><span class="lineNum">     673 </span>            :                 }</a>
+<span class="lineNum">     674 </span>            :         }
+<span class="lineNum">     675 </span>            : 
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :         dcc = dcc_chat_create(server, chat, nick, params[0]);</span>
+<a name="677"><span class="lineNum">     677 </span><span class="lineNoCov">          0 :         if (dcc == NULL) {</span></a>
+<span class="lineNum">     678 </span><span class="lineNoCov">          0 :                 g_strfreev(params);</span>
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :                 g_warn_if_reached();</span>
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="681"><span class="lineNum">     681 </span>            :         }</a>
+<span class="lineNum">     682 </span><span class="lineNoCov">          0 :         dcc-&gt;target = g_strdup(target);</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :         dcc-&gt;port = atoi(params[2]);</span>
+<span class="lineNum">     684 </span>            : 
+<a name="685"><span class="lineNum">     685 </span><span class="lineNoCov">          0 :         if (passive)</span></a>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :                 dcc-&gt;pasv_id = atoi(params[3]);</span>
+<span class="lineNum">     687 </span>            : 
+<span class="lineNum">     688 </span><span class="lineNoCov">          0 :         dcc_str2ip(params[1], &amp;dcc-&gt;addr);</span>
+<a name="689"><span class="lineNum">     689 </span><span class="lineNoCov">          0 :         net_ip2host(&amp;dcc-&gt;addr, dcc-&gt;addrstr);</span></a>
+<span class="lineNum">     690 </span>            : 
+<span class="lineNum">     691 </span><span class="lineNoCov">          0 :         signal_emit(&quot;dcc request&quot;, 2, dcc, addr);</span>
+<span class="lineNum">     692 </span>            : 
+<a name="693"><span class="lineNum">     693 </span><span class="lineNoCov">          0 :         if (autoallow || DCC_CHAT_AUTOACCEPT(dcc, server, nick, addr)) {</span></a>
+<span class="lineNum">     694 </span><span class="lineNoCov">          0 :                 if (passive) {</span>
+<span class="lineNum">     695 </span>            :                         /* Passive DCC... let's set up a listening socket
+<span class="lineNum">     696 </span>            :                            and send reply back */
+<a name="697"><span class="lineNum">     697 </span><span class="lineNoCov">          0 :                         dcc_chat_passive(dcc);</span></a>
+<span class="lineNum">     698 </span>            :                 } else {
+<span class="lineNum">     699 </span><span class="lineNoCov">          0 :                         dcc_chat_connect(dcc);</span>
+<span class="lineNum">     700 </span>            :                 }
+<a name="701"><span class="lineNum">     701 </span>            :         }</a>
+<span class="lineNum">     702 </span><span class="lineNoCov">          0 :         g_strfreev(params);</span>
+<span class="lineNum">     703 </span>            : }
+<a name="704"><span class="lineNum">     704 </span>            : </a>
+<a name="705"><span class="lineNum">     705 </span>            : /* DCC CHAT: text received */</a>
+<span class="lineNum">     706 </span><span class="lineNoCov">          0 : static void dcc_chat_msg(CHAT_DCC_REC *dcc, const char *msg)</span>
+<span class="lineNum">     707 </span>            : {
+<span class="lineNum">     708 </span>            :         char *event, *cmd, *ptr;
+<a name="709"><span class="lineNum">     709 </span>            :         int reply;</a>
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_DCC_CHAT(dcc));</span>
+<span class="lineNum">     712 </span><span class="lineNoCov">          0 :         g_return_if_fail(msg != NULL);</span>
+<a name="713"><span class="lineNum">     713 </span>            : </a>
+<span class="lineNum">     714 </span><span class="lineNoCov">          0 :         reply = FALSE;</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :         if (g_ascii_strncasecmp(msg, &quot;CTCP_MESSAGE &quot;, 13) == 0) {</span>
+<span class="lineNum">     716 </span>            :                 /* bitchx (and ircii?) sends this */
+<a name="717"><span class="lineNum">     717 </span><span class="lineNoCov">          0 :                 msg += 13;</span></a>
+<span class="lineNum">     718 </span><span class="lineNoCov">          0 :                 dcc-&gt;mirc_ctcp = FALSE;</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">          0 :         } else if (g_ascii_strncasecmp(msg, &quot;CTCP_REPLY &quot;, 11) == 0) {</span>
+<span class="lineNum">     720 </span>            :                 /* bitchx (and ircii?) sends this */
+<a name="721"><span class="lineNum">     721 </span><span class="lineNoCov">          0 :                 msg += 11;</span></a>
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 :                 reply = TRUE;</span>
+<span class="lineNum">     723 </span><span class="lineNoCov">          0 :                 dcc-&gt;mirc_ctcp = FALSE;</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :         } else if (*msg == 1) {</span>
+<a name="725"><span class="lineNum">     725 </span>            :                 /* Use the mirc style CTCPs from now on.. */</a>
+<span class="lineNum">     726 </span><span class="lineNoCov">          0 :                 dcc-&gt;mirc_ctcp = TRUE;</span>
+<span class="lineNum">     727 </span>            :         }
+<span class="lineNum">     728 </span>            : 
+<a name="729"><span class="lineNum">     729 </span>            :         /* Handle only DCC CTCPs */</a>
+<span class="lineNum">     730 </span><span class="lineNoCov">          0 :         if (*msg != 1)</span>
+<span class="lineNum">     731 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     732 </span>            : 
+<a name="733"><span class="lineNum">     733 </span>            :         /* get ctcp command, remove \001 chars */</a>
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :         event = g_strconcat(reply ? &quot;dcc reply &quot; : &quot;dcc ctcp &quot;, msg+1, NULL);</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">          0 :         if (event[strlen(event)-1] == 1) event[strlen(event)-1] = '\0';</span>
+<span class="lineNum">     736 </span>            : 
+<a name="737"><span class="lineNum">     737 </span><span class="lineNoCov">          0 :         cmd = event + (reply ? 10 : 9);</span></a>
+<span class="lineNum">     738 </span><span class="lineNoCov">          0 :         ptr = strchr(cmd, ' ');</span>
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :         if (ptr != NULL) *ptr++ = '\0'; else ptr = &quot;&quot;;</span>
+<span class="lineNum">     740 </span>            : 
+<a name="741"><span class="lineNum">     741 </span><span class="lineNoCov">          0 :         cmd = g_ascii_strup(cmd, -1);</span></a>
+<span class="lineNum">     742 </span>            : 
+<span class="lineNum">     743 </span><span class="lineNoCov">          0 :         ascii_strdown(event+9);</span>
+<span class="lineNum">     744 </span><span class="lineNoCov">          0 :         if (!signal_emit(event, 2, dcc, ptr)) {</span>
+<a name="745"><span class="lineNum">     745 </span><span class="lineNoCov">          0 :                 signal_emit(reply ? &quot;default dcc reply&quot; :</span></a>
+<span class="lineNum">     746 </span>            :                             &quot;default dcc ctcp&quot;, 3, dcc, cmd, ptr);
+<span class="lineNum">     747 </span>            :         }
+<span class="lineNum">     748 </span>            : 
+<a name="749"><span class="lineNum">     749 </span><span class="lineNoCov">          0 :         g_free(cmd);</span></a>
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 :         g_free(event);</span>
+<span class="lineNum">     751 </span>            : 
+<span class="lineNum">     752 </span><span class="lineNoCov">          0 :         signal_stop();</span>
+<a name="753"><span class="lineNum">     753 </span>            : }</a>
+<span class="lineNum">     754 </span>            : 
+<span class="lineNum">     755 </span><span class="lineNoCov">          0 : static void dcc_ctcp_redirect(CHAT_DCC_REC *dcc, const char *msg)</span>
+<span class="lineNum">     756 </span>            : {
+<a name="757"><span class="lineNum">     757 </span><span class="lineNoCov">          0 :         g_return_if_fail(msg != NULL);</span></a>
+<span class="lineNum">     758 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_DCC_CHAT(dcc));</span>
+<span class="lineNum">     759 </span>            : 
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :         signal_emit(&quot;ctcp msg dcc&quot;, 6, dcc-&gt;server, msg,</span>
+<a name="761"><span class="lineNum">     761 </span>            :                     dcc-&gt;nick, &quot;dcc&quot;, dcc-&gt;mynick, dcc);</a>
+<a name="762"><span class="lineNum">     762 </span>            : }</a>
+<span class="lineNum">     763 </span>            : 
+<span class="lineNum">     764 </span><span class="lineNoCov">          0 : static void dcc_ctcp_reply_redirect(CHAT_DCC_REC *dcc, const char *msg)</span>
+<a name="765"><span class="lineNum">     765 </span>            : {</a>
+<span class="lineNum">     766 </span><span class="lineNoCov">          0 :         g_return_if_fail(msg != NULL);</span>
+<span class="lineNum">     767 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_DCC_CHAT(dcc));</span>
+<span class="lineNum">     768 </span>            : 
+<a name="769"><span class="lineNum">     769 </span><span class="lineNoCov">          0 :         signal_emit(&quot;ctcp reply dcc&quot;, 6, dcc-&gt;server, msg,</span></a>
+<span class="lineNum">     770 </span>            :                     dcc-&gt;nick, &quot;dcc&quot;, dcc-&gt;mynick, dcc);
+<span class="lineNum">     771 </span>            : }
+<a name="772"><span class="lineNum">     772 </span>            : </a>
+<a name="773"><span class="lineNum">     773 </span>            : /* CTCP REPLY: REJECT */</a>
+<span class="lineNum">     774 </span><span class="lineNoCov">          0 : static void ctcp_reply_dcc_reject(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">     775 </span>            :                                   const char *nick, const char *addr,
+<span class="lineNum">     776 </span>            :                                   DCC_REC *chat)
+<a name="777"><span class="lineNum">     777 </span>            : {</a>
+<span class="lineNum">     778 </span>            :         DCC_REC *dcc;
+<span class="lineNum">     779 </span>            : 
+<span class="lineNum">     780 </span>            :         /* default REJECT handler checks args too -
+<a name="781"><span class="lineNum">     781 </span>            :            we don't care about it in DCC chats. */</a>
+<span class="lineNum">     782 </span><span class="lineNoCov">          0 :         if (g_ascii_strncasecmp(data, &quot;CHAT&quot;, 4) == 0 &amp;&amp;</span>
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 :             (data[4] == '\0' || data[4] == ' ')) {</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 :                 dcc = dcc_find_request(DCC_CHAT_TYPE, nick, NULL);</span>
+<a name="785"><span class="lineNum">     785 </span><span class="lineNoCov">          0 :                 if (dcc != NULL) dcc_close(dcc);</span></a>
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 :                 signal_stop();</span>
+<span class="lineNum">     787 </span>            :         }
+<a name="788"><span class="lineNum">     788 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="789"><span class="lineNum">     789 </span>            : </a>
+<span class="lineNum">     790 </span><span class="lineNoCov">          0 : static void event_nick(IRC_SERVER_REC *server, const char *data,</span>
+<span class="lineNum">     791 </span>            :                        const char *orignick)
+<span class="lineNum">     792 </span>            : {
+<a name="793"><span class="lineNum">     793 </span>            :         QUERY_REC *query;</a>
+<span class="lineNum">     794 </span>            :         CHAT_DCC_REC *dcc;
+<span class="lineNum">     795 </span>            :         char *params, *nick, *tag;
+<span class="lineNum">     796 </span>            : 
+<a name="797"><span class="lineNum">     797 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span></a>
+<span class="lineNum">     798 </span><span class="lineNoCov">          0 :         g_return_if_fail(orignick != NULL);</span>
+<span class="lineNum">     799 </span>            : 
+<span class="lineNum">     800 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 1, &amp;nick);</span>
+<a name="801"><span class="lineNum">     801 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(nick, orignick) == 0) {</span></a>
+<span class="lineNum">     802 </span>            :                 /* shouldn't happen, but just to be sure irssi doesn't
+<span class="lineNum">     803 </span>            :                    get into infinite loop */
+<span class="lineNum">     804 </span><span class="lineNoCov">          0 :                 g_free(params);</span>
+<a name="805"><span class="lineNum">     805 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     806 </span>            :         }
+<span class="lineNum">     807 </span>            : 
+<span class="lineNum">     808 </span><span class="lineNoCov">          0 :         while ((dcc = dcc_chat_find_nick(server, orignick)) != NULL) {</span>
+<a name="809"><span class="lineNum">     809 </span><span class="lineNoCov">          0 :                 g_free(dcc-&gt;nick);</span></a>
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 :                 dcc-&gt;nick = g_strdup(nick);</span>
+<span class="lineNum">     811 </span>            : 
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :                 tag = g_strconcat(&quot;=&quot;, dcc-&gt;id, NULL);</span>
+<a name="813"><span class="lineNum">     813 </span><span class="lineNoCov">          0 :                 query = irc_query_find(server, tag);</span></a>
+<span class="lineNum">     814 </span><span class="lineNoCov">          0 :                 g_free(tag);</span>
+<span class="lineNum">     815 </span>            : 
+<span class="lineNum">     816 </span>            :                 /* change the id too */
+<a name="817"><span class="lineNum">     817 </span><span class="lineNoCov">          0 :                 g_free(dcc-&gt;id);</span></a>
+<span class="lineNum">     818 </span><span class="lineNoCov">          0 :                 dcc-&gt;id = NULL;</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">          0 :                 dcc-&gt;id = dcc_chat_get_new_id(nick);</span>
+<span class="lineNum">     820 </span>            : 
+<a name="821"><span class="lineNum">     821 </span><span class="lineNoCov">          0 :                 if (query != NULL) {</span></a>
+<span class="lineNum">     822 </span><span class="lineNoCov">          0 :                         tag = g_strconcat(&quot;=&quot;, dcc-&gt;id, NULL);</span>
+<span class="lineNum">     823 </span><span class="lineNoCov">          0 :                         query_change_nick(query, tag);</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">          0 :                         g_free(tag);</span>
+<a name="825"><span class="lineNum">     825 </span>            :                 }</a>
+<span class="lineNum">     826 </span>            :         }
+<span class="lineNum">     827 </span>            : 
+<span class="lineNum">     828 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="829"><span class="lineNum">     829 </span>            : }</a>
+<span class="lineNum">     830 </span>            : 
+<span class="lineNum">     831 </span><span class="lineCov">          1 : void dcc_chat_init(void)</span>
+<span class="lineNum">     832 </span>            : {
+<a name="833"><span class="lineNum">     833 </span><span class="lineCov">          1 :         dcc_register_type(&quot;CHAT&quot;);</span></a>
+<span class="lineNum">     834 </span><span class="lineCov">          1 :         settings_add_bool(&quot;dcc&quot;, &quot;dcc_mirc_ctcp&quot;, FALSE);</span>
+<span class="lineNum">     835 </span><span class="lineCov">          1 :         settings_add_str(&quot;dcc&quot;, &quot;dcc_autochat_masks&quot;, &quot;&quot;);</span>
+<span class="lineNum">     836 </span>            : 
+<a name="837"><span class="lineNum">     837 </span><span class="lineCov">          1 :         command_bind(&quot;msg&quot;, NULL, (SIGNAL_FUNC) cmd_msg);</span></a>
+<span class="lineNum">     838 </span><span class="lineCov">          1 :         command_bind(&quot;me&quot;, NULL, (SIGNAL_FUNC) cmd_me);</span>
+<span class="lineNum">     839 </span><span class="lineCov">          1 :         command_bind(&quot;action&quot;, NULL, (SIGNAL_FUNC) cmd_action);</span>
+<span class="lineNum">     840 </span><span class="lineCov">          1 :         command_bind(&quot;ctcp&quot;, NULL, (SIGNAL_FUNC) cmd_ctcp);</span>
+<a name="841"><span class="lineNum">     841 </span><span class="lineCov">          1 :         command_bind(&quot;dcc chat&quot;, NULL, (SIGNAL_FUNC) cmd_dcc_chat);</span></a>
+<span class="lineNum">     842 </span><span class="lineCov">          1 :         command_set_options(&quot;dcc chat&quot;, &quot;passive&quot;);</span>
+<span class="lineNum">     843 </span><span class="lineCov">          1 :         command_bind(&quot;mircdcc&quot;, NULL, (SIGNAL_FUNC) cmd_mircdcc);</span>
+<span class="lineNum">     844 </span><span class="lineCov">          1 :         command_bind(&quot;dcc close&quot;, NULL, (SIGNAL_FUNC) cmd_dcc_close);</span>
+<a name="845"><span class="lineNum">     845 </span><span class="lineCov">          1 :         command_bind(&quot;whois&quot;, NULL, (SIGNAL_FUNC) cmd_whois);</span></a>
+<span class="lineNum">     846 </span><span class="lineCov">          1 :         signal_add(&quot;dcc destroyed&quot;, (SIGNAL_FUNC) sig_dcc_destroyed);</span>
+<span class="lineNum">     847 </span><span class="lineCov">          1 :         signal_add(&quot;ctcp msg dcc chat&quot;, (SIGNAL_FUNC) ctcp_msg_dcc_chat);</span>
+<span class="lineNum">     848 </span><span class="lineCov">          1 :         signal_add_first(&quot;dcc chat message&quot;, (SIGNAL_FUNC) dcc_chat_msg);</span>
+<a name="849"><span class="lineNum">     849 </span><span class="lineCov">          1 :         signal_add(&quot;dcc ctcp dcc&quot;, (SIGNAL_FUNC) dcc_ctcp_redirect);</span></a>
+<span class="lineNum">     850 </span><span class="lineCov">          1 :         signal_add(&quot;dcc reply dcc&quot;, (SIGNAL_FUNC) dcc_ctcp_reply_redirect);</span>
+<span class="lineNum">     851 </span><span class="lineCov">          1 :         signal_add(&quot;ctcp reply dcc reject&quot;, (SIGNAL_FUNC) ctcp_reply_dcc_reject);</span>
+<span class="lineNum">     852 </span><span class="lineCov">          1 :         signal_add(&quot;event nick&quot;, (SIGNAL_FUNC) event_nick);</span>
+<a name="853"><span class="lineNum">     853 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     854 </span>            : 
+<span class="lineNum">     855 </span><span class="lineCov">          1 : void dcc_chat_deinit(void)</span>
+<span class="lineNum">     856 </span>            : {
+<a name="857"><span class="lineNum">     857 </span><span class="lineCov">          1 :         dcc_unregister_type(&quot;CHAT&quot;);</span></a>
+<span class="lineNum">     858 </span><span class="lineCov">          1 :         command_unbind(&quot;msg&quot;, (SIGNAL_FUNC) cmd_msg);</span>
+<span class="lineNum">     859 </span><span class="lineCov">          1 :         command_unbind(&quot;me&quot;, (SIGNAL_FUNC) cmd_me);</span>
+<span class="lineNum">     860 </span><span class="lineCov">          1 :         command_unbind(&quot;action&quot;, (SIGNAL_FUNC) cmd_action);</span>
+<a name="861"><span class="lineNum">     861 </span><span class="lineCov">          1 :         command_unbind(&quot;ctcp&quot;, (SIGNAL_FUNC) cmd_ctcp);</span></a>
+<span class="lineNum">     862 </span><span class="lineCov">          1 :         command_unbind(&quot;dcc chat&quot;, (SIGNAL_FUNC) cmd_dcc_chat);</span>
+<span class="lineNum">     863 </span><span class="lineCov">          1 :         command_unbind(&quot;mircdcc&quot;, (SIGNAL_FUNC) cmd_mircdcc);</span>
+<span class="lineNum">     864 </span><span class="lineCov">          1 :         command_unbind(&quot;dcc close&quot;, (SIGNAL_FUNC) cmd_dcc_close);</span>
+<a name="865"><span class="lineNum">     865 </span><span class="lineCov">          1 :         command_unbind(&quot;whois&quot;, (SIGNAL_FUNC) cmd_whois);</span></a>
+<span class="lineNum">     866 </span><span class="lineCov">          1 :         signal_remove(&quot;dcc destroyed&quot;, (SIGNAL_FUNC) sig_dcc_destroyed);</span>
+<span class="lineNum">     867 </span><span class="lineCov">          1 :         signal_remove(&quot;ctcp msg dcc chat&quot;, (SIGNAL_FUNC) ctcp_msg_dcc_chat);</span>
+<span class="lineNum">     868 </span><span class="lineCov">          1 :         signal_remove(&quot;dcc chat message&quot;, (SIGNAL_FUNC) dcc_chat_msg);</span>
+<a name="869"><span class="lineNum">     869 </span><span class="lineCov">          1 :         signal_remove(&quot;dcc ctcp dcc&quot;, (SIGNAL_FUNC) dcc_ctcp_redirect);</span></a>
+<span class="lineNum">     870 </span><span class="lineCov">          1 :         signal_remove(&quot;dcc reply dcc&quot;, (SIGNAL_FUNC) dcc_ctcp_reply_redirect);</span>
+<span class="lineNum">     871 </span><span class="lineCov">          1 :         signal_remove(&quot;ctcp reply dcc reject&quot;, (SIGNAL_FUNC) ctcp_reply_dcc_reject);</span>
+<span class="lineNum">     872 </span><span class="lineCov">          1 :         signal_remove(&quot;event nick&quot;, (SIGNAL_FUNC) event_nick);</span>
+<a name="873"><span class="lineNum">     873 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

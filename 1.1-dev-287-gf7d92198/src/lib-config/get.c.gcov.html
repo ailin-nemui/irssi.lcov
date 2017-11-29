@@ -1,0 +1,417 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/lib-config/get.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/lib-config</a> - get.c<span style="font-size: 80%;"> (source / <a href="get.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">100</td>
+            <td class="headerCovTableEntry">163</td>
+            <td class="headerCovTableEntryLo">61.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">12</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntryMed">80.0 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  get.c : irssi configuration - get settings from memory
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span><span class="lineCov">       3208 : CONFIG_NODE *config_node_find(CONFIG_NODE *node, const char *key)</span>
+<span class="lineNum">      24 </span>            : {
+<a name="25"><span class="lineNum">      25 </span>            :         GSList *tmp;</a>
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span><span class="lineCov">       3208 :         g_return_val_if_fail(node != NULL, NULL);</span>
+<span class="lineNum">      28 </span><span class="lineCov">       3208 :         g_return_val_if_fail(key != NULL, NULL);</span>
+<a name="29"><span class="lineNum">      29 </span><span class="lineCov">       3208 :         g_return_val_if_fail(is_node_list(node), NULL);</span></a>
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span><span class="lineCov">     130854 :         for (tmp = node-&gt;value; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">      32 </span><span class="lineCov">     128122 :                 CONFIG_NODE *node = tmp-&gt;data;</span>
+<a name="33"><span class="lineNum">      33 </span>            : </a>
+<span class="lineNum">      34 </span><span class="lineCov">     128122 :                 if (node-&gt;key != NULL &amp;&amp; g_ascii_strcasecmp(node-&gt;key, key) == 0)</span>
+<span class="lineNum">      35 </span><span class="lineCov">        476 :                         return node;</span>
+<span class="lineNum">      36 </span>            :         }
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span><span class="lineCov">       2732 :         return NULL;</span>
+<a name="39"><span class="lineNum">      39 </span>            : }</a>
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span><span class="lineCov">        433 : CONFIG_NODE *config_node_section(CONFIG_REC *rec, CONFIG_NODE *parent, const char *key, int new_type)</span></a>
+<span class="lineNum">      42 </span>            : {
+<span class="lineNum">      43 </span><span class="lineCov">        433 :         return config_node_section_index(rec, parent, key, -1, new_type);</span>
+<a name="44"><span class="lineNum">      44 </span>            : }</a>
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span><span class="lineCov">        433 : CONFIG_NODE *config_node_section_index(CONFIG_REC *rec, CONFIG_NODE *parent, const char *key,</span>
+<span class="lineNum">      47 </span>            :                                        int index, int new_type)
+<span class="lineNum">      48 </span>            : {
+<a name="49"><span class="lineNum">      49 </span>            :         CONFIG_NODE *node;</a>
+<span class="lineNum">      50 </span>            :         int nindex;
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span><span class="lineCov">        433 :         g_return_val_if_fail(parent != NULL, NULL);</span>
+<a name="53"><span class="lineNum">      53 </span><span class="lineCov">        433 :         g_return_val_if_fail(is_node_list(parent), NULL);</span></a>
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span><span class="lineCov">        433 :         node = key == NULL ? NULL : config_node_find(parent, key);</span>
+<span class="lineNum">      56 </span><span class="lineCov">        433 :         if (node != NULL) {</span>
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">        160 :                 nindex = g_slist_index(parent-&gt;value, node);</span></a>
+<span class="lineNum">      58 </span><span class="lineCov">        160 :                 if (index &gt;= 0 &amp;&amp; nindex != index &amp;&amp;</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :                     nindex &lt;= g_slist_length(parent-&gt;value)) {</span>
+<span class="lineNum">      60 </span>            :                         /* move it to wanted position */
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :                         parent-&gt;value = g_slist_remove(parent-&gt;value, node);</span></a>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :                         parent-&gt;value = g_slist_insert(parent-&gt;value, node, index);</span>
+<span class="lineNum">      63 </span>            :                 }
+<span class="lineNum">      64 </span><span class="lineCov">        160 :                 if (!is_node_list(node)) {</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 :                         int show_error = 0;</span></a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :                         if (new_type != -1) {</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :                                 config_node_remove(rec, parent, node);</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :                                 node = NULL;</span></a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :                                 show_error = 1;</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                         } else if (!g_hash_table_lookup_extended(rec-&gt;cache_nodes, node, NULL, NULL)) {</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :                                 g_hash_table_insert(rec-&gt;cache_nodes, node, NULL);</span>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :                                 show_error = 1;</span></a>
+<span class="lineNum">      74 </span>            :                         }
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :                         if (show_error)</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :                                 g_critical(&quot;Expected %s node at `..%s/%s' was of scalar type. Corrupt config?&quot;,</span>
+<a name="77"><span class="lineNum">      77 </span>            :                                                    new_type == NODE_TYPE_LIST ? &quot;list&quot; : new_type == NODE_TYPE_BLOCK ? &quot;block&quot; : &quot;section&quot;,</a>
+<span class="lineNum">      78 </span>            :                                                    parent-&gt;key, key);
+<span class="lineNum">      79 </span>            :                 } else {
+<span class="lineNum">      80 </span><span class="lineCov">        160 :                         g_return_val_if_fail(new_type == -1 || new_type == node-&gt;type, NULL);</span>
+<a name="81"><span class="lineNum">      81 </span><span class="lineCov">        160 :                         return node;</span></a>
+<span class="lineNum">      82 </span>            :                 }
+<span class="lineNum">      83 </span>            :         }
+<span class="lineNum">      84 </span>            : 
+<a name="85"><span class="lineNum">      85 </span><span class="lineCov">        273 :         if (new_type == -1)</span></a>
+<span class="lineNum">      86 </span><span class="lineCov">         31 :                 return NULL;</span>
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span><span class="lineCov">        242 :         node = g_new0(CONFIG_NODE, 1);</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineCov">        242 :         parent-&gt;value = index &lt; 0 ? g_slist_append(parent-&gt;value, node) :</span></a>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                 g_slist_insert(parent-&gt;value, node, index);</span>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineCov">        242 :         node-&gt;type = new_type;</span>
+<a name="93"><span class="lineNum">      93 </span><span class="lineCov">        242 :         node-&gt;key = key == NULL ? NULL : g_strdup(key);</span></a>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineCov">        242 :         return node;</span>
+<a name="96"><span class="lineNum">      96 </span>            : }</a>
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineCov">        170 : CONFIG_NODE *config_node_traverse(CONFIG_REC *rec, const char *section, int create)</span>
+<span class="lineNum">      99 </span>            : {
+<span class="lineNum">     100 </span>            :         CONFIG_NODE *node;
+<a name="101"><span class="lineNum">     101 </span>            :         char **list, **tmp, *str;</a>
+<span class="lineNum">     102 </span>            :         int is_list, new_type;
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineCov">        170 :         g_return_val_if_fail(rec != NULL, NULL);</span>
+<a name="105"><span class="lineNum">     105 </span>            : </a>
+<span class="lineNum">     106 </span><span class="lineCov">        170 :         if (section == NULL || *section == '\0')</span>
+<span class="lineNum">     107 </span><span class="lineCov">          2 :                 return rec-&gt;mainnode;</span>
+<span class="lineNum">     108 </span>            : 
+<a name="109"><span class="lineNum">     109 </span>            :         /* check if it already exists in cache */</a>
+<span class="lineNum">     110 </span><span class="lineCov">        168 :         node = g_hash_table_lookup(rec-&gt;cache, section);</span>
+<span class="lineNum">     111 </span><span class="lineCov">        168 :         if (node != NULL) {</span>
+<span class="lineNum">     112 </span><span class="lineCov">        144 :                 if (create) {</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineCov">          2 :                         const char *path = strrchr(section, '/');</span></a>
+<span class="lineNum">     114 </span><span class="lineCov">          2 :                         if (path == NULL) path = section;</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                         else path++;</span>
+<span class="lineNum">     116 </span><span class="lineCov">          2 :                         new_type = *path == '(' ? NODE_TYPE_LIST : NODE_TYPE_BLOCK;</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineCov">          2 :                         if (node-&gt;type != new_type) {</span></a>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :                                 g_critical(&quot;Expected %s node at `%s' was of %s type. Corrupt config?&quot;,</span>
+<span class="lineNum">     119 </span>            :                                                    new_type == NODE_TYPE_LIST ? &quot;list&quot; : &quot;block&quot;, section,
+<span class="lineNum">     120 </span>            :                                                    node-&gt;type == NODE_TYPE_LIST ? &quot;list&quot; : &quot;block&quot;);
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :                                 node-&gt;type = new_type;</span></a>
+<span class="lineNum">     122 </span>            :                         }
+<span class="lineNum">     123 </span>            :                 }
+<span class="lineNum">     124 </span><span class="lineCov">        144 :                 return node;</span>
+<a name="125"><span class="lineNum">     125 </span>            :         }</a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineCov">         24 :         new_type = -1;</span>
+<span class="lineNum">     128 </span>            : 
+<a name="129"><span class="lineNum">     129 </span><span class="lineCov">         24 :         node = rec-&gt;mainnode;</span></a>
+<span class="lineNum">     130 </span><span class="lineCov">         24 :         list = g_strsplit(section, &quot;/&quot;, -1);</span>
+<span class="lineNum">     131 </span><span class="lineCov">         47 :         for (tmp = list; *tmp != NULL; tmp++) {</span>
+<span class="lineNum">     132 </span><span class="lineCov">         24 :                 is_list = **tmp == '(';</span>
+<a name="133"><span class="lineNum">     133 </span><span class="lineCov">         24 :                 if (create) {</span></a>
+<span class="lineNum">     134 </span>            :                         CONFIG_NODE *tmpnode;
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                         new_type = is_list ? NODE_TYPE_LIST : NODE_TYPE_BLOCK;</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :                         tmpnode = config_node_find(node, *tmp + is_list);</span></a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                         if (tmpnode != NULL &amp;&amp; tmpnode-&gt;type != new_type) {</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                                 g_critical(&quot;Expected %s node at `%s' was of scalar type. Corrupt config?&quot;, is_list ? &quot;list&quot; : &quot;block&quot;, section);</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                                 config_node_remove(rec, node, tmpnode);</span>
+<a name="141"><span class="lineNum">     141 </span>            :                         }</a>
+<span class="lineNum">     142 </span>            :                 }
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineCov">         24 :                 node = config_node_section(rec, node, *tmp + is_list, new_type);</span>
+<a name="145"><span class="lineNum">     145 </span><span class="lineCov">         24 :                 if (node == NULL) {</span></a>
+<span class="lineNum">     146 </span><span class="lineCov">          1 :                         g_strfreev(list);</span>
+<span class="lineNum">     147 </span><span class="lineCov">          1 :                         return NULL;</span>
+<span class="lineNum">     148 </span>            :                 }
+<a name="149"><span class="lineNum">     149 </span>            :         }</a>
+<span class="lineNum">     150 </span><span class="lineCov">         23 :         g_strfreev(list);</span>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineCov">         23 :         if (!is_node_list(node)) {</span>
+<a name="153"><span class="lineNum">     153 </span>            :                 /* Will die. Better to not corrupt the config further in this case. */</a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :                 g_critical(&quot;Attempt to use non-list node `%s' as list. Corrupt config?&quot;, section);</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     156 </span>            :         }
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span>            :         /* save to cache */
+<span class="lineNum">     159 </span><span class="lineCov">         23 :         str = g_strdup(section);</span>
+<span class="lineNum">     160 </span><span class="lineCov">         23 :         g_hash_table_insert(rec-&gt;cache, str, node);</span>
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">         23 :         g_hash_table_insert(rec-&gt;cache_nodes, node, str);</span></a>
+<span class="lineNum">     162 </span><span class="lineCov">         23 :         return node;</span>
+<a name="163"><span class="lineNum">     163 </span>            : }</a>
+<span class="lineNum">     164 </span>            : 
+<a name="165"><span class="lineNum">     165 </span><span class="lineCov">          4 : char *config_get_str(CONFIG_REC *rec, const char *section, const char *key, const char *def)</span></a>
+<span class="lineNum">     166 </span>            : {
+<span class="lineNum">     167 </span>            :         CONFIG_NODE *parent, *node;
+<span class="lineNum">     168 </span>            :         char *path;
+<a name="169"><span class="lineNum">     169 </span>            : </a>
+<span class="lineNum">     170 </span><span class="lineCov">          4 :         g_return_val_if_fail(rec != NULL, (char *) def);</span>
+<span class="lineNum">     171 </span><span class="lineCov">          4 :         g_return_val_if_fail(key != NULL, (char *) def);</span>
+<span class="lineNum">     172 </span>            : 
+<a name="173"><span class="lineNum">     173 </span>            :         /* check if it already exists in cache */</a>
+<span class="lineNum">     174 </span><span class="lineCov">          4 :         path = g_strconcat(section == NULL ? &quot;&quot; : section, &quot;/&quot;, key, NULL);</span>
+<span class="lineNum">     175 </span><span class="lineCov">          4 :         node = g_hash_table_lookup(rec-&gt;cache, path);</span>
+<span class="lineNum">     176 </span>            : 
+<a name="177"><span class="lineNum">     177 </span><span class="lineCov">          4 :         if (node != NULL)</span></a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                 g_free(path);</span>
+<span class="lineNum">     179 </span>            :         else {
+<span class="lineNum">     180 </span><span class="lineCov">          4 :                 parent = config_node_traverse(rec, section, FALSE);</span>
+<a name="181"><span class="lineNum">     181 </span><span class="lineCov">          4 :                 node = parent == NULL ? NULL :</span></a>
+<span class="lineNum">     182 </span>            :                         config_node_find(parent, key);
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span>            :                 /* save to cache */
+<a name="185"><span class="lineNum">     185 </span><span class="lineCov">          4 :                 if (node == NULL)</span></a>
+<span class="lineNum">     186 </span><span class="lineCov">          2 :                         g_free(path);</span>
+<span class="lineNum">     187 </span>            :                 else {
+<span class="lineNum">     188 </span><span class="lineCov">          2 :                         g_hash_table_insert(rec-&gt;cache, path, node);</span>
+<a name="189"><span class="lineNum">     189 </span><span class="lineCov">          2 :                         g_hash_table_insert(rec-&gt;cache_nodes, node, path);</span></a>
+<span class="lineNum">     190 </span>            :                 }
+<span class="lineNum">     191 </span>            :         }
+<span class="lineNum">     192 </span>            : 
+<a name="193"><span class="lineNum">     193 </span><span class="lineCov">          4 :         return (node == NULL || !has_node_value(node)) ? (char *) def : node-&gt;value;</span></a>
+<a name="194"><span class="lineNum">     194 </span>            : }</a>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineCov">          1 : int config_get_int(CONFIG_REC *rec, const char *section, const char *key, int def)</span>
+<a name="197"><span class="lineNum">     197 </span>            : {</a>
+<span class="lineNum">     198 </span>            :         char *str;
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span><span class="lineCov">          1 :         str = config_get_str(rec, section, key, NULL);</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineCov">          1 :         if (str == NULL) return def;</span></a>
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineCov">          1 :         return atoi(str);</span>
+<a name="204"><span class="lineNum">     204 </span>            : }</a>
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<span class="lineNum">     206 </span><span class="lineCov">          1 : int config_get_bool(CONFIG_REC *rec, const char *section, const char *key, int def)</span>
+<span class="lineNum">     207 </span>            : {
+<span class="lineNum">     208 </span>            :         char *str;
+<a name="209"><span class="lineNum">     209 </span>            : </a>
+<span class="lineNum">     210 </span><span class="lineCov">          1 :         str = config_get_str(rec, section, key, NULL);</span>
+<span class="lineNum">     211 </span><span class="lineCov">          1 :         if (str == NULL) return def;</span>
+<span class="lineNum">     212 </span>            : 
+<a name="213"><span class="lineNum">     213 </span><span class="lineCov">          1 :         return i_toupper(*str) == 'T' || i_toupper(*str) == 'Y';</span></a>
+<a name="214"><span class="lineNum">     214 </span>            : }</a>
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineCov">       1169 : char *config_node_get_str(CONFIG_NODE *parent, const char *key, const char *def)</span>
+<a name="217"><span class="lineNum">     217 </span>            : {</a>
+<span class="lineNum">     218 </span>            :         CONFIG_NODE *node;
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span><span class="lineCov">       1169 :         if (parent == NULL) return (char *) def;</span>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span><span class="lineCov">       1169 :         node = config_node_find(parent, key);</span>
+<span class="lineNum">     223 </span><span class="lineCov">       1169 :         return (char *) ((node != NULL &amp;&amp; has_node_value(node)) ?</span>
+<span class="lineNum">     224 </span>            :                          node-&gt;value : def);
+<a name="225"><span class="lineNum">     225 </span>            : }</a>
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineCov">        241 : int config_node_get_int(CONFIG_NODE *parent, const char *key, int def)</span>
+<span class="lineNum">     228 </span>            : {
+<a name="229"><span class="lineNum">     229 </span>            :         char *str;</a>
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineCov">        241 :         str = config_node_get_str(parent, key, NULL);</span>
+<span class="lineNum">     232 </span><span class="lineCov">        241 :         if (str == NULL) return def;</span>
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<span class="lineNum">     234 </span><span class="lineCov">         98 :         return atoi(str);</span>
+<a name="235"><span class="lineNum">     235 </span>            : }</a>
+<span class="lineNum">     236 </span>            : 
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">        186 : int config_node_get_bool(CONFIG_NODE *parent, const char *key, int def)</span></a>
+<span class="lineNum">     238 </span>            : {
+<span class="lineNum">     239 </span>            :         char *str;
+<span class="lineNum">     240 </span>            : 
+<a name="241"><span class="lineNum">     241 </span><span class="lineCov">        186 :         str = config_node_get_str(parent, key, NULL);</span></a>
+<span class="lineNum">     242 </span><span class="lineCov">        186 :         if (str == NULL) return def;</span>
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineCov">         76 :         return i_toupper(*str) == 'T' || i_toupper(*str) == 'Y' ||</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineCov">         25 :                 (i_toupper(*str) == 'O' &amp;&amp; i_toupper(str[1]) == 'N');</span></a>
+<a name="246"><span class="lineNum">     246 </span>            : }</a>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 : char **config_node_get_list(CONFIG_NODE *node)</span>
+<a name="249"><span class="lineNum">     249 </span>            : {</a>
+<span class="lineNum">     250 </span>            :         GString *values;
+<span class="lineNum">     251 </span>            :         GSList *tmp;
+<span class="lineNum">     252 </span>            :         char **ret;
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(node != NULL, NULL);</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(is_node_list(node), NULL);</span>
+<span class="lineNum">     256 </span>            : 
+<a name="257"><span class="lineNum">     257 </span>            :         /* put values to string */</a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         values = g_string_new(NULL);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :         for (tmp = node-&gt;value; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :                 node = tmp-&gt;data;</span>
+<a name="261"><span class="lineNum">     261 </span>            : </a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                 if (node-&gt;type == NODE_TYPE_VALUE)</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                         g_string_append_printf(values, &quot;%s &quot;, (char *) node-&gt;value);</span>
+<span class="lineNum">     264 </span>            :         }
+<a name="265"><span class="lineNum">     265 </span>            : </a>
+<span class="lineNum">     266 </span>            :         /* split the values to **str array */
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         if (values-&gt;len == 0)</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                 ret = NULL;</span>
+<a name="269"><span class="lineNum">     269 </span>            :         else {</a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                 g_string_truncate(values, values-&gt;len-1);</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                 ret = g_strsplit(values-&gt;str, &quot; &quot;, -1);</span>
+<span class="lineNum">     272 </span>            :         }
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :         g_string_free(values, TRUE);</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :         return ret;</span>
+<a name="276"><span class="lineNum">     276 </span>            : }</a>
+<a name="277"><span class="lineNum">     277 </span>            : </a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 : CONFIG_NODE *config_node_nth(CONFIG_NODE *node, int index)</span>
+<span class="lineNum">     279 </span>            : {
+<span class="lineNum">     280 </span>            :         GSList *tmp;
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(node != NULL, NULL);</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(is_node_list(node), NULL);</span>
+<span class="lineNum">     284 </span>            : 
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :         for (tmp = node-&gt;value; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                 CONFIG_NODE *node = tmp-&gt;data;</span>
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 if (node-&gt;type != NODE_TYPE_COMMENT) {</span>
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :                         if (index == 0)</span></a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                                 return node;</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                         index--;</span>
+<span class="lineNum">     292 </span>            :                 }
+<a name="293"><span class="lineNum">     293 </span>            :         }</a>
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="296"><span class="lineNum">     296 </span>            : }</a>
+<a name="297"><span class="lineNum">     297 </span>            : </a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 : int config_node_index(CONFIG_NODE *parent, const char *key)</span>
+<span class="lineNum">     299 </span>            : {
+<span class="lineNum">     300 </span>            :         CONFIG_NODE *node;
+<a name="301"><span class="lineNum">     301 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     302 </span>            :         int index;
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(parent != NULL, -1);</span>
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(key != NULL, -1);</span></a>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :         node = config_node_find(parent, key);</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :         if (node == NULL)</span>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 return -1;</span></a>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :         index = 0;</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :         for (tmp = parent-&gt;value; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :                 CONFIG_NODE *tmpnode = tmp-&gt;data;</span></a>
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                 if (tmpnode == node)</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                         return index;</span>
+<a name="317"><span class="lineNum">     317 </span>            : </a>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :                 if (tmpnode-&gt;type != NODE_TYPE_COMMENT)</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :                         index++;</span>
+<span class="lineNum">     320 </span>            :         }
+<a name="321"><span class="lineNum">     321 </span>            : </a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="323"><span class="lineNum">     323 </span>            : }</a>
+<span class="lineNum">     324 </span>            : 
+<a name="325"><span class="lineNum">     325 </span><span class="lineCov">        219 : GSList *config_node_first(GSList *list)</span></a>
+<span class="lineNum">     326 </span>            : {
+<span class="lineNum">     327 </span><span class="lineCov">        464 :         while (list != NULL) {</span>
+<span class="lineNum">     328 </span><span class="lineCov">        216 :                 CONFIG_NODE *node = list-&gt;data;</span>
+<a name="329"><span class="lineNum">     329 </span>            : </a>
+<span class="lineNum">     330 </span><span class="lineCov">        216 :                 if (node-&gt;type != NODE_TYPE_COMMENT)</span>
+<span class="lineNum">     331 </span><span class="lineCov">        190 :                         break;</span>
+<span class="lineNum">     332 </span><span class="lineCov">         26 :                 list = list-&gt;next;</span>
+<a name="333"><span class="lineNum">     333 </span>            :         }</a>
+<span class="lineNum">     334 </span><span class="lineCov">        219 :         return list;</span>
+<a name="335"><span class="lineNum">     335 </span>            : }</a>
+<span class="lineNum">     336 </span>            : 
+<a name="337"><span class="lineNum">     337 </span><span class="lineCov">        190 : GSList *config_node_next(GSList *list)</span></a>
+<span class="lineNum">     338 </span>            : {
+<span class="lineNum">     339 </span><span class="lineCov">        190 :         list = list-&gt;next;</span>
+<span class="lineNum">     340 </span><span class="lineCov">        190 :         return config_node_first(list);</span>
+<a name="341"><span class="lineNum">     341 </span>            : }</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,567 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/irc/dcc/dcc-send.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/irc/dcc</a> - dcc-send.c<span style="font-size: 80%;"> (source / <a href="dcc-send.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntry">227</td>
+            <td class="headerCovTableEntryLo">7.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">13</td>
+            <td class="headerCovTableEntryLo">15.4 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  dcc-send.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;network.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;net-sendbuffer.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      28 </span>            : 
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;irc-servers.h&quot;</a>
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;dcc-send.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;dcc-chat.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;dcc-queue.h&quot;</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &lt;glob.h&gt;
+<span class="lineNum">      36 </span>            : 
+<a name="37"><span class="lineNum">      37 </span>            : #ifndef GLOB_TILDE</a>
+<span class="lineNum">      38 </span>            : #  define GLOB_TILDE 0 /* unsupported */
+<span class="lineNum">      39 </span>            : #endif
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span>            : static int dcc_send_one_file(int queue, const char *target, const char *fname,</a>
+<span class="lineNum">      42 </span>            :                              IRC_SERVER_REC *server, CHAT_DCC_REC *chat,
+<a name="43"><span class="lineNum">      43 </span>            :                              int passive);</a>
+<span class="lineNum">      44 </span>            : 
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 : static void dcc_queue_send_next(int queue)</span></a>
+<span class="lineNum">      46 </span>            : {
+<span class="lineNum">      47 </span>            :         IRC_SERVER_REC *server;
+<span class="lineNum">      48 </span>            :         DCC_QUEUE_REC *qrec;
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :         int send_started = FALSE;</span></a>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :         while ((qrec = dcc_queue_get_next(queue)) != NULL &amp;&amp; !send_started) {</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :                 server = qrec-&gt;servertag == NULL ? NULL :</span>
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :                         IRC_SERVER(server_find_tag(qrec-&gt;servertag));</span></a>
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :                 if (server == NULL &amp;&amp; qrec-&gt;chat == NULL) {</span>
+<span class="lineNum">      56 </span>            :                         /* no way to send this request */
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;dcc error send no route&quot;, 2,</span></a>
+<span class="lineNum">      58 </span>            :                                     qrec-&gt;nick, qrec-&gt;file);
+<span class="lineNum">      59 </span>            :                 } else {
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :                         send_started = dcc_send_one_file(queue, qrec-&gt;nick,</span>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :                                                          qrec-&gt;file, server,</span></a>
+<span class="lineNum">      62 </span>            :                                                          qrec-&gt;chat,
+<span class="lineNum">      63 </span>            :                                                          qrec-&gt;passive);
+<span class="lineNum">      64 </span>            :                 }
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 :                 dcc_queue_remove_head(queue);</span></a>
+<span class="lineNum">      66 </span>            :         }
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :         if (!send_started) {</span>
+<a name="69"><span class="lineNum">      69 </span>            :                 /* no files in queue anymore, remove it */</a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :                 dcc_queue_free(queue);</span>
+<span class="lineNum">      71 </span>            :         }
+<a name="72"><span class="lineNum">      72 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 : static char *dcc_send_get_file(const char *fname)</span>
+<span class="lineNum">      75 </span>            : {
+<span class="lineNum">      76 </span>            :         char *str, *path;
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         str = convert_home(fname);</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         if (!g_path_is_absolute(str)) {</span>
+<span class="lineNum">      80 </span>            :                 /* full path not given to file, use dcc_upload_path */
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :                 g_free(str);</span></a>
+<span class="lineNum">      82 </span>            : 
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :                 path = convert_home(settings_get_str(&quot;dcc_upload_path&quot;));</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :                 str = *path == '\0' ? g_strdup(fname) :</span>
+<a name="85"><span class="lineNum">      85 </span>            :                         g_strconcat(path, G_DIR_SEPARATOR_S, fname, NULL);</a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                 g_free(path);</span>
+<span class="lineNum">      87 </span>            :         }
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         return str;</span></a>
+<a name="90"><span class="lineNum">      90 </span>            : }</a>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 : static void dcc_send_add(const char *servertag, CHAT_DCC_REC *chat,</span>
+<a name="93"><span class="lineNum">      93 </span>            :                          const char *nick, char *fileargs, int add_mode,</a>
+<span class="lineNum">      94 </span>            :                          int passive)
+<span class="lineNum">      95 </span>            : {
+<span class="lineNum">      96 </span>            :         struct stat st;
+<a name="97"><span class="lineNum">      97 </span>            :         glob_t globbuf;</a>
+<span class="lineNum">      98 </span>            :         char *fname;
+<span class="lineNum">      99 </span>            :         int i, ret, files, flags, queue, start_new_transfer;
+<span class="lineNum">     100 </span>            : 
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :         memset(&amp;globbuf, 0, sizeof(globbuf));</span></a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :         flags = GLOB_NOCHECK | GLOB_TILDE;</span>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span>            :         /* this loop parses all &lt;file&gt; parameters and adds them to glubbuf */
+<a name="105"><span class="lineNum">     105 </span>            :         for (;;) {</a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :                 fname = cmd_get_quoted_param(&amp;fileargs);</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :                 if (*fname == '\0')</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                         break;</span>
+<a name="109"><span class="lineNum">     109 </span>            : </a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 if (glob(fname, flags, 0, &amp;globbuf) &lt; 0)</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     112 </span>            : 
+<a name="113"><span class="lineNum">     113 </span>            :                 /* this flag must not be set before first call to glob!</a>
+<span class="lineNum">     114 </span>            :                    (man glob) */
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                 flags |= GLOB_APPEND;</span>
+<span class="lineNum">     116 </span>            :         }
+<a name="117"><span class="lineNum">     117 </span>            : </a>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :         files = 0; queue = -1; start_new_transfer = 0;</span>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            :         /* add all globbed files to a proper queue */
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; globbuf.gl_pathc; i++) {</span></a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                 char *fname = dcc_send_get_file(globbuf.gl_pathv[i]);</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                 ret = stat(fname, &amp;st);</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 if (ret == 0 &amp;&amp; S_ISDIR(st.st_mode)) {</span></a>
+<span class="lineNum">     126 </span>            :                         /* we don't want directories */
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                         errno = EISDIR;</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                         ret = -1;</span>
+<a name="129"><span class="lineNum">     129 </span>            :                 }</a>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 if (ret &lt; 0) {</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;dcc error file open&quot;, 3,</span>
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :                                     nick, fname, errno);</span></a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                         g_free(fname);</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     136 </span>            :                 }
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 if (queue &lt; 0) {</span>
+<span class="lineNum">     139 </span>            :                         /* in append and prepend mode try to find an
+<span class="lineNum">     140 </span>            :                            old queue. if an old queue is not found
+<a name="141"><span class="lineNum">     141 </span>            :                            create a new queue. if not in append or</a>
+<span class="lineNum">     142 </span>            :                            prepend mode, create a new queue */
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                         if (add_mode != DCC_QUEUE_NORMAL)</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                                 queue = dcc_queue_old(nick, servertag);</span>
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 :                         start_new_transfer = 0;</span></a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                         if (queue &lt; 0) {</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                                 queue = dcc_queue_new();</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                                 start_new_transfer = 1;</span>
+<a name="149"><span class="lineNum">     149 </span>            :                         }</a>
+<span class="lineNum">     150 </span>            :                 }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                 dcc_queue_add(queue, add_mode, nick,</span>
+<a name="153"><span class="lineNum">     153 </span>            :                               fname, servertag, chat, passive);</a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :                 files++;</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                 g_free(fname);</span>
+<span class="lineNum">     156 </span>            :         }
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         if (files &gt; 0 &amp;&amp; start_new_transfer)</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                 dcc_queue_send_next(queue);</span>
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :         globfree(&amp;globbuf);</span></a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     163 </span>            : 
+<a name="164"><span class="lineNum">     164 </span>            : /* DCC SEND [-append | -prepend | -flush | -rmtail | -rmhead | -passive]</a>
+<a name="165"><span class="lineNum">     165 </span>            :             &lt;nick&gt; &lt;file&gt; [&lt;file&gt; ...] */</a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 : static void cmd_dcc_send(const char *data, IRC_SERVER_REC *server,</span>
+<span class="lineNum">     167 </span>            :                          WI_ITEM_REC *item)
+<span class="lineNum">     168 </span>            : {
+<a name="169"><span class="lineNum">     169 </span>            :         const char *servertag;</a>
+<span class="lineNum">     170 </span>            :         char *nick, *fileargs;
+<span class="lineNum">     171 </span>            :         void *free_arg;
+<span class="lineNum">     172 </span>            :         CHAT_DCC_REC *chat;
+<a name="173"><span class="lineNum">     173 </span>            :         GHashTable *optlist;</a>
+<span class="lineNum">     174 </span>            :         int queue, mode, passive;
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 2 | PARAM_FLAG_OPTIONS |</span>
+<a name="177"><span class="lineNum">     177 </span>            :                             PARAM_FLAG_GETREST | PARAM_FLAG_STRIP_TRAILING_WS, </a>
+<span class="lineNum">     178 </span>            :                             &quot;dcc send&quot;, &amp;optlist, &amp;nick, &amp;fileargs))
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     180 </span>            : 
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :         chat = item_get_dcc(item);</span></a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         if (chat != NULL &amp;&amp;</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :             (chat-&gt;mirc_ctcp || g_ascii_strcasecmp(nick, chat-&gt;nick) != 0))</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                 chat = NULL;</span>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :         if (IS_IRC_SERVER(server) &amp;&amp; server-&gt;connected)</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                 servertag = server-&gt;tag;</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :         else if (chat != NULL)</span>
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :                 servertag = chat-&gt;servertag;</span></a>
+<span class="lineNum">     190 </span>            :         else
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :                 servertag = NULL;</span>
+<span class="lineNum">     192 </span>            : 
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :         if (servertag == NULL &amp;&amp; chat == NULL)</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 cmd_param_error(CMDERR_NOT_CONNECTED);</span>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         passive = g_hash_table_lookup(optlist, &quot;passive&quot;) != NULL;</span>
+<a name="197"><span class="lineNum">     197 </span>            : </a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;rmhead&quot;) != NULL) {</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                 queue = dcc_queue_old(nick, servertag);</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 if (queue != -1)</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :                         dcc_queue_remove_head(queue);</span></a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :         } else if (g_hash_table_lookup(optlist, &quot;rmtail&quot;) != NULL) {</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                 queue = dcc_queue_old(nick, servertag);</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                 if (queue != -1)</span>
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :                         dcc_queue_remove_tail(queue);</span></a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :         } else if (g_hash_table_lookup(optlist, &quot;flush&quot;) != NULL) {</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 queue = dcc_queue_old(nick, servertag);</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                 if (queue != -1)</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :                         dcc_queue_free(queue);</span></a>
+<span class="lineNum">     210 </span>            :         } else {
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 if (g_hash_table_lookup(optlist, &quot;append&quot;) != NULL)</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                         mode = DCC_QUEUE_APPEND;</span>
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 else if (g_hash_table_lookup(optlist, &quot;prepend&quot;) != NULL)</span></a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                         mode = DCC_QUEUE_PREPEND;</span>
+<span class="lineNum">     215 </span>            :                 else
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                         mode = DCC_QUEUE_NORMAL;</span>
+<a name="217"><span class="lineNum">     217 </span>            : </a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                 if (*fileargs == '\0')</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                         cmd_param_error(CMDERR_NOT_ENOUGH_PARAMS);</span>
+<span class="lineNum">     220 </span>            : 
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :                 dcc_send_add(servertag, chat, nick, fileargs, mode, passive);</span></a>
+<span class="lineNum">     222 </span>            :         }
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<a name="225"><span class="lineNum">     225 </span>            : }</a>
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 : static SEND_DCC_REC *dcc_send_create(IRC_SERVER_REC *server,</span>
+<span class="lineNum">     228 </span>            :                                      CHAT_DCC_REC *chat,
+<a name="229"><span class="lineNum">     229 </span>            :                                      const char *nick, const char *arg)</a>
+<span class="lineNum">     230 </span>            : {
+<span class="lineNum">     231 </span>            :         SEND_DCC_REC *dcc;
+<span class="lineNum">     232 </span>            : 
+<a name="233"><span class="lineNum">     233 </span><span class="lineNoCov">          0 :         dcc = g_new0(SEND_DCC_REC, 1);</span></a>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         dcc-&gt;orig_type = module_get_uniq_id_str(&quot;DCC&quot;, &quot;GET&quot;);</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :         dcc-&gt;type = module_get_uniq_id_str(&quot;DCC&quot;, &quot;SEND&quot;);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :         dcc-&gt;fhandle = -1;</span>
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 :         dcc-&gt;queue = -1;</span></a>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :         dcc_init_rec(DCC(dcc), server, chat, nick, arg);</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :         if (dcc-&gt;module_data == NULL) {</span>
+<a name="241"><span class="lineNum">     241 </span>            :                 /* failed to successfully init; TODO: change API */</a>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :                 g_free(dcc);</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     244 </span>            :         }
+<a name="245"><span class="lineNum">     245 </span>            : </a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :         return dcc;</span>
+<a name="247"><span class="lineNum">     247 </span>            : }</a>
+<span class="lineNum">     248 </span>            : 
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 : static void sig_dcc_destroyed(SEND_DCC_REC *dcc)</span></a>
+<span class="lineNum">     250 </span>            : {
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :         if (!IS_DCC_SEND(dcc)) return;</span>
+<span class="lineNum">     252 </span>            : 
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :         if (dcc-&gt;fhandle != -1)</span></a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 close(dcc-&gt;fhandle);</span>
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :         dcc_queue_send_next(dcc-&gt;queue);</span>
+<a name="257"><span class="lineNum">     257 </span>            : }</a>
+<a name="258"><span class="lineNum">     258 </span>            : </a>
+<span class="lineNum">     259 </span>            : /* input function: DCC SEND - we're ready to send more data */
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 : static void dcc_send_data(SEND_DCC_REC *dcc)</span>
+<a name="261"><span class="lineNum">     261 </span>            : {</a>
+<span class="lineNum">     262 </span>            :         char buffer[512];
+<span class="lineNum">     263 </span>            :         int ret;
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :         ret = read(dcc-&gt;fhandle, buffer, sizeof(buffer));</span></a>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :         if (ret &lt;= 0) {</span>
+<span class="lineNum">     267 </span>            :                 /* no need to call this function anymore..
+<span class="lineNum">     268 </span>            :                    in fact it just eats all the cpu.. */
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 dcc-&gt;waitforend = TRUE;</span></a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                 g_source_remove(dcc-&gt;tagwrite);</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                 dcc-&gt;tagwrite = -1;</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="273"><span class="lineNum">     273 </span>            :         }</a>
+<span class="lineNum">     274 </span>            : 
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :         ret = net_transmit(dcc-&gt;handle, buffer, ret);</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :         if (ret &gt; 0) dcc-&gt;transfd += ret;</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :         dcc-&gt;gotalldata = FALSE;</span></a>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :         lseek(dcc-&gt;fhandle, dcc-&gt;transfd, SEEK_SET);</span>
+<span class="lineNum">     280 </span>            : 
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :         signal_emit(&quot;dcc transfer update&quot;, 1, dcc);</span></a>
+<span class="lineNum">     282 </span>            : }
+<a name="283"><span class="lineNum">     283 </span>            : </a>
+<span class="lineNum">     284 </span>            : /* input function: DCC SEND - received some data */
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 : static void dcc_send_read_size(SEND_DCC_REC *dcc)</span></a>
+<span class="lineNum">     286 </span>            : {
+<span class="lineNum">     287 </span>            :         guint32 bytes;
+<span class="lineNum">     288 </span>            :         int ret;
+<a name="289"><span class="lineNum">     289 </span>            : </a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :         ret = net_receive(dcc-&gt;handle, dcc-&gt;count_buf+dcc-&gt;count_pos,</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                           4-dcc-&gt;count_pos);</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :         if (ret == -1) {</span>
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :                 dcc_close(DCC(dcc));</span></a>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     295 </span>            :         }
+<span class="lineNum">     296 </span>            : 
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :         dcc-&gt;count_pos += ret;</span></a>
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :         if (dcc-&gt;count_pos != 4)</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         memcpy(&amp;bytes, dcc-&gt;count_buf, sizeof(bytes));</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         bytes = ntohl(bytes);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :         dcc-&gt;count_pos = 0;</span>
+<a name="305"><span class="lineNum">     305 </span>            : </a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :         if (dcc-&gt;waitforend &amp;&amp; bytes == (dcc-&gt;transfd &amp; 0xffffffff)) {</span>
+<span class="lineNum">     307 </span>            :                 /* file is sent */
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 dcc-&gt;gotalldata = TRUE;</span>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 dcc_close(DCC(dcc));</span></a>
+<span class="lineNum">     310 </span>            :         }
+<span class="lineNum">     311 </span>            : }
+<a name="312"><span class="lineNum">     312 </span>            : </a>
+<a name="313"><span class="lineNum">     313 </span>            : /* input function: DCC SEND - someone tried to connect to our socket */</a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 : static void dcc_send_connected(SEND_DCC_REC *dcc)</span>
+<span class="lineNum">     315 </span>            : {
+<span class="lineNum">     316 </span>            :         GIOChannel *handle;
+<a name="317"><span class="lineNum">     317 </span>            :         IPADDR addr;</a>
+<span class="lineNum">     318 </span>            :         int port;
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span>            :         /* accept connection */
+<a name="321"><span class="lineNum">     321 </span><span class="lineNoCov">          0 :         handle = net_accept(dcc-&gt;handle, &amp;addr, &amp;port);</span></a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :         if (handle == NULL)</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     324 </span>            : 
+<a name="325"><span class="lineNum">     325 </span>            :         /* TODO: some kind of paranoia check would be nice. it would check</a>
+<span class="lineNum">     326 </span>            :            that the host of the nick who we sent the request matches the
+<span class="lineNum">     327 </span>            :            address who connected us. */
+<span class="lineNum">     328 </span>            : 
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :         net_disconnect(dcc-&gt;handle);</span></a>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :         g_source_remove(dcc-&gt;tagconn);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :         dcc-&gt;tagconn = -1;</span>
+<span class="lineNum">     332 </span>            : 
+<a name="333"><span class="lineNum">     333 </span><span class="lineNoCov">          0 :         dcc-&gt;starttime = time(NULL);</span></a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :         dcc-&gt;handle = handle;</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :         memcpy(&amp;dcc-&gt;addr, &amp;addr, sizeof(IPADDR));</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         net_ip2host(&amp;dcc-&gt;addr, dcc-&gt;addrstr);</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :         dcc-&gt;port = port;</span></a>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :         dcc-&gt;tagread = g_input_add(handle, G_INPUT_READ,</span>
+<span class="lineNum">     340 </span>            :                                    (GInputFunction) dcc_send_read_size, dcc);
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :         dcc-&gt;tagwrite = g_input_add(handle, G_INPUT_WRITE,</span></a>
+<span class="lineNum">     342 </span>            :                                     (GInputFunction) dcc_send_data, dcc);
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :         signal_emit(&quot;dcc connected&quot;, 1, dcc);</span>
+<a name="345"><span class="lineNum">     345 </span>            : }</a>
+<a name="346"><span class="lineNum">     346 </span>            : </a>
+<span class="lineNum">     347 </span>            : /* input function: DCC SEND - connect to the receiver (passive protocol) */
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 : static void dcc_send_connect(SEND_DCC_REC *dcc)</span>
+<a name="349"><span class="lineNum">     349 </span>            : {</a>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :         dcc-&gt;handle = dcc_connect_ip(&amp;dcc-&gt;addr, dcc-&gt;port);</span>
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :         if (dcc-&gt;handle != NULL) {</span>
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :                 dcc-&gt;starttime = time(NULL);</span></a>
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                 dcc-&gt;tagread = g_input_add(dcc-&gt;handle, G_INPUT_READ,</span>
+<span class="lineNum">     356 </span>            :                                            (GInputFunction) dcc_send_read_size,
+<a name="357"><span class="lineNum">     357 </span>            :                                            dcc);</a>
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :                 dcc-&gt;tagwrite = g_input_add(dcc-&gt;handle, G_INPUT_WRITE,</span>
+<span class="lineNum">     359 </span>            :                                             (GInputFunction) dcc_send_data,
+<span class="lineNum">     360 </span>            :                                             dcc);
+<a name="361"><span class="lineNum">     361 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;dcc connected&quot;, 1, dcc);</span></a>
+<span class="lineNum">     362 </span>            :         } else {
+<span class="lineNum">     363 </span>            :                 /* error connecting */
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;dcc error connect&quot;, 1, dcc);</span>
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :                 dcc_destroy(DCC(dcc));</span></a>
+<span class="lineNum">     366 </span>            :         }
+<a name="367"><span class="lineNum">     367 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     368 </span>            : 
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 : static int dcc_send_one_file(int queue, const char *target, const char *fname,</span></a>
+<span class="lineNum">     370 </span>            :                              IRC_SERVER_REC *server, CHAT_DCC_REC *chat,
+<span class="lineNum">     371 </span>            :                              int passive)
+<span class="lineNum">     372 </span>            : {
+<a name="373"><span class="lineNum">     373 </span>            :         struct stat st;</a>
+<span class="lineNum">     374 </span>            :         char *str;
+<span class="lineNum">     375 </span>            :         char host[MAX_IP_LEN];
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :         int hfile, port = 0;</span>
+<a name="377"><span class="lineNum">     377 </span>            :         SEND_DCC_REC *dcc;</a>
+<span class="lineNum">     378 </span>            :         IPADDR own_ip;
+<span class="lineNum">     379 </span>            :         GIOChannel *handle;
+<span class="lineNum">     380 </span>            : 
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :         if (dcc_find_request(DCC_SEND_TYPE, target, fname)) {</span></a>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;dcc error send exists&quot;, 2, target, fname);</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<span class="lineNum">     384 </span>            :         }
+<a name="385"><span class="lineNum">     385 </span>            : </a>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :         str = dcc_send_get_file(fname);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :         hfile = open(str, O_RDONLY);</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :         g_free(str);</span>
+<a name="389"><span class="lineNum">     389 </span>            : </a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         if (hfile == -1) {</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;dcc error file open&quot;, 3, target, fname,</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                             GINT_TO_POINTER(errno));</span>
+<a name="393"><span class="lineNum">     393 </span><span class="lineNoCov">          0 :                 return FALSE;</span></a>
+<span class="lineNum">     394 </span>            :         }
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :         if (fstat(hfile, &amp;st) &lt; 0) {</span>
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :                 g_warning(&quot;fstat() failed: %s&quot;, strerror(errno));</span></a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :                 close(hfile);</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<span class="lineNum">     400 </span>            :         }
+<a name="401"><span class="lineNum">     401 </span>            : </a>
+<span class="lineNum">     402 </span>            :         /* start listening (only if passive == FALSE )*/
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         if (passive == FALSE) {</span>
+<a name="405"><span class="lineNum">     405 </span><span class="lineNoCov">          0 :                 handle = dcc_listen(chat != NULL ? chat-&gt;handle :</span></a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                                     net_sendbuffer_handle(server-&gt;handle),</span>
+<span class="lineNum">     407 </span>            :                                     &amp;own_ip, &amp;port);
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                 if (handle == NULL) {</span>
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :                         close(hfile);</span></a>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                         g_warning(&quot;dcc_listen() failed: %s&quot;, strerror(errno));</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :                         return FALSE;</span>
+<span class="lineNum">     412 </span>            :                 }
+<a name="413"><span class="lineNum">     413 </span>            :         } else {</a>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                 handle = NULL;</span>
+<span class="lineNum">     415 </span>            :         }
+<span class="lineNum">     416 </span>            : 
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 :         str = g_path_get_basename(fname);</span></a>
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span>            :         /* Replace all the spaces with underscore so that lesser
+<span class="lineNum">     420 </span>            :            intelligent clients can communicate.. */
+<a name="421"><span class="lineNum">     421 </span><span class="lineNoCov">          0 :         if (settings_get_bool(&quot;dcc_send_replace_space_with_underscore&quot;))</span></a>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :                 g_strdelimit(str, &quot; &quot;, '_');</span>
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :         dcc = dcc_send_create(server, chat, target, str);</span>
+<a name="425"><span class="lineNum">     425 </span><span class="lineNoCov">          0 :         g_free(str);</span></a>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :         if (dcc == NULL) {</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                 g_warn_if_reached();</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<a name="429"><span class="lineNum">     429 </span>            :         }</a>
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         dcc-&gt;handle = handle;</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :         dcc-&gt;port = port;</span>
+<a name="433"><span class="lineNum">     433 </span><span class="lineNoCov">          0 :         dcc-&gt;size = st.st_size;</span></a>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :         dcc-&gt;fhandle = hfile;</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :         dcc-&gt;queue = queue;</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :         dcc-&gt;file_quoted = strchr(fname, ' ') != NULL;</span>
+<a name="437"><span class="lineNum">     437 </span><span class="lineNoCov">          0 :         if (!passive) {</span></a>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :                 dcc-&gt;tagconn = g_input_add(handle, G_INPUT_READ,</span>
+<span class="lineNum">     439 </span>            :                                            (GInputFunction) dcc_send_connected,
+<span class="lineNum">     440 </span>            :                                            dcc);
+<a name="441"><span class="lineNum">     441 </span>            :         }</a>
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span>            :         /* Generate an ID for this send if using passive protocol */
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :         if (passive) {</span>
+<a name="445"><span class="lineNum">     445 </span><span class="lineNoCov">          0 :                 dcc-&gt;pasv_id = rand() % 64;</span></a>
+<span class="lineNum">     446 </span>            :         }
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span>            :         /* send DCC request */
+<a name="449"><span class="lineNum">     449 </span><span class="lineNoCov">          0 :         signal_emit(&quot;dcc request send&quot;, 1, dcc);</span></a>
+<span class="lineNum">     450 </span>            : 
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :         dcc_ip2str(&amp;own_ip, host);</span>
+<a name="453"><span class="lineNum">     453 </span><span class="lineNoCov">          0 :         if (passive == FALSE) {</span></a>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                 str = g_strdup_printf(dcc-&gt;file_quoted ?</span>
+<span class="lineNum">     455 </span>            :                                       &quot;DCC SEND \&quot;%s\&quot; %s %d %&quot;PRIuUOFF_T :
+<span class="lineNum">     456 </span>            :                                       &quot;DCC SEND %s %s %d %&quot;PRIuUOFF_T,
+<a name="457"><span class="lineNum">     457 </span>            :                                       dcc-&gt;arg, host, port, dcc-&gt;size);</a>
+<span class="lineNum">     458 </span>            :         } else {
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :                 str = g_strdup_printf(dcc-&gt;file_quoted ?</span>
+<span class="lineNum">     460 </span>            :                                       &quot;DCC SEND \&quot;%s\&quot; 16843009 0 %&quot;PRIuUOFF_T&quot; %d&quot; :
+<a name="461"><span class="lineNum">     461 </span>            :                                       &quot;DCC SEND %s 16843009 0 %&quot;PRIuUOFF_T&quot; %d&quot;,</a>
+<span class="lineNum">     462 </span>            :                                       dcc-&gt;arg, dcc-&gt;size, dcc-&gt;pasv_id);
+<span class="lineNum">     463 </span>            :         }
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :         dcc_ctcp_message(server, target, chat, FALSE, str);</span>
+<a name="465"><span class="lineNum">     465 </span>            : </a>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :         g_free(str);</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :         return TRUE;</span>
+<a name="468"><span class="lineNum">     468 </span>            : }</a>
+<a name="469"><span class="lineNum">     469 </span>            : </a>
+<span class="lineNum">     470 </span><span class="lineCov">          1 : void dcc_send_init(void)</span>
+<span class="lineNum">     471 </span>            : {
+<span class="lineNum">     472 </span><span class="lineCov">          1 :         dcc_register_type(&quot;SEND&quot;);</span>
+<a name="473"><span class="lineNum">     473 </span><span class="lineCov">          1 :         settings_add_str(&quot;dcc&quot;, &quot;dcc_upload_path&quot;, &quot;~&quot;);</span></a>
+<span class="lineNum">     474 </span><span class="lineCov">          1 :         settings_add_bool(&quot;dcc&quot;, &quot;dcc_send_replace_space_with_underscore&quot;, FALSE);</span>
+<span class="lineNum">     475 </span><span class="lineCov">          1 :         signal_add(&quot;dcc destroyed&quot;, (SIGNAL_FUNC) sig_dcc_destroyed);</span>
+<span class="lineNum">     476 </span><span class="lineCov">          1 :         signal_add(&quot;dcc reply send pasv&quot;, (SIGNAL_FUNC) dcc_send_connect);</span>
+<a name="477"><span class="lineNum">     477 </span><span class="lineCov">          1 :         command_bind(&quot;dcc send&quot;, NULL, (SIGNAL_FUNC) cmd_dcc_send);</span></a>
+<span class="lineNum">     478 </span><span class="lineCov">          1 :         command_set_options(&quot;dcc send&quot;, &quot;append flush prepend rmhead rmtail passive&quot;);</span>
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span><span class="lineCov">          1 :         dcc_queue_init();</span>
+<a name="481"><span class="lineNum">     481 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span><span class="lineCov">          1 : void dcc_send_deinit(void)</span>
+<span class="lineNum">     484 </span>            : {
+<a name="485"><span class="lineNum">     485 </span><span class="lineCov">          1 :         dcc_queue_deinit();</span></a>
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span><span class="lineCov">          1 :         dcc_unregister_type(&quot;SEND&quot;);</span>
+<span class="lineNum">     488 </span><span class="lineCov">          1 :         signal_remove(&quot;dcc destroyed&quot;, (SIGNAL_FUNC) sig_dcc_destroyed);</span>
+<a name="489"><span class="lineNum">     489 </span><span class="lineCov">          1 :         signal_remove(&quot;dcc reply send pasv&quot;, (SIGNAL_FUNC) dcc_send_connect);</span></a>
+<span class="lineNum">     490 </span><span class="lineCov">          1 :         command_unbind(&quot;dcc send&quot;, (SIGNAL_FUNC) cmd_dcc_send);</span>
+<span class="lineNum">     491 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

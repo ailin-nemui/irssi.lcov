@@ -1,0 +1,268 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/irc/core/irc-cap.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/irc/core</a> - irc-cap.c<span style="font-size: 80%;"> (source / <a href="irc-cap.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntry">86</td>
+            <td class="headerCovTableEntryLo">9.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntryLo">28.6 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*  irc-cap.c : irssi</a>
+<span class="lineNum">       2 </span>            : 
+<span class="lineNum">       3 </span>            :     Copyright (C) 2015 The Lemon Man
+<span class="lineNum">       4 </span>            : 
+<a name="5"><span class="lineNum">       5 </span>            :     This program is free software; you can redistribute it and/or modify</a>
+<span class="lineNum">       6 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       7 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<span class="lineNum">       8 </span>            :     (at your option) any later version.
+<a name="9"><span class="lineNum">       9 </span>            : </a>
+<span class="lineNum">      10 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      11 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<span class="lineNum">      12 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+<a name="13"><span class="lineNum">      13 </span>            :     GNU General Public License for more details.</a>
+<span class="lineNum">      14 </span>            : 
+<span class="lineNum">      15 </span>            :     You should have received a copy of the GNU General Public License along
+<span class="lineNum">      16 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,
+<a name="17"><span class="lineNum">      17 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.</a>
+<span class="lineNum">      18 </span>            : */
+<span class="lineNum">      19 </span>            : 
+<span class="lineNum">      20 </span>            : #include &quot;module.h&quot;
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;signals.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : #include &quot;irc-cap.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;irc-servers.h&quot;</a>
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span><span class="lineNoCov">          0 : int cap_toggle (IRC_SERVER_REC *server, char *cap, int enable)</span>
+<span class="lineNum">      28 </span>            : {
+<a name="29"><span class="lineNum">      29 </span><span class="lineNoCov">          0 :         if (cap == NULL || *cap == '\0')</span></a>
+<span class="lineNum">      30 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            :         /* If the negotiation hasn't been completed yet just queue the requests */
+<a name="33"><span class="lineNum">      33 </span><span class="lineNoCov">          0 :         if (!server-&gt;cap_complete) {</span></a>
+<span class="lineNum">      34 </span><span class="lineNoCov">          0 :                 if (enable &amp;&amp; !gslist_find_string(server-&gt;cap_queue, cap)) {</span>
+<span class="lineNum">      35 </span><span class="lineNoCov">          0 :                         server-&gt;cap_queue = g_slist_prepend(server-&gt;cap_queue, g_strdup(cap));</span>
+<span class="lineNum">      36 </span><span class="lineNoCov">          0 :                         return TRUE;</span>
+<a name="37"><span class="lineNum">      37 </span>            :                 }</a>
+<span class="lineNum">      38 </span><span class="lineNoCov">          0 :                 else if (!enable &amp;&amp; gslist_find_string(server-&gt;cap_queue, cap)) {</span>
+<span class="lineNum">      39 </span><span class="lineNoCov">          0 :                         server-&gt;cap_queue = gslist_remove_string(server-&gt;cap_queue, cap);</span>
+<span class="lineNum">      40 </span><span class="lineNoCov">          0 :                         return TRUE;</span>
+<a name="41"><span class="lineNum">      41 </span>            :                 }</a>
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<span class="lineNum">      44 </span>            :         }
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :         if (enable &amp;&amp; !gslist_find_string(server-&gt;cap_active, cap)) {</span>
+<span class="lineNum">      47 </span>            :                 /* Make sure the required cap is supported by the server */
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :                 if (!gslist_find_string(server-&gt;cap_supported, cap))</span>
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :                         return FALSE;</span></a>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :                 irc_send_cmdv(server, &quot;CAP REQ %s&quot;, cap);</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :                 return TRUE;</span>
+<a name="53"><span class="lineNum">      53 </span>            :         }</a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :         else if (!enable &amp;&amp; gslist_find_string(server-&gt;cap_active, cap)) {</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :                 irc_send_cmdv(server, &quot;CAP REQ -%s&quot;, cap);</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :                 return TRUE;</span>
+<a name="57"><span class="lineNum">      57 </span>            :         }</a>
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :         return FALSE;</span>
+<a name="60"><span class="lineNum">      60 </span>            : }</a>
+<a name="61"><span class="lineNum">      61 </span>            : </a>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 : void cap_finish_negotiation (IRC_SERVER_REC *server)</span>
+<span class="lineNum">      63 </span>            : {
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :         if (server-&gt;cap_complete)</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :         server-&gt;cap_complete = TRUE;</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :         irc_send_cmd_now(server, &quot;CAP END&quot;);</span>
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :         signal_emit(&quot;server cap end&quot;, 1, server);</span>
+<a name="71"><span class="lineNum">      71 </span>            : }</a>
+<span class="lineNum">      72 </span>            : 
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 : static void cap_emit_signal (IRC_SERVER_REC *server, char *cmd, char *args)</span></a>
+<span class="lineNum">      74 </span>            : {
+<span class="lineNum">      75 </span>            :         char *signal_name;
+<span class="lineNum">      76 </span>            : 
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :         signal_name = g_strdup_printf(&quot;server cap %s %s&quot;, cmd, args? args: &quot;&quot;);</span></a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         signal_emit(signal_name, 1, server);</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         g_free(signal_name);</span>
+<a name="80"><span class="lineNum">      80 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 : static void event_cap (IRC_SERVER_REC *server, char *args, char *nick, char *address)</span>
+<span class="lineNum">      83 </span>            : {
+<span class="lineNum">      84 </span>            :         GSList *tmp;
+<a name="85"><span class="lineNum">      85 </span>            :         GString *cmd;</a>
+<span class="lineNum">      86 </span>            :         char *params, *evt, *list, **caps;
+<span class="lineNum">      87 </span>            :         int i, caps_length, disable, avail_caps;
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         params = event_get_params(args, 3, NULL, &amp;evt, &amp;list);</span></a>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :         if (params == NULL)</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">      92 </span>            : 
+<a name="93"><span class="lineNum">      93 </span>            :         /* Strip the trailing whitespaces before splitting the string, some servers send responses with</a>
+<span class="lineNum">      94 </span>            :          * superfluous whitespaces that g_strsplit the interprets as tokens */
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         caps = g_strsplit(g_strchomp(list), &quot; &quot;, -1);</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         caps_length = g_strv_length(caps);</span>
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         if (!g_strcmp0(evt, &quot;LS&quot;)) {</span>
+<span class="lineNum">      99 </span>            :                 /* Create a list of the supported caps */
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; caps_length; i++)</span>
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :                         server-&gt;cap_supported = g_slist_prepend(server-&gt;cap_supported, g_strdup(caps[i]));</span></a>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span>            :                 /* Request the required caps, if any */
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                 if (server-&gt;cap_queue == NULL) {</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :                         cap_finish_negotiation(server);</span></a>
+<span class="lineNum">     106 </span>            :                 }
+<span class="lineNum">     107 </span>            :                 else {
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                         cmd = g_string_new(&quot;CAP REQ :&quot;);</span>
+<a name="109"><span class="lineNum">     109 </span>            : </a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                         avail_caps = 0;</span>
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span>            :                         /* Check whether the cap is supported by the server */
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :                         for (tmp = server-&gt;cap_queue; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :                                 if (gslist_find_string(server-&gt;cap_supported, tmp-&gt;data)) {</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                                         if (avail_caps &gt; 0)</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :                                                 g_string_append_c(cmd, ' ');</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :                                         g_string_append(cmd, tmp-&gt;data);</span></a>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :                                         avail_caps++;</span>
+<span class="lineNum">     120 </span>            :                                 }
+<a name="121"><span class="lineNum">     121 </span>            :                         }</a>
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span>            :                         /* Clear the queue here */
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                         gslist_free_full(server-&gt;cap_queue, (GDestroyNotify) g_free);</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                         server-&gt;cap_queue = NULL;</span></a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            :                         /* If the server doesn't support any cap we requested close the negotiation here */
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                         if (avail_caps &gt; 0)</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                                 irc_send_cmd_now(server, cmd-&gt;str);</span></a>
+<span class="lineNum">     130 </span>            :                         else
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                                 cap_finish_negotiation(server);</span>
+<span class="lineNum">     132 </span>            : 
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :                         g_string_free(cmd, TRUE);</span></a>
+<span class="lineNum">     134 </span>            :                 }
+<span class="lineNum">     135 </span>            :         }
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         else if (!g_strcmp0(evt, &quot;ACK&quot;)) {</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 int got_sasl = FALSE;</span></a>
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            :                 /* Emit a signal for every ack'd cap */
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; caps_length; i++) {</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :                         disable = (*caps[i] == '-');</span></a>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                         if (disable)</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                                 server-&gt;cap_active = gslist_remove_string(server-&gt;cap_active, caps[i] + 1);</span>
+<a name="145"><span class="lineNum">     145 </span>            :                         else</a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                                 server-&gt;cap_active = g_slist_prepend(server-&gt;cap_active, g_strdup(caps[i]));</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                         if (!g_strcmp0(caps[i], &quot;sasl&quot;))</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :                                 got_sasl = TRUE;</span></a>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :                         cap_emit_signal(server, &quot;ack&quot;, caps[i]);</span>
+<span class="lineNum">     152 </span>            :                 }
+<a name="153"><span class="lineNum">     153 </span>            : </a>
+<span class="lineNum">     154 </span>            :                 /* Hopefully the server has ack'd all the caps requested and we're ready to terminate the
+<span class="lineNum">     155 </span>            :                  * negotiation, unless sasl was requested. In this case we must not terminate the negotiation
+<span class="lineNum">     156 </span>            :                  * until the sasl handshake is over. */
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 :                 if (got_sasl == FALSE)</span></a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :                         cap_finish_negotiation(server);</span>
+<span class="lineNum">     159 </span>            :         }
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :         else if (!g_strcmp0(evt, &quot;NAK&quot;)) {</span>
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :                 g_warning(&quot;The server answered with a NAK to our CAP request, this should not happen&quot;);</span></a>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span>            :                 /* A NAK'd request means that a required cap can't be enabled or disabled, don't update the
+<span class="lineNum">     164 </span>            :                  * list of active caps and notify the listeners. */
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; caps_length; i++)</span></a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                         cap_emit_signal(server, &quot;nak&quot;, caps[i]);</span>
+<span class="lineNum">     167 </span>            :         }
+<span class="lineNum">     168 </span>            : 
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :         g_strfreev(caps);</span></a>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="171"><span class="lineNum">     171 </span>            : }</a>
+<span class="lineNum">     172 </span>            : 
+<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 : static void event_invalid_cap (IRC_SERVER_REC *server, const char *data, const char *from)</span></a>
+<span class="lineNum">     174 </span>            : {
+<span class="lineNum">     175 </span>            :         /* The server didn't understand one (or more) requested caps, terminate the negotiation.
+<span class="lineNum">     176 </span>            :          * This could be handled in a graceful way but since it shouldn't really ever happen this seems a
+<a name="177"><span class="lineNum">     177 </span>            :          * good way to deal with 410 errors. */</a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         server-&gt;cap_complete = FALSE;</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         irc_send_cmd_now(server, &quot;CAP END&quot;);</span>
+<a name="180"><span class="lineNum">     180 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineCov">          1 : void cap_init (void)</span>
+<span class="lineNum">     183 </span>            : {
+<span class="lineNum">     184 </span><span class="lineCov">          1 :         signal_add_first(&quot;event cap&quot;, (SIGNAL_FUNC) event_cap);</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineCov">          1 :         signal_add_first(&quot;event 410&quot;, (SIGNAL_FUNC) event_invalid_cap);</span></a>
+<a name="186"><span class="lineNum">     186 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span><span class="lineCov">          1 : void cap_deinit (void)</span>
+<a name="189"><span class="lineNum">     189 </span>            : {</a>
+<span class="lineNum">     190 </span><span class="lineCov">          1 :         signal_remove(&quot;event cap&quot;, (SIGNAL_FUNC) event_cap);</span>
+<span class="lineNum">     191 </span><span class="lineCov">          1 :         signal_remove(&quot;event 410&quot;, (SIGNAL_FUNC) event_invalid_cap);</span>
+<span class="lineNum">     192 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

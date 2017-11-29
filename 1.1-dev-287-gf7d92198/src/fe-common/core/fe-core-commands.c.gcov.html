@@ -1,0 +1,438 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/core/fe-core-commands.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/core</a> - fe-core-commands.c<span style="font-size: 80%;"> (source / <a href="fe-core-commands.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">45</td>
+            <td class="headerCovTableEntry">150</td>
+            <td class="headerCovTableEntryLo">30.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntryLo">28.6 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  fe-core-commands.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;core.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;signals.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;commands.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;levels.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;settings.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;irssi-version.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      31 </span>            : #ifdef HAVE_CAPSICUM
+<span class="lineNum">      32 </span>            : #include &quot;capsicum.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #endif</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &quot;fe-windows.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;printtext.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span>            : #define PASTE_CHECK_SPEED 200 /* 0.2 sec */
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : static int ret_texts[] = {
+<a name="41"><span class="lineNum">      41 </span>            :         TXT_OPTION_UNKNOWN,</a>
+<span class="lineNum">      42 </span>            :         TXT_OPTION_AMBIGUOUS,
+<span class="lineNum">      43 </span>            :         TXT_OPTION_MISSING_ARG,
+<span class="lineNum">      44 </span>            :         TXT_COMMAND_UNKNOWN,
+<a name="45"><span class="lineNum">      45 </span>            :         TXT_COMMAND_AMBIGUOUS,</a>
+<span class="lineNum">      46 </span>            :         -1,
+<span class="lineNum">      47 </span>            :         TXT_NOT_ENOUGH_PARAMS,
+<span class="lineNum">      48 </span>            :         TXT_NOT_CONNECTED,
+<a name="49"><span class="lineNum">      49 </span>            :         TXT_NOT_JOINED,</a>
+<span class="lineNum">      50 </span>            :         TXT_CHAN_NOT_FOUND,
+<span class="lineNum">      51 </span>            :         TXT_CHAN_NOT_SYNCED,
+<span class="lineNum">      52 </span>            :         TXT_ILLEGAL_PROTO,
+<a name="53"><span class="lineNum">      53 </span>            :         TXT_NOT_GOOD_IDEA,</a>
+<span class="lineNum">      54 </span>            :         TXT_INVALID_TIME,
+<span class="lineNum">      55 </span>            :         TXT_INVALID_CHARSET,
+<span class="lineNum">      56 </span>            :         TXT_EVAL_MAX_RECURSE,
+<a name="57"><span class="lineNum">      57 </span>            :         TXT_PROGRAM_NOT_FOUND,</a>
+<span class="lineNum">      58 </span>            :         TXT_NO_SERVER_DEFINED,
+<span class="lineNum">      59 </span>            : };
+<span class="lineNum">      60 </span>            : 
+<a name="61"><span class="lineNum">      61 </span>            : int command_hide_output;</a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : /* keep the whole command line here temporarily. we need it in
+<span class="lineNum">      64 </span>            :    &quot;default command&quot; event handler, but there we don't know if the start of
+<a name="65"><span class="lineNum">      65 </span>            :    the line had one or two command chars, and which one.. */</a>
+<span class="lineNum">      66 </span>            : static const char *current_cmdline;
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span>            : static GTimeVal time_command_last, time_command_now;
+<a name="69"><span class="lineNum">      69 </span>            : static int last_command_cmd, command_cmd;</a>
+<a name="70"><span class="lineNum">      70 </span>            : </a>
+<span class="lineNum">      71 </span>            : /* SYNTAX: ECHO [-current] [-window &lt;name&gt;] [-level &lt;level&gt;] &lt;text&gt; */
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 : static void cmd_echo(const char *data, void *server, WI_ITEM_REC *item)</span>
+<a name="73"><span class="lineNum">      73 </span>            : {</a>
+<span class="lineNum">      74 </span>            :         WINDOW_REC *window;
+<span class="lineNum">      75 </span>            :         GHashTable *optlist;
+<span class="lineNum">      76 </span>            :         char *msg, *levelstr, *winname;
+<a name="77"><span class="lineNum">      77 </span>            :         void *free_arg;</a>
+<span class="lineNum">      78 </span>            :         int level;
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1 | PARAM_FLAG_OPTIONS |</span>
+<span class="lineNum">      83 </span>            :                             PARAM_FLAG_GETREST, &quot;echo&quot;, &amp;optlist, &amp;msg))
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         levelstr = g_hash_table_lookup(optlist, &quot;level&quot;);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :         level = levelstr == NULL ? 0 :</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :                 level2bits(g_hash_table_lookup(optlist, &quot;level&quot;), NULL);</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         if (level == 0) level = MSGLEVEL_CRAP;</span></a>
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :         winname = g_hash_table_lookup(optlist, &quot;window&quot;);</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         window = winname == NULL ? NULL :</span>
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :                 is_numeric(winname, '\0') ?</span></a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :                 window_find_refnum(atoi(winname)) :</span>
+<span class="lineNum">      95 </span>            :                 window_find_item(NULL, winname);
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         if (window == NULL) window = active_win;</span>
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         printtext_window(window, level, &quot;%s&quot;, msg);</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<span class="lineNum">     100 </span>            : }
+<a name="101"><span class="lineNum">     101 </span>            : </a>
+<span class="lineNum">     102 </span>            : /* SYNTAX: VERSION */
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 : static void cmd_version(char *data)</span>
+<span class="lineNum">     104 </span>            : {
+<a name="105"><span class="lineNum">     105 </span>            :         char time[10];</a>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     108 </span>            : 
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :         if (*data == '\0') {</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 g_snprintf(time, sizeof(time), &quot;%04d&quot;, IRSSI_VERSION_TIME);</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 printtext(NULL, NULL, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     112 </span>            :                           &quot;Client: &quot;PACKAGE_TARNAME&quot; &quot; PACKAGE_VERSION&quot; (%d %s)&quot;,
+<a name="113"><span class="lineNum">     113 </span>            :                           IRSSI_VERSION_DATE, time);</a>
+<span class="lineNum">     114 </span>            :         }
+<span class="lineNum">     115 </span>            : }
+<a name="116"><span class="lineNum">     116 </span>            : </a>
+<a name="117"><span class="lineNum">     117 </span>            : /* SYNTAX: CAT &lt;file&gt; */</a>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 : static void cmd_cat(const char *data)</span>
+<span class="lineNum">     119 </span>            : {
+<span class="lineNum">     120 </span>            :         char *fname, *fposstr;
+<a name="121"><span class="lineNum">     121 </span>            :         void *free_arg;</a>
+<span class="lineNum">     122 </span>            :         int fpos;
+<span class="lineNum">     123 </span>            :         GIOChannel *handle;
+<span class="lineNum">     124 </span>            :         GString *buf;
+<a name="125"><span class="lineNum">     125 </span>            :         gsize tpos;</a>
+<span class="lineNum">     126 </span>            : #ifdef HAVE_CAPSICUM
+<span class="lineNum">     127 </span>            :         int fd;
+<span class="lineNum">     128 </span>            : #endif
+<a name="129"><span class="lineNum">     129 </span>            : </a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 2, &amp;fname, &amp;fposstr))</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     132 </span>            : 
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :         fname = convert_home(fname);</span></a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :         fpos = atoi(fposstr);</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<span class="lineNum">     136 </span>            : 
+<a name="137"><span class="lineNum">     137 </span>            : #ifdef HAVE_CAPSICUM</a>
+<span class="lineNum">     138 </span>            :         fd = capsicum_open_wrapper(fname, O_RDONLY, 0);
+<span class="lineNum">     139 </span>            :         if (fd &gt; 0)
+<span class="lineNum">     140 </span>            :                 handle = g_io_channel_unix_new(fd);
+<a name="141"><span class="lineNum">     141 </span>            :         else</a>
+<span class="lineNum">     142 </span>            :                 handle = NULL;
+<span class="lineNum">     143 </span>            : #else
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :         handle = g_io_channel_new_file(fname, &quot;r&quot;, NULL);</span>
+<a name="145"><span class="lineNum">     145 </span>            : #endif</a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         g_free(fname);</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :         if (handle == NULL) {</span>
+<a name="149"><span class="lineNum">     149 </span>            :                 /* file not found */</a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :                 printtext(NULL, NULL, MSGLEVEL_CLIENTERROR,</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :                           &quot;%s&quot;, g_strerror(errno));</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="153"><span class="lineNum">     153 </span>            :         }</a>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :         g_io_channel_set_encoding(handle, NULL, NULL);</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :         g_io_channel_seek_position(handle, fpos, G_SEEK_SET, NULL);</span>
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 :         buf = g_string_sized_new(512);</span></a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         while (g_io_channel_read_line_string(handle, buf, &amp;tpos, NULL) == G_IO_STATUS_NORMAL) {</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                 buf-&gt;str[tpos] = '\0';</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :                 printtext(NULL, NULL, MSGLEVEL_CLIENTCRAP |</span>
+<a name="161"><span class="lineNum">     161 </span>            :                           MSGLEVEL_NEVER, &quot;%s&quot;, buf-&gt;str);</a>
+<span class="lineNum">     162 </span>            :         }
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         g_string_free(buf, TRUE);</span>
+<span class="lineNum">     164 </span>            : 
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :         g_io_channel_unref(handle);</span></a>
+<span class="lineNum">     166 </span>            : }
+<a name="167"><span class="lineNum">     167 </span>            : </a>
+<span class="lineNum">     168 </span>            : /* SYNTAX: BEEP */
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 : static void cmd_beep(void)</span></a>
+<span class="lineNum">     170 </span>            : {
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :         signal_emit(&quot;beep&quot;, 0);</span>
+<a name="172"><span class="lineNum">     172 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 : static void cmd_nick(const char *data, SERVER_REC *server)</span>
+<span class="lineNum">     175 </span>            : {
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         if (*data != '\0') return;</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         if (server == NULL || !server-&gt;connected)</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 cmd_return_error(CMDERR_NOT_CONNECTED);</span>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span>            :         /* display current nick */
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         printformat(NULL, NULL, MSGLEVEL_CLIENTNOTICE, TXT_YOUR_NICK, server-&gt;nick);</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         signal_stop();</span>
+<a name="185"><span class="lineNum">     185 </span>            : }</a>
+<a name="186"><span class="lineNum">     186 </span>            : </a>
+<span class="lineNum">     187 </span>            : /* SYNTAX: UPTIME */
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 : static void cmd_uptime(char *data)</span>
+<a name="189"><span class="lineNum">     189 </span>            : {</a>
+<span class="lineNum">     190 </span>            :         long uptime;
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="193"><span class="lineNum">     193 </span>            : </a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :         if (*data == '\0') {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                 uptime = (long)difftime(time(NULL), client_start_time);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 printtext(NULL, NULL, MSGLEVEL_CLIENTNOTICE,</span>
+<a name="197"><span class="lineNum">     197 </span>            :                           &quot;Uptime: %ldd %ldh %ldm %lds&quot;,</a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                           uptime/3600/24, uptime/3600%24,</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                           uptime/60%60, uptime%60);</span>
+<span class="lineNum">     200 </span>            :         }
+<a name="201"><span class="lineNum">     201 </span>            : }</a>
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 : static void sig_stop(void)</span>
+<span class="lineNum">     204 </span>            : {
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :         signal_stop();</span></a>
+<a name="206"><span class="lineNum">     206 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineCov">          2 : static void event_command(const char *data)</span>
+<a name="209"><span class="lineNum">     209 </span>            : {</a>
+<span class="lineNum">     210 </span>            :         const char *cmdchar;
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span>            :         /* save current command line */
+<a name="213"><span class="lineNum">     213 </span><span class="lineCov">          2 :         current_cmdline = data;</span></a>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            :         /* for detecting if we're pasting text */
+<span class="lineNum">     216 </span><span class="lineCov">          2 :         time_command_last = time_command_now;</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">          2 :         last_command_cmd = command_cmd;</span></a>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineCov">          2 :         g_get_current_time(&amp;time_command_now);</span>
+<span class="lineNum">     220 </span><span class="lineCov">          4 :         command_cmd = *data != '\0' &amp;&amp;</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineCov">          2 :                 strchr(settings_get_str(&quot;cmdchars&quot;), *data) != NULL;</span></a>
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span>            :         /* /^command hides the output of the command */
+<span class="lineNum">     224 </span><span class="lineCov">          4 :         cmdchar = *data == '\0' ? NULL :</span>
+<a name="225"><span class="lineNum">     225 </span><span class="lineCov">          2 :                 strchr(settings_get_str(&quot;cmdchars&quot;), *data);</span></a>
+<span class="lineNum">     226 </span><span class="lineCov">          4 :         if (cmdchar != NULL &amp;&amp; (data[1] == '^' ||</span>
+<span class="lineNum">     227 </span><span class="lineCov">          2 :                                 (data[1] == *cmdchar &amp;&amp; data[2] == '^'))</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                             &amp;&amp; !command_hide_output++) {</span>
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 signal_add_first(&quot;print starting&quot;, (SIGNAL_FUNC) sig_stop);</span></a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 signal_add_first(&quot;print format&quot;, (SIGNAL_FUNC) sig_stop);</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 signal_add_first(&quot;print text&quot;, (SIGNAL_FUNC) sig_stop);</span>
+<span class="lineNum">     232 </span>            :         }
+<a name="233"><span class="lineNum">     233 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineCov">          2 : static void event_command_last(const char *data)</span>
+<span class="lineNum">     236 </span>            : {
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">          2 :         if (command_hide_output &amp;&amp; !--command_hide_output) {</span></a>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :                 signal_remove(&quot;print starting&quot;, (SIGNAL_FUNC) sig_stop);</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :                 signal_remove(&quot;print format&quot;, (SIGNAL_FUNC) sig_stop);</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                 signal_remove(&quot;print text&quot;, (SIGNAL_FUNC) sig_stop);</span>
+<a name="241"><span class="lineNum">     241 </span>            :         }</a>
+<a name="242"><span class="lineNum">     242 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 : static void event_default_command(const char *data, void *server,</span>
+<a name="245"><span class="lineNum">     245 </span>            :                                   WI_ITEM_REC *item)</a>
+<span class="lineNum">     246 </span>            : {
+<span class="lineNum">     247 </span>            :         const char *cmdchars, *ptr;
+<span class="lineNum">     248 </span>            :         char *cmd, *p;
+<a name="249"><span class="lineNum">     249 </span>            :         long diff;</a>
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :         cmdchars = settings_get_str(&quot;cmdchars&quot;);</span>
+<span class="lineNum">     252 </span>            : 
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :         ptr = data;</span></a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :         while (*ptr != '\0' &amp;&amp; *ptr != ' ') {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                 if (strchr(cmdchars, *ptr)) {</span>
+<span class="lineNum">     256 </span>            :                         /* command character inside command .. we probably
+<a name="257"><span class="lineNum">     257 </span>            :                            want to send this text to channel. for example</a>
+<span class="lineNum">     258 </span>            :                            when pasting a path /usr/bin/xxx. */
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;send text&quot;, 3, current_cmdline, server, item);</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :                         return;</span>
+<a name="261"><span class="lineNum">     261 </span>            :                 }</a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                 ptr++;</span>
+<span class="lineNum">     263 </span>            :         }
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span>            :         /* maybe we're copy+pasting text? check how long it was since the</a>
+<span class="lineNum">     266 </span>            :            last line */
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         diff = get_timeval_diff(&amp;time_command_now, &amp;time_command_last);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         if (item != NULL &amp;&amp; !last_command_cmd &amp;&amp; diff &lt; PASTE_CHECK_SPEED) {</span>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;send text&quot;, 3, current_cmdline, active_win-&gt;active_server, active_win-&gt;active);</span></a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                 command_cmd = FALSE;</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     272 </span>            :         }
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<span class="lineNum">     274 </span>            :         /* get the command part of the line, send &quot;error command&quot; signal */
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :         cmd = g_strdup(data);</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :         p = strchr(cmd, ' ');</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :         if (p != NULL) *p = '\0';</span></a>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :         signal_emit(&quot;error command&quot;, 2, GINT_TO_POINTER(CMDERR_UNKNOWN), cmd);</span>
+<span class="lineNum">     280 </span>            : 
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :         g_free(cmd);</span></a>
+<a name="282"><span class="lineNum">     282 </span>            : }</a>
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 : static void event_cmderror(void *errorp, const char *arg)</span>
+<a name="285"><span class="lineNum">     285 </span>            : {</a>
+<span class="lineNum">     286 </span>            :         int error;
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :         error = GPOINTER_TO_INT(errorp);</span>
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :         if (error == CMDERR_ERRNO) {</span></a>
+<span class="lineNum">     290 </span>            :                 /* errno is special */
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 printtext(NULL, NULL, MSGLEVEL_CLIENTERROR, &quot;%s&quot;, g_strerror(errno));</span>
+<span class="lineNum">     292 </span>            :         } else {
+<a name="293"><span class="lineNum">     293 </span>            :                 /* others */</a>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTERROR, ret_texts[error + -CMDERR_OPTION_UNKNOWN], arg);</span>
+<span class="lineNum">     295 </span>            :         }
+<a name="296"><span class="lineNum">     296 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="297"><span class="lineNum">     297 </span>            : </a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 : static void event_list_subcommands(const char *command)</span>
+<span class="lineNum">     299 </span>            : {
+<span class="lineNum">     300 </span>            :         GSList *tmp;
+<a name="301"><span class="lineNum">     301 </span>            :         GString *str;</a>
+<span class="lineNum">     302 </span>            :         int len;
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :         str = g_string_new(NULL);</span>
+<a name="305"><span class="lineNum">     305 </span>            : </a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :         len = strlen(command);</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :         for (tmp = commands; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 COMMAND_REC *rec = tmp-&gt;data;</span>
+<a name="309"><span class="lineNum">     309 </span>            : </a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 if (g_ascii_strncasecmp(rec-&gt;cmd, command, len) == 0 &amp;&amp;</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                     rec-&gt;cmd[len] == ' ' &amp;&amp;</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                     strchr(rec-&gt;cmd+len+1, ' ') == NULL) {</span>
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :                         g_string_append_printf(str, &quot;%s &quot;, rec-&gt;cmd+len+1);</span></a>
+<span class="lineNum">     314 </span>            :                 }
+<span class="lineNum">     315 </span>            :         }
+<span class="lineNum">     316 </span>            : 
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :         if (str-&gt;len != 0) {</span></a>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :                 g_string_truncate(str, str-&gt;len-1);</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :                 printtext(NULL, NULL, MSGLEVEL_CLIENTERROR, &quot;%s&quot;, str-&gt;str);</span>
+<span class="lineNum">     320 </span>            :         }
+<a name="321"><span class="lineNum">     321 </span>            : </a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :         g_string_free(str, TRUE);</span>
+<a name="323"><span class="lineNum">     323 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     324 </span>            : 
+<a name="325"><span class="lineNum">     325 </span><span class="lineCov">          1 : void fe_core_commands_init(void)</span></a>
+<span class="lineNum">     326 </span>            : {
+<span class="lineNum">     327 </span><span class="lineCov">          1 :         command_hide_output = 0;</span>
+<span class="lineNum">     328 </span>            : 
+<a name="329"><span class="lineNum">     329 </span><span class="lineCov">          1 :         command_cmd = FALSE;</span></a>
+<span class="lineNum">     330 </span><span class="lineCov">          1 :         memset(&amp;time_command_now, 0, sizeof(GTimeVal));</span>
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineCov">          1 :         command_bind(&quot;echo&quot;, NULL, (SIGNAL_FUNC) cmd_echo);</span>
+<a name="333"><span class="lineNum">     333 </span><span class="lineCov">          1 :         command_bind(&quot;version&quot;, NULL, (SIGNAL_FUNC) cmd_version);</span></a>
+<span class="lineNum">     334 </span><span class="lineCov">          1 :         command_bind(&quot;cat&quot;, NULL, (SIGNAL_FUNC) cmd_cat);</span>
+<span class="lineNum">     335 </span><span class="lineCov">          1 :         command_bind(&quot;beep&quot;, NULL, (SIGNAL_FUNC) cmd_beep);</span>
+<span class="lineNum">     336 </span><span class="lineCov">          1 :         command_bind(&quot;uptime&quot;, NULL, (SIGNAL_FUNC) cmd_uptime);</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineCov">          1 :         command_bind_first(&quot;nick&quot;, NULL, (SIGNAL_FUNC) cmd_nick);</span></a>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span><span class="lineCov">          1 :         signal_add(&quot;send command&quot;, (SIGNAL_FUNC) event_command);</span>
+<span class="lineNum">     340 </span><span class="lineCov">          1 :         signal_add_last(&quot;send command&quot;, (SIGNAL_FUNC) event_command_last);</span>
+<a name="341"><span class="lineNum">     341 </span><span class="lineCov">          1 :         signal_add(&quot;default command&quot;, (SIGNAL_FUNC) event_default_command);</span></a>
+<span class="lineNum">     342 </span><span class="lineCov">          1 :         signal_add(&quot;error command&quot;, (SIGNAL_FUNC) event_cmderror);</span>
+<span class="lineNum">     343 </span><span class="lineCov">          1 :         signal_add(&quot;list subcommands&quot;, (SIGNAL_FUNC) event_list_subcommands);</span>
+<span class="lineNum">     344 </span>            : 
+<a name="345"><span class="lineNum">     345 </span><span class="lineCov">          1 :         command_set_options(&quot;echo&quot;, &quot;current +level +window&quot;);</span></a>
+<a name="346"><span class="lineNum">     346 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span><span class="lineCov">          1 : void fe_core_commands_deinit(void)</span>
+<a name="349"><span class="lineNum">     349 </span>            : {</a>
+<span class="lineNum">     350 </span><span class="lineCov">          1 :         command_unbind(&quot;echo&quot;, (SIGNAL_FUNC) cmd_echo);</span>
+<span class="lineNum">     351 </span><span class="lineCov">          1 :         command_unbind(&quot;version&quot;, (SIGNAL_FUNC) cmd_version);</span>
+<span class="lineNum">     352 </span><span class="lineCov">          1 :         command_unbind(&quot;cat&quot;, (SIGNAL_FUNC) cmd_cat);</span>
+<a name="353"><span class="lineNum">     353 </span><span class="lineCov">          1 :         command_unbind(&quot;beep&quot;, (SIGNAL_FUNC) cmd_beep);</span></a>
+<span class="lineNum">     354 </span><span class="lineCov">          1 :         command_unbind(&quot;uptime&quot;, (SIGNAL_FUNC) cmd_uptime);</span>
+<span class="lineNum">     355 </span><span class="lineCov">          1 :         command_unbind(&quot;nick&quot;, (SIGNAL_FUNC) cmd_nick);</span>
+<span class="lineNum">     356 </span>            : 
+<a name="357"><span class="lineNum">     357 </span><span class="lineCov">          1 :         signal_remove(&quot;send command&quot;, (SIGNAL_FUNC) event_command);</span></a>
+<span class="lineNum">     358 </span><span class="lineCov">          1 :         signal_remove(&quot;send command&quot;, (SIGNAL_FUNC) event_command_last);</span>
+<span class="lineNum">     359 </span><span class="lineCov">          1 :         signal_remove(&quot;default command&quot;, (SIGNAL_FUNC) event_default_command);</span>
+<span class="lineNum">     360 </span><span class="lineCov">          1 :         signal_remove(&quot;error command&quot;, (SIGNAL_FUNC) event_cmderror);</span>
+<a name="361"><span class="lineNum">     361 </span><span class="lineCov">          1 :         signal_remove(&quot;list subcommands&quot;, (SIGNAL_FUNC) event_list_subcommands);</span></a>
+<span class="lineNum">     362 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

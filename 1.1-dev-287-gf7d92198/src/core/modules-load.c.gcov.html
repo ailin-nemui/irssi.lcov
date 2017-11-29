@@ -1,0 +1,519 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/modules-load.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - modules-load.c<span style="font-size: 80%;"> (source / <a href="modules-load.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">65</td>
+            <td class="headerCovTableEntry">209</td>
+            <td class="headerCovTableEntryLo">31.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntry">13</td>
+            <td class="headerCovTableEntryLo">53.8 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  modules-load.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;modules.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;modules-load.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;signals.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : </a>
+<span class="lineNum">      26 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;misc.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<span class="lineNum">      30 </span>            : #ifdef HAVE_GMODULE
+<a name="31"><span class="lineNum">      31 </span>            : </a>
+<span class="lineNum">      32 </span>            : /* Returns the module name without path, &quot;lib&quot; prefix or &quot;.so&quot; suffix */
+<a name="33"><span class="lineNum">      33 </span><span class="lineCov">          1 : static char *module_get_name(const char *path, int *start, int *end)</span></a>
+<span class="lineNum">      34 </span>            : {
+<span class="lineNum">      35 </span>            :         const char *name;
+<span class="lineNum">      36 </span>            :         char *module_name, *ptr;
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span><span class="lineCov">          1 :         name = NULL;</span>
+<span class="lineNum">      39 </span><span class="lineCov">          1 :         if (*path == '~' || g_path_is_absolute(path)) {</span>
+<span class="lineNum">      40 </span><span class="lineNoCov">          0 :                 name = strrchr(path, G_DIR_SEPARATOR);</span>
+<a name="41"><span class="lineNum">      41 </span><span class="lineNoCov">          0 :                 if (name != NULL) name++;</span></a>
+<span class="lineNum">      42 </span>            :         }
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span><span class="lineCov">          1 :         if (name == NULL)</span>
+<a name="45"><span class="lineNum">      45 </span><span class="lineCov">          1 :                 name = path;</span></a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span><span class="lineCov">          1 :         if (strncmp(name, &quot;lib&quot;, 3) == 0)</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :                 name += 3;</span>
+<a name="49"><span class="lineNum">      49 </span>            : </a>
+<span class="lineNum">      50 </span><span class="lineCov">          1 :         module_name = g_strdup(name);</span>
+<span class="lineNum">      51 </span><span class="lineCov">          1 :         ptr = strchr(module_name, '.');</span>
+<span class="lineNum">      52 </span><span class="lineCov">          1 :         if (ptr != NULL) *ptr = '\0';</span>
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<span class="lineNum">      54 </span><span class="lineCov">          1 :         *start = (int) (name-path);</span>
+<span class="lineNum">      55 </span><span class="lineCov">          1 :         *end = *start + (ptr == NULL ? strlen(name) :</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :                          (int) (ptr-module_name));</span>
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<span class="lineNum">      58 </span><span class="lineCov">          1 :         return module_name;</span>
+<span class="lineNum">      59 </span>            : }
+<a name="60"><span class="lineNum">      60 </span>            : </a>
+<a name="61"><span class="lineNum">      61 </span>            : /* Returns the root module name for given submodule (eg. perl_core -&gt; perl) */</a>
+<span class="lineNum">      62 </span><span class="lineCov">          1 : static char *module_get_root(const char *name, char **prefixes)</span>
+<span class="lineNum">      63 </span>            : {
+<span class="lineNum">      64 </span>            :         int len;
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<span class="lineNum">      66 </span>            :         /* skip any of the prefixes.. */
+<span class="lineNum">      67 </span><span class="lineCov">          1 :         if (prefixes != NULL) {</span>
+<span class="lineNum">      68 </span><span class="lineCov">         10 :                 while (*prefixes != NULL) {</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineCov">          8 :                         len = strlen(*prefixes);</span></a>
+<span class="lineNum">      70 </span><span class="lineCov">          8 :                         if (strncmp(name, *prefixes, len) == 0 &amp;&amp;</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                             name[len] == '_') {</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :                                 name += len+1;</span>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :                                 break;</span></a>
+<span class="lineNum">      74 </span>            :                         }
+<span class="lineNum">      75 </span><span class="lineCov">          8 :                         prefixes++;</span>
+<span class="lineNum">      76 </span>            :                 }
+<a name="77"><span class="lineNum">      77 </span>            :         }</a>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span>            :         /* skip the _core part */
+<span class="lineNum">      80 </span><span class="lineCov">          1 :         len = strlen(name);</span>
+<a name="81"><span class="lineNum">      81 </span><span class="lineCov">          1 :         if (len &gt; 5 &amp;&amp; g_strcmp0(name+len-5, &quot;_core&quot;) == 0)</span></a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :                 return g_strndup(name, len-5);</span>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineCov">          1 :         return g_strdup(name);</span>
+<a name="85"><span class="lineNum">      85 </span>            : }</a>
+<a name="86"><span class="lineNum">      86 </span>            : </a>
+<span class="lineNum">      87 </span>            : /* Returns the sub module name for given submodule (eg. perl_core -&gt; core) */
+<span class="lineNum">      88 </span><span class="lineCov">          1 : static char *module_get_sub(const char *name, const char *root)</span>
+<a name="89"><span class="lineNum">      89 </span>            : {</a>
+<span class="lineNum">      90 </span>            :         int rootlen, namelen;
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineCov">          1 :         namelen = strlen(name);</span>
+<a name="93"><span class="lineNum">      93 </span><span class="lineCov">          1 :         rootlen = strlen(root);</span></a>
+<span class="lineNum">      94 </span><span class="lineCov">          1 :         g_return_val_if_fail(namelen &gt;= rootlen, g_strdup(name));</span>
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineCov">          2 :         if (strncmp(name, root, rootlen) == 0 &amp;&amp;</span>
+<a name="97"><span class="lineNum">      97 </span><span class="lineCov">          1 :             g_strcmp0(name+rootlen, &quot;_core&quot;) == 0)</span></a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :                 return g_strdup(&quot;core&quot;);</span>
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span><span class="lineCov">          1 :         if (namelen &gt; rootlen &amp;&amp; name[namelen-rootlen-1] == '_' &amp;&amp;</span>
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :             g_strcmp0(name+namelen-rootlen, root) == 0)</span></a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                 return g_strndup(name, namelen-rootlen-1);</span>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineCov">          1 :         return g_strdup(name);</span>
+<a name="105"><span class="lineNum">     105 </span>            : }</a>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 : static GModule *module_open(const char *name, int *found)</span>
+<span class="lineNum">     108 </span>            : {
+<a name="109"><span class="lineNum">     109 </span>            :         struct stat statbuf;</a>
+<span class="lineNum">     110 </span>            :         GModule *module;
+<span class="lineNum">     111 </span>            :         char *path, *str;
+<span class="lineNum">     112 </span>            : 
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :         if (g_path_is_absolute(name) || *name == '~' ||</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :             (*name == '.' &amp;&amp; name[1] == G_DIR_SEPARATOR))</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                 path = g_strdup(name);</span>
+<span class="lineNum">     116 </span>            :         else {
+<a name="117"><span class="lineNum">     117 </span>            :                 /* first try from home dir */</a>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :                 str = g_strdup_printf(&quot;%s/modules&quot;, get_irssi_dir());</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :                 path = g_module_build_path(str, name);</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                 g_free(str);</span>
+<a name="121"><span class="lineNum">     121 </span>            : </a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                 if (stat(path, &amp;statbuf) == 0) {</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                         module = g_module_open(path, (GModuleFlags) 0);</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                         g_free(path);</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                         *found = TRUE;</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :                         return module;</span>
+<span class="lineNum">     127 </span>            :                 }
+<span class="lineNum">     128 </span>            : 
+<a name="129"><span class="lineNum">     129 </span>            :                 /* module not found from home dir, try global module dir */</a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 g_free(path);</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 path = g_module_build_path(MODULEDIR, name);</span>
+<span class="lineNum">     132 </span>            :         }
+<a name="133"><span class="lineNum">     133 </span>            : </a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :         *found = stat(path, &amp;statbuf) == 0;</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :         module = g_module_open(path, (GModuleFlags) 0);</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         g_free(path);</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :         return module;</span></a>
+<a name="138"><span class="lineNum">     138 </span>            : }</a>
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 : static char *module_get_func(const char *rootmodule, const char *submodule,</span>
+<a name="141"><span class="lineNum">     141 </span>            :                              const char *function)</a>
+<span class="lineNum">     142 </span>            : {
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :         if (g_strcmp0(submodule, &quot;core&quot;) == 0)</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                 return g_strconcat(rootmodule, &quot;_core_&quot;, function, NULL);</span>
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         if (g_strcmp0(rootmodule, submodule) == 0)</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                 return g_strconcat(rootmodule, &quot;_&quot;, function, NULL);</span>
+<span class="lineNum">     148 </span>            : 
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :         return g_strconcat(submodule, &quot;_&quot;, rootmodule, &quot;_&quot;, function, NULL);</span></a>
+<span class="lineNum">     150 </span>            : }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            : #define module_error(error, text, rootmodule, submodule) \
+<a name="153"><span class="lineNum">     153 </span>            :         signal_emit(&quot;module error&quot;, 4, GINT_TO_POINTER(error), text, \</a>
+<span class="lineNum">     154 </span>            :                     rootmodule, submodule)
+<span class="lineNum">     155 </span>            : 
+<a name="156"><span class="lineNum">     156 </span>            : /* Returns 1 if ok, 0 if error in module and</a>
+<a name="157"><span class="lineNum">     157 </span>            :    -1 if module wasn't found */</a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 : static int module_load_name(const char *path, const char *rootmodule,</span>
+<span class="lineNum">     159 </span>            :                             const char *submodule, int silent)
+<span class="lineNum">     160 </span>            : {
+<a name="161"><span class="lineNum">     161 </span>            :         void (*module_init) (void);</a>
+<span class="lineNum">     162 </span>            :         void (*module_deinit) (void);
+<span class="lineNum">     163 </span>            :         void (*module_version) (int *);
+<span class="lineNum">     164 </span>            :         GModule *gmodule;
+<a name="165"><span class="lineNum">     165 </span>            :         MODULE_REC *module;</a>
+<span class="lineNum">     166 </span>            :         MODULE_FILE_REC *rec;
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :         gpointer value_version = NULL;</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         gpointer value1, value2 = NULL;</span>
+<a name="169"><span class="lineNum">     169 </span>            :         char *versionfunc, *initfunc, *deinitfunc;</a>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :         int module_abi_version = 0;</span>
+<span class="lineNum">     171 </span>            :         int found;
+<span class="lineNum">     172 </span>            : 
+<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 :         gmodule = module_open(path, &amp;found);</span></a>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :         if (gmodule == NULL) {</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :                 if (!silent || found) {</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :                         module_error(MODULE_ERROR_LOAD, g_module_error(),</span>
+<a name="177"><span class="lineNum">     177 </span>            :                                      rootmodule, submodule);</a>
+<span class="lineNum">     178 </span>            :                 }
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                 return found ? 0 : -1;</span>
+<span class="lineNum">     180 </span>            :         }
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span>            :         /* get the module's irssi abi version and bail out on mismatch */
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         versionfunc = module_get_func(rootmodule, submodule, &quot;abicheck&quot;);</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         if (!g_module_symbol(gmodule, versionfunc, &amp;value_version)) {</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineNoCov">          0 :                 g_free(versionfunc);</span></a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :                 module_error(MODULE_ERROR_VERSION_MISMATCH, &quot;0&quot;,</span>
+<span class="lineNum">     187 </span>            :                              rootmodule, submodule);
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 g_module_close(gmodule);</span>
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :                 return 0;</span></a>
+<span class="lineNum">     190 </span>            :         }
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :         g_free(versionfunc);</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :         module_version = value_version;</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :         module_version(&amp;module_abi_version);</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :         if (module_abi_version != IRSSI_ABI_VERSION) {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                 char *module_abi_versionstr = g_strdup_printf(&quot;%d&quot;, module_abi_version);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 module_error(MODULE_ERROR_VERSION_MISMATCH, module_abi_versionstr,</span>
+<a name="197"><span class="lineNum">     197 </span>            :                              rootmodule, submodule);</a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                 g_free(module_abi_versionstr);</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                 g_module_close(gmodule);</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<a name="201"><span class="lineNum">     201 </span>            :         }</a>
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span>            :         /* get the module's init() and deinit() functions */
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :         initfunc = module_get_func(rootmodule, submodule, &quot;init&quot;);</span>
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :         deinitfunc = module_get_func(rootmodule, submodule, &quot;deinit&quot;);</span></a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :         found = g_module_symbol(gmodule, initfunc, &amp;value1) &amp;&amp;</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 g_module_symbol(gmodule, deinitfunc, &amp;value2);</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :         g_free(initfunc);</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :         g_free(deinitfunc);</span></a>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :         if (!found) {</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 module_error(MODULE_ERROR_INVALID, NULL,</span>
+<a name="213"><span class="lineNum">     213 </span>            :                              rootmodule, submodule);</a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 g_module_close(gmodule);</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<span class="lineNum">     216 </span>            :         }
+<a name="217"><span class="lineNum">     217 </span>            : </a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :         module_init = value1;</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         module_deinit = value2;</span>
+<span class="lineNum">     220 </span>            : 
+<a name="221"><span class="lineNum">     221 </span>            :         /* Call the module's init() function - it should register itself</a>
+<span class="lineNum">     222 </span>            :            with module_register() function, abort if it doesn't. */
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :         module_init();</span>
+<span class="lineNum">     224 </span>            : 
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :         module = module_find(rootmodule);</span></a>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :         rec = module == NULL ? NULL :</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :                 g_strcmp0(rootmodule, submodule) == 0 ?</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :                 module_file_find(module, &quot;core&quot;) :</span>
+<a name="229"><span class="lineNum">     229 </span>            :                 module_file_find(module, submodule);</a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :         if (rec == NULL) {</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 rec = module_register_full(rootmodule, submodule, NULL);</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                 rec-&gt;gmodule = gmodule;</span>
+<a name="233"><span class="lineNum">     233 </span><span class="lineNoCov">          0 :                 module_file_unload(rec);</span></a>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                 module_error(MODULE_ERROR_INVALID, NULL,</span>
+<span class="lineNum">     236 </span>            :                              rootmodule, submodule);
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 :                 return 0;</span></a>
+<span class="lineNum">     238 </span>            :         }
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :         rec-&gt;module_deinit = module_deinit;</span>
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :         rec-&gt;gmodule = gmodule;</span></a>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :         rec-&gt;initialized = TRUE;</span>
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         settings_check_module(rec-&gt;defined_module_name);</span>
+<a name="245"><span class="lineNum">     245 </span>            : </a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :         signal_emit(&quot;module loaded&quot;, 2, rec-&gt;root, rec);</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :         return 1;</span>
+<a name="248"><span class="lineNum">     248 </span>            : }</a>
+<a name="249"><span class="lineNum">     249 </span>            : </a>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 : static int module_load_prefixes(const char *path, const char *module,</span>
+<span class="lineNum">     251 </span>            :                                 int start, int end, char **prefixes)
+<span class="lineNum">     252 </span>            : {
+<a name="253"><span class="lineNum">     253 </span>            :         GString *realpath;</a>
+<span class="lineNum">     254 </span>            :         int status, ok;
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span>            :         /* load module_core */
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :         realpath = g_string_new(path);</span></a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         g_string_insert(realpath, end, &quot;_core&quot;);</span>
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span>            :         /* Don't print the error message the first time, since the module
+<a name="261"><span class="lineNum">     261 </span>            :            may not have the core part at all. */</a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :         status = module_load_name(realpath-&gt;str, module, &quot;core&quot;, TRUE);</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :         ok = status &gt; 0;</span>
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :         if (prefixes != NULL) {</span></a>
+<span class="lineNum">     266 </span>            :                 /* load all the &quot;prefix modules&quot;, like the fe-common, irc,
+<span class="lineNum">     267 </span>            :                    etc. part of the module */
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                 while (*prefixes != NULL) {</span>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :                         g_string_assign(realpath, path);</span></a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                         g_string_insert_c(realpath, start, '_');</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                         g_string_insert(realpath, start, *prefixes);</span>
+<span class="lineNum">     272 </span>            : 
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :                         status = module_load_name(realpath-&gt;str, module,</span></a>
+<span class="lineNum">     274 </span>            :                                                   *prefixes, TRUE);
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                         if (status &gt; 0)</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                                 ok = TRUE;</span>
+<a name="277"><span class="lineNum">     277 </span>            : </a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                         prefixes++;</span>
+<span class="lineNum">     279 </span>            :                 }
+<span class="lineNum">     280 </span>            :         }
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :         if (!ok) {</span>
+<span class="lineNum">     283 </span>            :                 /* error loading module, print the error message */
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                 g_string_assign(realpath, path);</span>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 g_string_insert(realpath, end, &quot;_core&quot;);</span></a>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                 module_load_name(realpath-&gt;str, module, &quot;core&quot;, FALSE);</span>
+<span class="lineNum">     287 </span>            :         }
+<span class="lineNum">     288 </span>            : 
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :         g_string_free(realpath, TRUE);</span></a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :         return ok;</span>
+<a name="291"><span class="lineNum">     291 </span>            : }</a>
+<span class="lineNum">     292 </span>            : 
+<a name="293"><span class="lineNum">     293 </span><span class="lineCov">          1 : static int module_load_full(const char *path, const char *rootmodule,</span></a>
+<span class="lineNum">     294 </span>            :                             const char *submodule, int start, int end,
+<span class="lineNum">     295 </span>            :                             char **prefixes)
+<span class="lineNum">     296 </span>            : {
+<a name="297"><span class="lineNum">     297 </span>            :         MODULE_REC *module;</a>
+<span class="lineNum">     298 </span>            :         int status, try_prefixes;
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineCov">          1 :         if (!g_module_supported())</span>
+<a name="301"><span class="lineNum">     301 </span><span class="lineNoCov">          0 :                 return FALSE;</span></a>
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span><span class="lineCov">          1 :         module = module_find(rootmodule);</span>
+<span class="lineNum">     304 </span><span class="lineCov">          1 :         if (module != NULL &amp;&amp; (g_strcmp0(submodule, rootmodule) == 0 ||</span>
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :                                module_file_find(module, submodule) != NULL)) {</span></a>
+<span class="lineNum">     306 </span>            :                 /* module is already loaded */
+<span class="lineNum">     307 </span><span class="lineCov">          1 :                 module_error(MODULE_ERROR_ALREADY_LOADED, NULL,</span>
+<span class="lineNum">     308 </span>            :                              rootmodule, submodule);
+<a name="309"><span class="lineNum">     309 </span><span class="lineCov">          1 :                 return FALSE;</span></a>
+<span class="lineNum">     310 </span>            :         }
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span>            :         /* check if the given module exists.. */
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :         try_prefixes = g_strcmp0(rootmodule, submodule) == 0;</span></a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :         status = module_load_name(path, rootmodule, submodule, try_prefixes);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :         if (status == -1 &amp;&amp; try_prefixes) {</span>
+<span class="lineNum">     316 </span>            :                 /* nope, try loading the module_core,
+<a name="317"><span class="lineNum">     317 </span>            :                    fe_module, etc. */</a>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :                 status = module_load_prefixes(path, rootmodule,</span>
+<span class="lineNum">     319 </span>            :                                               start, end, prefixes);
+<span class="lineNum">     320 </span>            :         }
+<a name="321"><span class="lineNum">     321 </span>            : </a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :         return status &gt; 0;</span>
+<span class="lineNum">     323 </span>            : }
+<span class="lineNum">     324 </span>            : 
+<a name="325"><span class="lineNum">     325 </span>            : /* Load module - automatically tries to load also the related non-core</a>
+<span class="lineNum">     326 </span>            :    modules given in `prefixes' (like irc, fe, fe_text, ..) */
+<span class="lineNum">     327 </span><span class="lineCov">          1 : int module_load(const char *path, char **prefixes)</span>
+<span class="lineNum">     328 </span>            : {
+<a name="329"><span class="lineNum">     329 </span>            :         char *exppath, *name, *submodule, *rootmodule;</a>
+<span class="lineNum">     330 </span>            :         int start, end, ret;
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineCov">          1 :         g_return_val_if_fail(path != NULL, FALSE);</span>
+<a name="333"><span class="lineNum">     333 </span>            : </a>
+<span class="lineNum">     334 </span><span class="lineCov">          1 :         exppath = convert_home(path);</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">          1 :         name = module_get_name(exppath, &amp;start, &amp;end);</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineCov">          1 :         rootmodule = module_get_root(name, prefixes);</span></a>
+<span class="lineNum">     338 </span><span class="lineCov">          1 :         submodule = module_get_sub(name, rootmodule);</span>
+<span class="lineNum">     339 </span><span class="lineCov">          1 :         g_free(name);</span>
+<span class="lineNum">     340 </span>            : 
+<a name="341"><span class="lineNum">     341 </span><span class="lineCov">          1 :         ret = module_load_full(exppath, rootmodule, submodule,</span></a>
+<span class="lineNum">     342 </span>            :                                start, end, prefixes);
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span><span class="lineCov">          1 :         g_free(rootmodule);</span>
+<a name="345"><span class="lineNum">     345 </span><span class="lineCov">          1 :         g_free(submodule);</span></a>
+<span class="lineNum">     346 </span><span class="lineCov">          1 :         g_free(exppath);</span>
+<span class="lineNum">     347 </span><span class="lineCov">          1 :         return ret;</span>
+<span class="lineNum">     348 </span>            : }
+<a name="349"><span class="lineNum">     349 </span>            : </a>
+<span class="lineNum">     350 </span>            : /* Load a sub module. */
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 : int module_load_sub(const char *path, const char *submodule, char **prefixes)</span>
+<span class="lineNum">     352 </span>            : {
+<a name="353"><span class="lineNum">     353 </span>            :         GString *full_path;</a>
+<span class="lineNum">     354 </span>            :         char *exppath, *name, *rootmodule;
+<span class="lineNum">     355 </span>            :         int start, end, ret;
+<span class="lineNum">     356 </span>            : 
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(path != NULL, FALSE);</span></a>
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(submodule != NULL, FALSE);</span>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :         exppath = convert_home(path);</span>
+<a name="361"><span class="lineNum">     361 </span>            : </a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         name = module_get_name(exppath, &amp;start, &amp;end);</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :         rootmodule = module_get_root(name, prefixes);</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         g_free(name);</span>
+<a name="365"><span class="lineNum">     365 </span>            : </a>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :         full_path = g_string_new(exppath);</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :         if (g_strcmp0(submodule, &quot;core&quot;) == 0)</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                 g_string_insert(full_path, end, &quot;_core&quot;);</span>
+<a name="369"><span class="lineNum">     369 </span>            :         else {</a>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :                 g_string_insert_c(full_path, start, '_');</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 g_string_insert(full_path, start, submodule);</span>
+<span class="lineNum">     372 </span>            :         }
+<a name="373"><span class="lineNum">     373 </span>            : </a>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :         ret = module_load_full(full_path-&gt;str, rootmodule, submodule,</span>
+<span class="lineNum">     375 </span>            :                                start, end, NULL);
+<span class="lineNum">     376 </span>            : 
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 :         g_string_free(full_path, TRUE);</span></a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         g_free(rootmodule);</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         g_free(exppath);</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :         return ret;</span>
+<a name="381"><span class="lineNum">     381 </span>            : }</a>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 : static void module_file_deinit_gmodule(MODULE_FILE_REC *file)</span>
+<span class="lineNum">     384 </span>            : {
+<a name="385"><span class="lineNum">     385 </span>            :         /* call the module's deinit() function */</a>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :         if (file-&gt;module_deinit != NULL)</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                 file-&gt;module_deinit();</span>
+<span class="lineNum">     388 </span>            : 
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 :         if (file-&gt;defined_module_name != NULL) {</span></a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                 settings_remove_module(file-&gt;defined_module_name);</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 commands_remove_module(file-&gt;defined_module_name);</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                 signals_remove_module(file-&gt;defined_module_name);</span>
+<a name="393"><span class="lineNum">     393 </span>            :         }</a>
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :         g_module_close(file-&gt;gmodule);</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 : }</span>
+<a name="397"><span class="lineNum">     397 </span>            : </a>
+<span class="lineNum">     398 </span>            : #else /* !HAVE_GMODULE - modules are not supported */
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span>            : int module_load(const char *path, char **prefixes)
+<a name="401"><span class="lineNum">     401 </span>            : {</a>
+<span class="lineNum">     402 </span>            :         return FALSE;
+<span class="lineNum">     403 </span>            : }
+<span class="lineNum">     404 </span>            : 
+<a name="405"><span class="lineNum">     405 </span>            : #endif</a>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineCov">         12 : void module_file_unload(MODULE_FILE_REC *file)</span>
+<span class="lineNum">     408 </span>            : {
+<a name="409"><span class="lineNum">     409 </span>            :         MODULE_REC *root;</a>
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span><span class="lineCov">         12 :         root = file-&gt;root;</span>
+<span class="lineNum">     412 </span><span class="lineCov">         12 :         root-&gt;files = g_slist_remove(root-&gt;files, file);</span>
+<a name="413"><span class="lineNum">     413 </span>            : </a>
+<span class="lineNum">     414 </span><span class="lineCov">         12 :         if (file-&gt;initialized)</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;module unloaded&quot;, 2, file-&gt;root, file);</span>
+<span class="lineNum">     416 </span>            : 
+<a name="417"><span class="lineNum">     417 </span>            : #ifdef HAVE_GMODULE</a>
+<span class="lineNum">     418 </span><span class="lineCov">         12 :         if (file-&gt;gmodule != NULL)</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :                 module_file_deinit_gmodule(file);</span>
+<span class="lineNum">     420 </span>            : #endif
+<a name="421"><span class="lineNum">     421 </span>            : </a>
+<span class="lineNum">     422 </span><span class="lineCov">         12 :         g_free(file-&gt;name);</span>
+<span class="lineNum">     423 </span><span class="lineCov">         12 :         g_free(file-&gt;defined_module_name);</span>
+<span class="lineNum">     424 </span><span class="lineCov">         12 :         g_free(file);</span>
+<a name="425"><span class="lineNum">     425 </span>            : </a>
+<span class="lineNum">     426 </span><span class="lineCov">         12 :         if (root-&gt;files == NULL &amp;&amp; g_slist_find(modules, root) != NULL)</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                 module_unload(root);</span>
+<a name="428"><span class="lineNum">     428 </span><span class="lineCov">         12 : }</span></a>
+<a name="429"><span class="lineNum">     429 </span>            : </a>
+<span class="lineNum">     430 </span><span class="lineCov">          5 : void module_unload(MODULE_REC *module)</span>
+<span class="lineNum">     431 </span>            : {
+<span class="lineNum">     432 </span><span class="lineCov">          5 :         g_return_if_fail(module != NULL);</span>
+<a name="433"><span class="lineNum">     433 </span>            : </a>
+<span class="lineNum">     434 </span><span class="lineCov">          5 :         modules = g_slist_remove(modules, module);</span>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineCov">          5 :         signal_emit(&quot;module unloaded&quot;, 1, module);</span>
+<a name="437"><span class="lineNum">     437 </span>            : </a>
+<span class="lineNum">     438 </span><span class="lineCov">         22 :         while (module-&gt;files != NULL)</span>
+<span class="lineNum">     439 </span><span class="lineCov">         12 :                 module_file_unload(module-&gt;files-&gt;data);</span>
+<span class="lineNum">     440 </span>            : 
+<a name="441"><span class="lineNum">     441 </span><span class="lineCov">          5 :         g_free(module-&gt;name);</span></a>
+<span class="lineNum">     442 </span><span class="lineCov">          5 :         g_free(module);</span>
+<span class="lineNum">     443 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

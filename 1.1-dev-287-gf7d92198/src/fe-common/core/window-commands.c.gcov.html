@@ -1,0 +1,1022 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/core/window-commands.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/core</a> - window-commands.c<span style="font-size: 80%;"> (source / <a href="window-commands.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">71</td>
+            <td class="headerCovTableEntry">450</td>
+            <td class="headerCovTableEntryLo">15.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">39</td>
+            <td class="headerCovTableEntryLo">5.1 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  window-commands.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;commands.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;misc.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      28 </span>            : 
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;levels.h&quot;</a>
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;themes.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;fe-windows.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;window-items.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;windows-layout.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;printtext.h&quot;
+<a name="36"><span class="lineNum">      36 </span>            : #include &quot;command-history.h&quot;</a>
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span><span class="lineNoCov">          0 : static void window_print_binds(WINDOW_REC *win)</span>
+<span class="lineNum">      39 </span>            : {
+<span class="lineNum">      40 </span>            :         GSList *tmp;
+<a name="41"><span class="lineNum">      41 </span>            : </a>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 :         printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<span class="lineNum">      43 </span>            :                            TXT_WINDOW_INFO_BOUND_ITEMS_HEADER);
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :         for (tmp = win-&gt;bound_items; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :                 WINDOW_BIND_REC *bind = tmp-&gt;data;</span></a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :                 printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<span class="lineNum">      48 </span>            :                                    TXT_WINDOW_INFO_BOUND_ITEM,
+<a name="49"><span class="lineNum">      49 </span>            :                                    bind-&gt;name, bind-&gt;servertag,</a>
+<span class="lineNum">      50 </span>            :                                    bind-&gt;sticky ? &quot;sticky&quot; : &quot;&quot;);
+<span class="lineNum">      51 </span>            :         }
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :         printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<a name="53"><span class="lineNum">      53 </span>            :                            TXT_WINDOW_INFO_BOUND_ITEMS_FOOTER);</a>
+<a name="54"><span class="lineNum">      54 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 : static void window_print_items(WINDOW_REC *win)</span>
+<a name="57"><span class="lineNum">      57 </span>            : {</a>
+<span class="lineNum">      58 </span>            :         GSList *tmp;
+<span class="lineNum">      59 </span>            :         const char *type;
+<span class="lineNum">      60 </span>            : 
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :         printformat_window(win, MSGLEVEL_CLIENTCRAP,</span></a>
+<span class="lineNum">      62 </span>            :                            TXT_WINDOW_INFO_ITEMS_HEADER);
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :         for (tmp = win-&gt;items; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 WI_ITEM_REC *item = tmp-&gt;data;</span>
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :                 type = module_find_id_str(&quot;WINDOW ITEM TYPE&quot;, item-&gt;type);</span>
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :                 printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<span class="lineNum">      68 </span>            :                                    TXT_WINDOW_INFO_ITEM,
+<a name="69"><span class="lineNum">      69 </span>            :                                    type == NULL ? &quot;??&quot; : type,</a>
+<span class="lineNum">      70 </span>            :                                    item-&gt;visible_name,
+<span class="lineNum">      71 </span>            :                                    item-&gt;server == NULL ? &quot;&quot; :
+<span class="lineNum">      72 </span>            :                                    item-&gt;server-&gt;tag);
+<a name="73"><span class="lineNum">      73 </span>            :         }</a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<span class="lineNum">      75 </span>            :                            TXT_WINDOW_INFO_ITEMS_FOOTER);
+<a name="76"><span class="lineNum">      76 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 : static void cmd_window_info(WINDOW_REC *win)</span>
+<span class="lineNum">      79 </span>            : {
+<span class="lineNum">      80 </span>            :         char *levelstr;
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<span class="lineNum">      83 </span>            :                            TXT_WINDOW_INFO_HEADER);
+<span class="lineNum">      84 </span>            : 
+<a name="85"><span class="lineNum">      85 </span>            :         /* Window reference number + sticky status */</a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         if (!win-&gt;sticky_refnum) {</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<span class="lineNum">      88 </span>            :                                    TXT_WINDOW_INFO_REFNUM, win-&gt;refnum);
+<a name="89"><span class="lineNum">      89 </span>            :         } else {</a>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                 printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<span class="lineNum">      91 </span>            :                                    TXT_WINDOW_INFO_REFNUM_STICKY, win-&gt;refnum);
+<span class="lineNum">      92 </span>            :         }
+<a name="93"><span class="lineNum">      93 </span>            : </a>
+<span class="lineNum">      94 </span>            :         /* Window name */
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         if (win-&gt;name != NULL) {</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :                 printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<a name="97"><span class="lineNum">      97 </span>            :                                    TXT_WINDOW_INFO_NAME, win-&gt;name);</a>
+<span class="lineNum">      98 </span>            :         }
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            :         /* Window width / height */
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :         printformat_window(win, MSGLEVEL_CLIENTCRAP, TXT_WINDOW_INFO_SIZE,</span></a>
+<span class="lineNum">     102 </span>            :                            win-&gt;width, win-&gt;height);
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span>            :         /* Window immortality */
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :         if (win-&gt;immortal) {</span></a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :                 printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<span class="lineNum">     107 </span>            :                                    TXT_WINDOW_INFO_IMMORTAL);
+<span class="lineNum">     108 </span>            :         }
+<a name="109"><span class="lineNum">     109 </span>            : </a>
+<span class="lineNum">     110 </span>            :         /* Window history name */
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :         if (win-&gt;history_name != NULL) {</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                 printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<a name="113"><span class="lineNum">     113 </span>            :                                    TXT_WINDOW_INFO_HISTORY, win-&gt;history_name);</a>
+<span class="lineNum">     114 </span>            :         }
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span>            :         /* Window level */
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :         levelstr = win-&gt;level == 0 ?</span></a>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :                 g_strdup(&quot;NONE&quot;) : bits2level(win-&gt;level);</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :         printformat_window(win, MSGLEVEL_CLIENTCRAP, TXT_WINDOW_INFO_LEVEL,</span>
+<span class="lineNum">     120 </span>            :                            levelstr);
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :         g_free(levelstr);</span></a>
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span>            :         /* Active window server + sticky status */
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         if (win-&gt;servertag == NULL) {</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 printformat_window(win, MSGLEVEL_CLIENTCRAP,</span></a>
+<span class="lineNum">     126 </span>            :                                    TXT_WINDOW_INFO_SERVER,
+<span class="lineNum">     127 </span>            :                                    win-&gt;active_server != NULL ?
+<span class="lineNum">     128 </span>            :                                    win-&gt;active_server-&gt;tag : &quot;NONE&quot;);
+<a name="129"><span class="lineNum">     129 </span>            :         } else {</a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 if (win-&gt;active_server != NULL &amp;&amp;</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                     g_strcmp0(win-&gt;active_server-&gt;tag, win-&gt;servertag) != 0)</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                         g_warning(&quot;Active server isn't the sticky server!&quot;);</span>
+<a name="133"><span class="lineNum">     133 </span>            : </a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                 printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<span class="lineNum">     135 </span>            :                                    TXT_WINDOW_INFO_SERVER_STICKY,
+<span class="lineNum">     136 </span>            :                                    win-&gt;servertag);
+<a name="137"><span class="lineNum">     137 </span>            :         }</a>
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            :         /* Window theme + error status */
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :         if (win-&gt;theme_name != NULL) {</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 printformat_window(win, MSGLEVEL_CLIENTCRAP,</span></a>
+<span class="lineNum">     142 </span>            :                                    TXT_WINDOW_INFO_THEME, win-&gt;theme_name,
+<span class="lineNum">     143 </span>            :                                    win-&gt;theme != NULL ? &quot;&quot; : &quot;(not loaded)&quot;);
+<span class="lineNum">     144 </span>            :         }
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span>            :         /* Bound items in window */
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :         if (win-&gt;bound_items != NULL)</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 window_print_binds(win);</span>
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<span class="lineNum">     150 </span>            :         /* Item */
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         if (win-&gt;items != NULL)</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                 window_print_items(win);</span>
+<a name="153"><span class="lineNum">     153 </span>            : </a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         signal_emit(&quot;window print info&quot;, 1, win);</span>
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :         printformat_window(win, MSGLEVEL_CLIENTCRAP,</span>
+<a name="157"><span class="lineNum">     157 </span>            :                            TXT_WINDOW_INFO_FOOTER);</a>
+<a name="158"><span class="lineNum">     158 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 : static void cmd_window(const char *data, void *server, WI_ITEM_REC *item)</span>
+<a name="161"><span class="lineNum">     161 </span>            : {</a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         while (*data == ' ') data++;</span>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         if (*data == '\0')</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 cmd_window_info(active_win);</span></a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :         else if (is_numeric(data, 0))</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;command window refnum&quot;, 3, data, server, item);</span>
+<span class="lineNum">     168 </span>            :         else
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :                 command_runsub(&quot;window&quot;, data, server, item);</span></a>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 : }</span>
+<a name="171"><span class="lineNum">     171 </span>            : </a>
+<span class="lineNum">     172 </span>            : /* SYNTAX: WINDOW NEW [HIDDEN|SPLIT] */
+<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 : static void cmd_window_new(const char *data, void *server, WI_ITEM_REC *item)</span></a>
+<span class="lineNum">     174 </span>            : {
+<span class="lineNum">     175 </span>            :         WINDOW_REC *window;
+<span class="lineNum">     176 </span>            :         int type;
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         type = (g_ascii_strncasecmp(data, &quot;hid&quot;, 3) == 0 || g_ascii_strcasecmp(data, &quot;tab&quot;) == 0) ? 1 :</span>
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :                 (g_ascii_strcasecmp(data, &quot;split&quot;) == 0 ? 2 : 0);</span></a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         signal_emit(&quot;gui window create override&quot;, 1, GINT_TO_POINTER(type));</span>
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         window = window_create(NULL, FALSE);</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineNoCov">          0 :         window_change_server(window, server);</span></a>
+<span class="lineNum">     186 </span>            : }
+<a name="187"><span class="lineNum">     187 </span>            : </a>
+<span class="lineNum">     188 </span>            : /* SYNTAX: WINDOW CLOSE [&lt;first&gt; [&lt;last&gt;]] */
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 : static void cmd_window_close(const char *data)</span></a>
+<span class="lineNum">     190 </span>            : {
+<span class="lineNum">     191 </span>            :         GSList *tmp, *destroys;
+<span class="lineNum">     192 </span>            :         char *first, *last;
+<a name="193"><span class="lineNum">     193 </span>            :         int first_num, last_num;</a>
+<span class="lineNum">     194 </span>            :         void *free_arg;
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 2, &amp;first, &amp;last))</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :         if ((*first != '\0' &amp;&amp; !is_numeric(first, '\0')) ||</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :             ((*last != '\0') &amp;&amp; !is_numeric(last, '\0'))) {</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :                 cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     203 </span>            :         }
+<span class="lineNum">     204 </span>            : 
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :         first_num = *first == '\0' ? active_win-&gt;refnum : atoi(first);</span></a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :         last_num = *last == '\0' ? first_num : atoi(last);</span>
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span>            :         /* get list of windows to destroy */
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :         destroys = NULL;</span></a>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :         for (tmp = windows; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 WINDOW_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     212 </span>            : 
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 if (rec-&gt;refnum &gt;= first_num &amp;&amp; rec-&gt;refnum &lt;= last_num)</span></a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                         destroys = g_slist_append(destroys, rec);</span>
+<span class="lineNum">     215 </span>            :         }
+<span class="lineNum">     216 </span>            : 
+<a name="217"><span class="lineNum">     217 </span>            :         /* really destroy the windows */</a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :         while (destroys != NULL) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                 WINDOW_REC *rec = destroys-&gt;data;</span>
+<span class="lineNum">     220 </span>            : 
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :                 if (windows-&gt;next != NULL) {</span></a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                         if (!rec-&gt;immortal)</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                                 window_destroy(rec);</span>
+<span class="lineNum">     224 </span>            :                         else {
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :                                 printformat_window(rec, MSGLEVEL_CLIENTERROR,</span></a>
+<span class="lineNum">     226 </span>            :                                                    TXT_WINDOW_IMMORTAL_ERROR);
+<span class="lineNum">     227 </span>            :                         }
+<span class="lineNum">     228 </span>            :                 }
+<a name="229"><span class="lineNum">     229 </span>            : </a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 destroys = g_slist_remove(destroys, rec);</span>
+<span class="lineNum">     231 </span>            :         }
+<span class="lineNum">     232 </span>            : 
+<a name="233"><span class="lineNum">     233 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     234 </span>            : }
+<a name="235"><span class="lineNum">     235 </span>            : </a>
+<span class="lineNum">     236 </span>            : /* SYNTAX: WINDOW REFNUM &lt;number&gt; */
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 : static void cmd_window_refnum(const char *data)</span></a>
+<span class="lineNum">     238 </span>            : {
+<span class="lineNum">     239 </span>            :         WINDOW_REC *window;
+<span class="lineNum">     240 </span>            : 
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :         if (!is_numeric(data, 0))</span></a>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         window = window_find_refnum(atoi(data));</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :         if (window != NULL)</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                 window_set_active(window);</span>
+<span class="lineNum">     247 </span>            : }
+<span class="lineNum">     248 </span>            : 
+<a name="249"><span class="lineNum">     249 </span>            : /**</a>
+<span class="lineNum">     250 </span>            :  * return the window with the highest activity
+<span class="lineNum">     251 </span>            :  *
+<span class="lineNum">     252 </span>            :  * If ignore_refnum is true, the most recently active window with the highest
+<a name="253"><span class="lineNum">     253 </span>            :  * activity will be returned. If ignore_refnum is false, the refnum will be used</a>
+<a name="254"><span class="lineNum">     254 </span>            :  * to break ties between windows with equally high activity.</a>
+<span class="lineNum">     255 </span>            :  */
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 : static WINDOW_REC *window_highest_activity(WINDOW_REC *window,</span>
+<a name="257"><span class="lineNum">     257 </span>            :                                            int ignore_refnum)</a>
+<span class="lineNum">     258 </span>            : {
+<span class="lineNum">     259 </span>            :         WINDOW_REC *rec, *max_win;
+<span class="lineNum">     260 </span>            :         GSList *tmp;
+<a name="261"><span class="lineNum">     261 </span>            :         int max_act, max_ref, through;</a>
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(window != NULL, NULL);</span>
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :         max_win = NULL; max_act = 0; max_ref = 0; through = FALSE;</span></a>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         tmp = g_slist_find(windows, window);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         for (;; tmp = tmp-&gt;next) {</span>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 if (tmp == NULL) {</span></a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                         tmp = windows;</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                         through = TRUE;</span>
+<span class="lineNum">     272 </span>            :                 }
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                 if (through &amp;&amp; tmp-&gt;data == window)</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     276 </span>            : 
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :                 rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span>            :                 /* ignore refnum */
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :                 if (ignore_refnum &amp;&amp;</span>
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :                     rec-&gt;data_level &gt; 0 &amp;&amp; max_act &lt; rec-&gt;data_level) {</span></a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                         max_act = rec-&gt;data_level;</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                         max_win = rec;</span>
+<span class="lineNum">     284 </span>            :                 }
+<a name="285"><span class="lineNum">     285 </span>            : </a>
+<span class="lineNum">     286 </span>            :                 /* windows with lower refnums break ties */
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :                 else if (!ignore_refnum &amp;&amp;</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                          rec-&gt;data_level &gt; 0 &amp;&amp;</span>
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :                          (rec-&gt;data_level &gt; max_act ||</span></a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                           (rec-&gt;data_level == max_act &amp;&amp; rec-&gt;refnum &lt; max_ref))) {</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                         max_act = rec-&gt;data_level;</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                         max_win = rec;</span>
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :                         max_ref = rec-&gt;refnum;</span></a>
+<span class="lineNum">     294 </span>            :                 }
+<span class="lineNum">     295 </span>            :         }
+<span class="lineNum">     296 </span>            : 
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :         return max_win;</span></a>
+<a name="298"><span class="lineNum">     298 </span>            : }</a>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 : static inline int is_nearer(int r1, int r2)</span>
+<a name="301"><span class="lineNum">     301 </span>            : {</a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         int a = r2 &lt; active_win-&gt;refnum;</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         int b = r1 &lt; r2;</span>
+<span class="lineNum">     304 </span>            : 
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :         if (r1 &gt; active_win-&gt;refnum)</span></a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 return a || b;</span>
+<span class="lineNum">     307 </span>            :         else
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 return a &amp;&amp; b;</span>
+<a name="309"><span class="lineNum">     309 </span>            : }</a>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 : static WINDOW_REC *window_find_item_cycle(SERVER_REC *server, const char *name)</span>
+<span class="lineNum">     312 </span>            : {
+<a name="313"><span class="lineNum">     313 </span>            :         WINDOW_REC *rec, *win;</a>
+<span class="lineNum">     314 </span>            :         GSList *tmp;
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         win = NULL;</span>
+<a name="317"><span class="lineNum">     317 </span>            : </a>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :         tmp = g_slist_find(windows, active_win);</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :         tmp = tmp-&gt;next;</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :         for (;; tmp = tmp-&gt;next) {</span>
+<a name="321"><span class="lineNum">     321 </span><span class="lineNoCov">          0 :                 if (tmp == NULL)</span></a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                         tmp = windows;</span>
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                 if (tmp-&gt;data == active_win)</span>
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                 rec = tmp-&gt;data;</span>
+<span class="lineNum">     328 </span>            : 
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :                 if (window_item_find_window(rec, server, name) != NULL &amp;&amp;</span></a>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :                     (win == NULL || is_nearer(rec-&gt;refnum, win-&gt;refnum))) {</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :                         win = rec;</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :                         if (server != NULL) break;</span>
+<a name="333"><span class="lineNum">     333 </span>            :                 }</a>
+<span class="lineNum">     334 </span>            :         }
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         return win;</span>
+<a name="337"><span class="lineNum">     337 </span>            : }</a>
+<a name="338"><span class="lineNum">     338 </span>            : </a>
+<span class="lineNum">     339 </span>            : /* SYNTAX: WINDOW GOTO active|&lt;number&gt;|&lt;name&gt; */
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 : static void cmd_window_goto(const char *data)</span>
+<a name="341"><span class="lineNum">     341 </span>            : {</a>
+<span class="lineNum">     342 </span>            :         WINDOW_REC *window;
+<span class="lineNum">     343 </span>            :         char *target;
+<span class="lineNum">     344 </span>            :         void *free_arg;
+<a name="345"><span class="lineNum">     345 </span>            : </a>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :         if (is_numeric(data, 0)) {</span>
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :                 cmd_window_refnum(data);</span></a>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     351 </span>            :         }
+<span class="lineNum">     352 </span>            : 
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1, &amp;target))</span></a>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(target, &quot;active&quot;) == 0)</span>
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 :                 window = window_highest_activity(active_win,</span></a>
+<span class="lineNum">     358 </span>            :                         settings_get_bool(&quot;active_window_ignore_refnum&quot;));
+<span class="lineNum">     359 </span>            :         else {
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :                 window = window_find_name(target);</span>
+<a name="361"><span class="lineNum">     361 </span><span class="lineNoCov">          0 :                 if (window == NULL &amp;&amp; active_win-&gt;active_server != NULL)</span></a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :                         window = window_find_item_cycle(active_win-&gt;active_server, target);</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :                 if (window == NULL)</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :                         window = window_find_item_cycle(NULL, target);</span>
+<a name="365"><span class="lineNum">     365 </span>            :         }</a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :         if (window != NULL)</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                 window_set_active(window);</span>
+<a name="369"><span class="lineNum">     369 </span>            : </a>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<span class="lineNum">     371 </span>            : }
+<a name="372"><span class="lineNum">     372 </span>            : </a>
+<a name="373"><span class="lineNum">     373 </span>            : /* SYNTAX: WINDOW NEXT */</a>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 : static void cmd_window_next(void)</span>
+<span class="lineNum">     375 </span>            : {
+<span class="lineNum">     376 </span>            :         int num;
+<a name="377"><span class="lineNum">     377 </span>            : </a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         num = window_refnum_next(active_win-&gt;refnum, TRUE);</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         if (num &lt; 1) num = windows_refnum_last();</span>
+<span class="lineNum">     380 </span>            : 
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :         window_set_active(window_find_refnum(num));</span></a>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 : }</span>
+<a name="383"><span class="lineNum">     383 </span>            : </a>
+<span class="lineNum">     384 </span>            : /* SYNTAX: WINDOW LAST */
+<a name="385"><span class="lineNum">     385 </span><span class="lineNoCov">          0 : static void cmd_window_last(void)</span></a>
+<span class="lineNum">     386 </span>            : {
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :         if (windows-&gt;next != NULL)</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :                 window_set_active(windows-&gt;next-&gt;data);</span>
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="390"><span class="lineNum">     390 </span>            : </a>
+<span class="lineNum">     391 </span>            : /* SYNTAX: WINDOW PREVIOUS */
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 : static void cmd_window_previous(void)</span>
+<a name="393"><span class="lineNum">     393 </span>            : {</a>
+<span class="lineNum">     394 </span>            :         int num;
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :         num = window_refnum_prev(active_win-&gt;refnum, TRUE);</span>
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :         if (num &lt; 1) num = window_refnum_next(0, TRUE);</span></a>
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :         window_set_active(window_find_refnum(num));</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 : }</span>
+<a name="401"><span class="lineNum">     401 </span>            : </a>
+<span class="lineNum">     402 </span>            : /* SYNTAX: WINDOW LEVEL [&lt;level&gt;] */
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 : static void cmd_window_level(const char *data)</span>
+<span class="lineNum">     404 </span>            : {
+<a name="405"><span class="lineNum">     405 </span>            :         char *level;</a>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     408 </span>            : 
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :         window_set_level(active_win, combine_level(active_win-&gt;level, data));</span></a>
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :         level = active_win-&gt;level == 0 ? g_strdup(&quot;NONE&quot;) :</span>
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :                 bits2level(active_win-&gt;level);</span>
+<a name="413"><span class="lineNum">     413 </span><span class="lineNoCov">          0 :         printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span></a>
+<span class="lineNum">     414 </span>            :                            TXT_WINDOW_LEVEL, level);
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :         g_free(level);</span>
+<span class="lineNum">     416 </span>            : }
+<a name="417"><span class="lineNum">     417 </span>            : </a>
+<span class="lineNum">     418 </span>            : /* SYNTAX: WINDOW IMMORTAL on|off|toggle */
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 : static void cmd_window_immortal(const char *data)</span>
+<span class="lineNum">     420 </span>            : {
+<a name="421"><span class="lineNum">     421 </span>            :         int set;</a>
+<span class="lineNum">     422 </span>            : 
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :         if (*data == '\0')</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                 set = active_win-&gt;immortal;</span>
+<a name="425"><span class="lineNum">     425 </span><span class="lineNoCov">          0 :         else if (g_ascii_strcasecmp(data, &quot;ON&quot;) == 0)</span></a>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                 set = TRUE;</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :         else if (g_ascii_strcasecmp(data, &quot;OFF&quot;) == 0)</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                 set = FALSE;</span>
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 :         else if (g_ascii_strcasecmp(data, &quot;TOGGLE&quot;) == 0)</span></a>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                 set = !active_win-&gt;immortal;</span>
+<span class="lineNum">     431 </span>            :         else {
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :                 printformat_window(active_win, MSGLEVEL_CLIENTERROR,</span>
+<a name="433"><span class="lineNum">     433 </span>            :                                    TXT_NOT_TOGGLE);</a>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     435 </span>            :         }
+<span class="lineNum">     436 </span>            : 
+<a name="437"><span class="lineNum">     437 </span><span class="lineNoCov">          0 :         if (set) {</span></a>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :                 window_set_immortal(active_win, TRUE);</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                 printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     440 </span>            :                                    TXT_WINDOW_SET_IMMORTAL);
+<a name="441"><span class="lineNum">     441 </span>            :         } else {</a>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                 window_set_immortal(active_win, FALSE);</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                 printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     444 </span>            :                                    TXT_WINDOW_UNSET_IMMORTAL);
+<a name="445"><span class="lineNum">     445 </span>            :         }</a>
+<span class="lineNum">     446 </span>            : }
+<a name="447"><span class="lineNum">     447 </span>            : </a>
+<span class="lineNum">     448 </span>            : /* SYNTAX: WINDOW SERVER [-sticky | -unsticky] &lt;tag&gt; */
+<a name="449"><span class="lineNum">     449 </span><span class="lineNoCov">          0 : static void cmd_window_server(const char *data)</span></a>
+<span class="lineNum">     450 </span>            : {
+<span class="lineNum">     451 </span>            :         GHashTable *optlist;
+<span class="lineNum">     452 </span>            :         SERVER_REC *server;
+<a name="453"><span class="lineNum">     453 </span>            :         char *tag;</a>
+<span class="lineNum">     454 </span>            :         void *free_arg;
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1 | PARAM_FLAG_OPTIONS,</span>
+<a name="457"><span class="lineNum">     457 </span>            :                             &quot;window server&quot;, &amp;optlist, &amp;tag))</a>
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     459 </span>            : 
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :         if (*tag == '\0' &amp;&amp; active_win-&gt;active_server != NULL &amp;&amp;</span>
+<a name="461"><span class="lineNum">     461 </span><span class="lineNoCov">          0 :             (g_hash_table_lookup(optlist, &quot;sticky&quot;) != NULL ||</span></a>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :              g_hash_table_lookup(optlist, &quot;unsticky&quot;) != NULL)) {</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                 tag = active_win-&gt;active_server-&gt;tag;</span>
+<span class="lineNum">     464 </span>            :         }
+<a name="465"><span class="lineNum">     465 </span>            : </a>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :         if (*tag == '\0')</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :                 cmd_param_error(CMDERR_NOT_ENOUGH_PARAMS);</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :         server = server_find_tag(tag);</span>
+<a name="469"><span class="lineNum">     469 </span><span class="lineNoCov">          0 :         if (server == NULL)</span></a>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :                 server = server_find_lookup_tag(tag);</span>
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;unsticky&quot;) != NULL &amp;&amp;</span>
+<a name="473"><span class="lineNum">     473 </span><span class="lineNoCov">          0 :             active_win-&gt;servertag != NULL) {</span></a>
+<span class="lineNum">     474 </span><span class="lineNoCov">          0 :                 g_free_and_null(active_win-&gt;servertag);</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :                 printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     476 </span>            :                                    TXT_UNSET_SERVER_STICKY);
+<a name="477"><span class="lineNum">     477 </span>            :         }</a>
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :         if (active_win-&gt;servertag != NULL &amp;&amp;</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :             g_hash_table_lookup(optlist, &quot;sticky&quot;) == NULL) {</span>
+<a name="481"><span class="lineNum">     481 </span><span class="lineNoCov">          0 :                 printformat_window(active_win, MSGLEVEL_CLIENTERROR,</span></a>
+<span class="lineNum">     482 </span>            :                                    TXT_ERROR_SERVER_STICKY);
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :         } else if (server == NULL) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :                 printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<a name="485"><span class="lineNum">     485 </span>            :                                    TXT_UNKNOWN_SERVER_TAG, tag);</a>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :         } else if (active_win-&gt;active == NULL) {</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                 window_change_server(active_win, server);</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :                 if (g_hash_table_lookup(optlist, &quot;sticky&quot;) != NULL) {</span>
+<a name="489"><span class="lineNum">     489 </span><span class="lineNoCov">          0 :                         g_free_not_null(active_win-&gt;servertag);</span></a>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                         active_win-&gt;servertag = g_strdup(server-&gt;tag);</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                         printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     492 </span>            :                                            TXT_SET_SERVER_STICKY, server-&gt;tag);
+<a name="493"><span class="lineNum">     493 </span>            :                 }</a>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :                 printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     495 </span>            :                                    TXT_SERVER_CHANGED,
+<span class="lineNum">     496 </span>            :                                    server-&gt;tag, server-&gt;connrec-&gt;address,
+<a name="497"><span class="lineNum">     497 </span>            :                                    server-&gt;connrec-&gt;chatnet == NULL ? &quot;&quot; :</a>
+<span class="lineNum">     498 </span>            :                                    server-&gt;connrec-&gt;chatnet);
+<span class="lineNum">     499 </span>            :         }
+<span class="lineNum">     500 </span>            : 
+<a name="501"><span class="lineNum">     501 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span></a>
+<a name="502"><span class="lineNum">     502 </span>            : }</a>
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 : static void cmd_window_item(const char *data, void *server, WI_ITEM_REC *item)</span>
+<a name="505"><span class="lineNum">     505 </span>            : {</a>
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 :         while (*data == ' ') data++;</span>
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :         if (is_numeric(data, '\0'))</span>
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;command window item goto&quot;, 3, data, server, item);</span></a>
+<span class="lineNum">     510 </span>            :         else
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :                 command_runsub(&quot;window item&quot;, data, server, item);</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 : }</span>
+<a name="513"><span class="lineNum">     513 </span>            : </a>
+<span class="lineNum">     514 </span>            : /* SYNTAX: WINDOW ITEM PREV */
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 : static void cmd_window_item_prev(void)</span>
+<span class="lineNum">     516 </span>            : {
+<a name="517"><span class="lineNum">     517 </span><span class="lineNoCov">          0 :         window_item_prev(active_win);</span></a>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 : }</span>
+<a name="519"><span class="lineNum">     519 </span>            : </a>
+<span class="lineNum">     520 </span>            : /* SYNTAX: WINDOW ITEM NEXT */
+<a name="521"><span class="lineNum">     521 </span><span class="lineNoCov">          0 : static void cmd_window_item_next(void)</span></a>
+<span class="lineNum">     522 </span>            : {
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :         window_item_next(active_win);</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 : }</span>
+<a name="525"><span class="lineNum">     525 </span>            : </a>
+<span class="lineNum">     526 </span>            : /* SYNTAX: WINDOW ITEM GOTO &lt;number&gt;|&lt;name&gt; */
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 : static void cmd_window_item_goto(const char *data, SERVER_REC *server)</span>
+<span class="lineNum">     528 </span>            : {
+<a name="529"><span class="lineNum">     529 </span>            :         WI_ITEM_REC *item;</a>
+<span class="lineNum">     530 </span>            :         GSList *tmp;
+<span class="lineNum">     531 </span>            :         void *free_arg;
+<span class="lineNum">     532 </span>            :         char *target;
+<a name="533"><span class="lineNum">     533 </span>            : </a>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1, &amp;target))</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     536 </span>            : 
+<a name="537"><span class="lineNum">     537 </span><span class="lineNoCov">          0 :         if (is_numeric(target, '\0')) {</span></a>
+<span class="lineNum">     538 </span>            :                 /* change to specified number */
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :                 tmp = g_slist_nth(active_win-&gt;items, atoi(target)-1);</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :                 item = tmp == NULL ? NULL : tmp-&gt;data;</span>
+<a name="541"><span class="lineNum">     541 </span>            :         } else {</a>
+<span class="lineNum">     542 </span><span class="lineNoCov">          0 :                 item = window_item_find_window(active_win, server, target);</span>
+<span class="lineNum">     543 </span>            :         }
+<span class="lineNum">     544 </span>            : 
+<a name="545"><span class="lineNum">     545 </span><span class="lineNoCov">          0 :         if (item != NULL)</span></a>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :                 window_item_set_active(active_win, item);</span>
+<span class="lineNum">     547 </span>            : 
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<a name="549"><span class="lineNum">     549 </span>            : }</a>
+<a name="550"><span class="lineNum">     550 </span>            : </a>
+<span class="lineNum">     551 </span>            : /* SYNTAX: WINDOW ITEM MOVE &lt;number&gt;|&lt;name&gt; */
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 : static void cmd_window_item_move(const char *data, SERVER_REC *server,</span>
+<a name="553"><span class="lineNum">     553 </span>            :                                  WI_ITEM_REC *item)</a>
+<span class="lineNum">     554 </span>            : {
+<span class="lineNum">     555 </span>            :         WINDOW_REC *window;
+<span class="lineNum">     556 </span>            :         void *free_arg;
+<a name="557"><span class="lineNum">     557 </span>            :         char *target;</a>
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1, &amp;target))</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="561"><span class="lineNum">     561 </span>            : </a>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :         if (is_numeric(target, '\0')) {</span>
+<span class="lineNum">     563 </span>            :                 /* move current window item to specified window */
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :                 window = window_find_refnum(atoi(target));</span>
+<a name="565"><span class="lineNum">     565 </span>            :         } else {</a>
+<span class="lineNum">     566 </span>            :                 /* move specified window item to current window */
+<span class="lineNum">     567 </span><span class="lineNoCov">          0 :                 item = window_item_find(server, target);</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :                 window = active_win;</span>
+<a name="569"><span class="lineNum">     569 </span>            :         }</a>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :         if (window != NULL &amp;&amp; item != NULL)</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :                 window_item_set_active(window, item);</span>
+<span class="lineNum">     572 </span>            : 
+<a name="573"><span class="lineNum">     573 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     574 </span>            : }
+<a name="575"><span class="lineNum">     575 </span>            : </a>
+<span class="lineNum">     576 </span>            : /* SYNTAX: WINDOW NUMBER [-sticky] &lt;number&gt; */
+<a name="577"><span class="lineNum">     577 </span><span class="lineNoCov">          0 : static void cmd_window_number(const char *data)</span></a>
+<span class="lineNum">     578 </span>            : {
+<span class="lineNum">     579 </span>            :         GHashTable *optlist;
+<span class="lineNum">     580 </span>            :         char *refnum;
+<a name="581"><span class="lineNum">     581 </span>            :         void *free_arg;</a>
+<span class="lineNum">     582 </span>            :         int num;
+<span class="lineNum">     583 </span>            : 
+<span class="lineNum">     584 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1 | PARAM_FLAG_OPTIONS,</span>
+<a name="585"><span class="lineNum">     585 </span>            :                             &quot;window number&quot;, &amp;optlist, &amp;refnum))</a>
+<span class="lineNum">     586 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     587 </span>            : 
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :         if (*refnum == '\0')</span>
+<a name="589"><span class="lineNum">     589 </span><span class="lineNoCov">          0 :                 cmd_param_error(CMDERR_NOT_ENOUGH_PARAMS);</span></a>
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :         num = atoi(refnum);</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :         if (num &lt; 1) {</span>
+<a name="593"><span class="lineNum">     593 </span><span class="lineNoCov">          0 :                 printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span></a>
+<span class="lineNum">     594 </span>            :                                    TXT_REFNUM_TOO_LOW);
+<span class="lineNum">     595 </span>            :         } else {
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 :                 window_set_refnum(active_win, num);</span>
+<a name="597"><span class="lineNum">     597 </span><span class="lineNoCov">          0 :                 active_win-&gt;sticky_refnum =</span></a>
+<span class="lineNum">     598 </span><span class="lineNoCov">          0 :                         g_hash_table_lookup(optlist, &quot;sticky&quot;) != NULL;</span>
+<span class="lineNum">     599 </span>            :         }
+<span class="lineNum">     600 </span>            : 
+<a name="601"><span class="lineNum">     601 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     602 </span>            : }
+<a name="603"><span class="lineNum">     603 </span>            : </a>
+<span class="lineNum">     604 </span>            : /* SYNTAX: WINDOW NAME &lt;name&gt; */
+<a name="605"><span class="lineNum">     605 </span><span class="lineNoCov">          0 : static void cmd_window_name(const char *data)</span></a>
+<span class="lineNum">     606 </span>            : {
+<span class="lineNum">     607 </span>            :         WINDOW_REC *win;
+<span class="lineNum">     608 </span>            : 
+<a name="609"><span class="lineNum">     609 </span><span class="lineNoCov">          0 :         win = window_find_name(data);</span></a>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :         if (win == NULL || win == active_win)</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :                 window_set_name(active_win, data);</span>
+<span class="lineNum">     612 </span><span class="lineNoCov">          0 :         else if (active_win-&gt;name == NULL ||</span>
+<a name="613"><span class="lineNum">     613 </span><span class="lineNoCov">          0 :                  g_strcmp0(active_win-&gt;name, data) != 0) {</span></a>
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :                 printformat_window(active_win, MSGLEVEL_CLIENTERROR,</span>
+<span class="lineNum">     615 </span>            :                                    TXT_WINDOW_NAME_NOT_UNIQUE, data);
+<span class="lineNum">     616 </span>            :         }
+<a name="617"><span class="lineNum">     617 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="618"><span class="lineNum">     618 </span>            : </a>
+<span class="lineNum">     619 </span>            : /* SYNTAX: WINDOW HISTORY [-clear] &lt;name&gt; */
+<span class="lineNum">     620 </span><span class="lineNoCov">          0 : void cmd_window_history(const char *data)</span>
+<a name="621"><span class="lineNum">     621 </span>            : {</a>
+<span class="lineNum">     622 </span>            :         GHashTable *optlist;
+<span class="lineNum">     623 </span>            :         char *name;
+<span class="lineNum">     624 </span>            :         void *free_arg;
+<a name="625"><span class="lineNum">     625 </span>            : </a>
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1 | PARAM_FLAG_OPTIONS | PARAM_FLAG_STRIP_TRAILING_WS,</span>
+<span class="lineNum">     627 </span>            :                             &quot;window history&quot;, &amp;optlist, &amp;name))
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="629"><span class="lineNum">     629 </span>            : </a>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;clear&quot;) != NULL) {</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">          0 :                 signal_continue(1, data);</span>
+<span class="lineNum">     632 </span><span class="lineNoCov">          0 :                 window_clear_history(active_win, name);</span>
+<a name="633"><span class="lineNum">     633 </span>            :         } else {</a>
+<span class="lineNum">     634 </span><span class="lineNoCov">          0 :                 window_set_history(active_win, name);</span>
+<span class="lineNum">     635 </span>            :         }
+<span class="lineNum">     636 </span>            : 
+<a name="637"><span class="lineNum">     637 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span></a>
+<span class="lineNum">     638 </span>            : }
+<span class="lineNum">     639 </span>            : 
+<span class="lineNum">     640 </span>            : /* we're moving the first window to last - move the first contiguous block
+<a name="641"><span class="lineNum">     641 </span>            :    of refnums to left. Like if there's windows 1..5 and 7..10, move 1 to</a>
+<span class="lineNum">     642 </span>            :    11, 2..5 to 1..4 and leave 7..10 alone */
+<span class="lineNum">     643 </span><span class="lineNoCov">          0 : static void window_refnums_move_left(WINDOW_REC *move_window)</span>
+<span class="lineNum">     644 </span>            : {
+<a name="645"><span class="lineNum">     645 </span>            :         WINDOW_REC *window;</a>
+<span class="lineNum">     646 </span>            :         int refnum, new_refnum;
+<span class="lineNum">     647 </span>            : 
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :         new_refnum = windows_refnum_last();</span>
+<a name="649"><span class="lineNum">     649 </span><span class="lineNoCov">          0 :         for (refnum = move_window-&gt;refnum+1; refnum &lt;= new_refnum; refnum++) {</span></a>
+<span class="lineNum">     650 </span><span class="lineNoCov">          0 :                 window = window_find_refnum(refnum);</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :                 if (window == NULL) {</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :                         new_refnum++;</span>
+<a name="653"><span class="lineNum">     653 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     654 </span>            :                 }
+<span class="lineNum">     655 </span>            : 
+<span class="lineNum">     656 </span><span class="lineNoCov">          0 :                 window_set_refnum(window, refnum-1);</span>
+<a name="657"><span class="lineNum">     657 </span>            :         }</a>
+<span class="lineNum">     658 </span>            : 
+<span class="lineNum">     659 </span><span class="lineNoCov">          0 :         window_set_refnum(move_window, new_refnum);</span>
+<span class="lineNum">     660 </span><span class="lineNoCov">          0 : }</span>
+<a name="661"><span class="lineNum">     661 </span>            : </a>
+<a name="662"><span class="lineNum">     662 </span>            : /* we're moving the last window to first - make some space so we can use the</a>
+<span class="lineNum">     663 </span>            :    refnum 1 */
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 : static void window_refnums_move_right(WINDOW_REC *move_window)</span>
+<a name="665"><span class="lineNum">     665 </span>            : {</a>
+<span class="lineNum">     666 </span>            :         WINDOW_REC *window;
+<span class="lineNum">     667 </span>            :         int refnum, new_refnum;
+<span class="lineNum">     668 </span>            : 
+<a name="669"><span class="lineNum">     669 </span><span class="lineNoCov">          0 :         new_refnum = 1;</span></a>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :         if (window_find_refnum(new_refnum) == NULL) {</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :                 window_set_refnum(move_window, new_refnum);</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="673"><span class="lineNum">     673 </span>            :         }</a>
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span>            :         /* find the first unused refnum, like if there's windows
+<span class="lineNum">     676 </span>            :            1..5 and 7..10, we only need to move 1..5 to 2..6 */
+<a name="677"><span class="lineNum">     677 </span><span class="lineNoCov">          0 :         refnum = new_refnum;</span></a>
+<span class="lineNum">     678 </span><span class="lineNoCov">          0 :         while (move_window-&gt;refnum == refnum ||</span>
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :                window_find_refnum(refnum) != NULL) refnum++;</span>
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :         refnum--;</span>
+<a name="681"><span class="lineNum">     681 </span>            : </a>
+<span class="lineNum">     682 </span><span class="lineNoCov">          0 :         while (refnum &gt;= new_refnum) {</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :                 window = window_find_refnum(refnum);</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :                 window_set_refnum(window, refnum+1);</span>
+<a name="685"><span class="lineNum">     685 </span>            : </a>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :                 refnum--;</span>
+<span class="lineNum">     687 </span>            :         }
+<span class="lineNum">     688 </span>            : 
+<a name="689"><span class="lineNum">     689 </span><span class="lineNoCov">          0 :         window_set_refnum(move_window, new_refnum);</span></a>
+<span class="lineNum">     690 </span>            : }
+<a name="691"><span class="lineNum">     691 </span>            : </a>
+<span class="lineNum">     692 </span>            : /* SYNTAX: WINDOW MOVE PREV */
+<a name="693"><span class="lineNum">     693 </span><span class="lineNoCov">          0 : static void cmd_window_move_prev(void)</span></a>
+<span class="lineNum">     694 </span>            : {
+<span class="lineNum">     695 </span>            :         int refnum;
+<span class="lineNum">     696 </span>            : 
+<a name="697"><span class="lineNum">     697 </span><span class="lineNoCov">          0 :         refnum = window_refnum_prev(active_win-&gt;refnum, FALSE);</span></a>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :         if (refnum != -1) {</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">          0 :                 window_set_refnum(active_win, refnum);</span>
+<span class="lineNum">     700 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="701"><span class="lineNum">     701 </span>            :         }</a>
+<span class="lineNum">     702 </span>            : 
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :         window_refnums_move_left(active_win);</span>
+<span class="lineNum">     704 </span>            : }
+<a name="705"><span class="lineNum">     705 </span>            : </a>
+<span class="lineNum">     706 </span>            : /* SYNTAX: WINDOW MOVE NEXT */
+<span class="lineNum">     707 </span><span class="lineNoCov">          0 : static void cmd_window_move_next(void)</span>
+<span class="lineNum">     708 </span>            : {
+<a name="709"><span class="lineNum">     709 </span>            :         int refnum;</a>
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :         refnum = window_refnum_next(active_win-&gt;refnum, FALSE);</span>
+<span class="lineNum">     712 </span><span class="lineNoCov">          0 :         if (refnum != -1) {</span>
+<a name="713"><span class="lineNum">     713 </span><span class="lineNoCov">          0 :                 window_set_refnum(active_win, refnum);</span></a>
+<span class="lineNum">     714 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     715 </span>            :         }
+<span class="lineNum">     716 </span>            : 
+<a name="717"><span class="lineNum">     717 </span><span class="lineNoCov">          0 :         window_refnums_move_right(active_win);</span></a>
+<a name="718"><span class="lineNum">     718 </span>            : }</a>
+<span class="lineNum">     719 </span>            : 
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 : static void active_window_move_to(int new_refnum)</span>
+<a name="721"><span class="lineNum">     721 </span>            : {</a>
+<span class="lineNum">     722 </span>            :         int refnum;
+<span class="lineNum">     723 </span>            : 
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :         if (new_refnum &gt; active_win-&gt;refnum) {</span>
+<a name="725"><span class="lineNum">     725 </span>            :                 for (;;) {</a>
+<span class="lineNum">     726 </span><span class="lineNoCov">          0 :                         refnum = window_refnum_next(active_win-&gt;refnum, FALSE);</span>
+<span class="lineNum">     727 </span><span class="lineNoCov">          0 :                         if (refnum == -1 || refnum &gt; new_refnum)</span>
+<span class="lineNum">     728 </span>            :                                 break;
+<a name="729"><span class="lineNum">     729 </span>            : </a>
+<span class="lineNum">     730 </span><span class="lineNoCov">          0 :                         window_set_refnum(active_win, refnum);</span>
+<span class="lineNum">     731 </span>            :                 }
+<span class="lineNum">     732 </span>            :         } else {
+<a name="733"><span class="lineNum">     733 </span>            :                 for (;;) {</a>
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :                         refnum = window_refnum_prev(active_win-&gt;refnum, FALSE);</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">          0 :                         if (refnum == -1 || refnum &lt; new_refnum)</span>
+<span class="lineNum">     736 </span>            :                                 break;
+<a name="737"><span class="lineNum">     737 </span>            : </a>
+<span class="lineNum">     738 </span><span class="lineNoCov">          0 :                         window_set_refnum(active_win, refnum);</span>
+<span class="lineNum">     739 </span>            :                 }
+<span class="lineNum">     740 </span>            :         }
+<a name="741"><span class="lineNum">     741 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="742"><span class="lineNum">     742 </span>            : </a>
+<span class="lineNum">     743 </span>            : /* SYNTAX: WINDOW MOVE FIRST */
+<span class="lineNum">     744 </span><span class="lineNoCov">          0 : static void cmd_window_move_first(void)</span>
+<a name="745"><span class="lineNum">     745 </span>            : {</a>
+<span class="lineNum">     746 </span><span class="lineNoCov">          0 :         active_window_move_to(1);</span>
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 : }</span>
+<a name="748"><span class="lineNum">     748 </span>            : </a>
+<a name="749"><span class="lineNum">     749 </span>            : /* SYNTAX: WINDOW MOVE LAST */</a>
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 : static void cmd_window_move_last(void)</span>
+<span class="lineNum">     751 </span>            : {
+<span class="lineNum">     752 </span><span class="lineNoCov">          0 :         active_window_move_to(windows_refnum_last());</span>
+<a name="753"><span class="lineNum">     753 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="754"><span class="lineNum">     754 </span>            : </a>
+<span class="lineNum">     755 </span>            : /* SYNTAX: WINDOW MOVE &lt;number&gt;|&lt;direction&gt; */
+<span class="lineNum">     756 </span><span class="lineNoCov">          0 : static void cmd_window_move(const char *data, SERVER_REC *server, WI_ITEM_REC *item)</span>
+<a name="757"><span class="lineNum">     757 </span>            : {</a>
+<span class="lineNum">     758 </span><span class="lineNoCov">          0 :         if (!is_numeric(data, 0)) {</span>
+<span class="lineNum">     759 </span><span class="lineNoCov">          0 :                 command_runsub(&quot;window move&quot;, data, server, item);</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="761"><span class="lineNum">     761 </span>            :         }</a>
+<span class="lineNum">     762 </span>            : 
+<span class="lineNum">     763 </span><span class="lineNoCov">          0 :         active_window_move_to(atoi(data));</span>
+<span class="lineNum">     764 </span>            : }
+<a name="765"><span class="lineNum">     765 </span>            : </a>
+<span class="lineNum">     766 </span>            : /* SYNTAX: WINDOW LIST */
+<span class="lineNum">     767 </span><span class="lineNoCov">          0 : static void cmd_window_list(void)</span>
+<span class="lineNum">     768 </span>            : {
+<a name="769"><span class="lineNum">     769 </span>            :         GSList *tmp, *sorted;</a>
+<span class="lineNum">     770 </span>            :         char *levelstr;
+<span class="lineNum">     771 </span>            : 
+<span class="lineNum">     772 </span><span class="lineNoCov">          0 :         sorted = windows_get_sorted();</span>
+<a name="773"><span class="lineNum">     773 </span><span class="lineNoCov">          0 :         printformat(NULL, NULL, MSGLEVEL_CLIENTCRAP, TXT_WINDOWLIST_HEADER);</span></a>
+<span class="lineNum">     774 </span><span class="lineNoCov">          0 :         for (tmp = sorted; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     775 </span><span class="lineNoCov">          0 :                 WINDOW_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     776 </span>            : 
+<a name="777"><span class="lineNum">     777 </span><span class="lineNoCov">          0 :                 levelstr = bits2level(rec-&gt;level);</span></a>
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTCRAP, TXT_WINDOWLIST_LINE,</span>
+<span class="lineNum">     779 </span>            :                             rec-&gt;refnum, rec-&gt;name == NULL ? &quot;&quot; : rec-&gt;name,
+<span class="lineNum">     780 </span>            :                             rec-&gt;active == NULL ? &quot;&quot; : rec-&gt;active-&gt;visible_name,
+<a name="781"><span class="lineNum">     781 </span>            :                             rec-&gt;active_server == NULL ? &quot;&quot; : ((SERVER_REC *) rec-&gt;active_server)-&gt;tag,</a>
+<span class="lineNum">     782 </span>            :                             levelstr);
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 :                 g_free(levelstr);</span>
+<span class="lineNum">     784 </span>            :         }
+<a name="785"><span class="lineNum">     785 </span><span class="lineNoCov">          0 :         g_slist_free(sorted);</span></a>
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 :         printformat(NULL, NULL, MSGLEVEL_CLIENTCRAP, TXT_WINDOWLIST_FOOTER);</span>
+<span class="lineNum">     787 </span><span class="lineNoCov">          0 : }</span>
+<a name="788"><span class="lineNum">     788 </span>            : </a>
+<a name="789"><span class="lineNum">     789 </span>            : /* SYNTAX: WINDOW THEME [-delete] [&lt;name&gt;] */</a>
+<span class="lineNum">     790 </span><span class="lineNoCov">          0 : static void cmd_window_theme(const char *data)</span>
+<span class="lineNum">     791 </span>            : {
+<span class="lineNum">     792 </span>            :         THEME_REC *theme;
+<a name="793"><span class="lineNum">     793 </span>            :         GHashTable *optlist;</a>
+<span class="lineNum">     794 </span>            :         char *name;
+<span class="lineNum">     795 </span>            :         void *free_arg;
+<span class="lineNum">     796 </span>            : 
+<a name="797"><span class="lineNum">     797 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1 | PARAM_FLAG_OPTIONS,</span></a>
+<span class="lineNum">     798 </span>            :                             &quot;window theme&quot;, &amp;optlist, &amp;name))
+<span class="lineNum">     799 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     800 </span>            : 
+<a name="801"><span class="lineNum">     801 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;delete&quot;) != NULL) {</span></a>
+<span class="lineNum">     802 </span><span class="lineNoCov">          0 :                 g_free_and_null(active_win-&gt;theme_name);</span>
+<span class="lineNum">     803 </span>            : 
+<span class="lineNum">     804 </span><span class="lineNoCov">          0 :                 printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<a name="805"><span class="lineNum">     805 </span>            :                                    TXT_WINDOW_THEME_REMOVED);</a>
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 :         } else if (*name == '\0') {</span>
+<span class="lineNum">     807 </span><span class="lineNoCov">          0 :                 if (active_win-&gt;theme == NULL) {</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">          0 :                         printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<a name="809"><span class="lineNum">     809 </span>            :                                            TXT_WINDOW_THEME_DEFAULT);</a>
+<span class="lineNum">     810 </span>            :                 } else {
+<span class="lineNum">     811 </span><span class="lineNoCov">          0 :                         theme = active_win-&gt;theme;</span>
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :                         printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<a name="813"><span class="lineNum">     813 </span>            :                                            TXT_WINDOW_THEME,</a>
+<span class="lineNum">     814 </span>            :                                            theme-&gt;name, theme-&gt;path);
+<span class="lineNum">     815 </span>            :                 }
+<span class="lineNum">     816 </span>            :         } else {
+<a name="817"><span class="lineNum">     817 </span><span class="lineNoCov">          0 :                 g_free_not_null(active_win-&gt;theme_name);</span></a>
+<span class="lineNum">     818 </span><span class="lineNoCov">          0 :                 active_win-&gt;theme_name = g_strdup(data);</span>
+<span class="lineNum">     819 </span>            : 
+<span class="lineNum">     820 </span><span class="lineNoCov">          0 :                 active_win-&gt;theme = theme = theme_load(data);</span>
+<a name="821"><span class="lineNum">     821 </span><span class="lineNoCov">          0 :                 if (theme != NULL) {</span></a>
+<span class="lineNum">     822 </span><span class="lineNoCov">          0 :                         printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     823 </span>            :                                            TXT_WINDOW_THEME_CHANGED,
+<span class="lineNum">     824 </span>            :                                            theme-&gt;name, theme-&gt;path);
+<a name="825"><span class="lineNum">     825 </span>            :                 } else {</a>
+<span class="lineNum">     826 </span><span class="lineNoCov">          0 :                         printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     827 </span>            :                                            TXT_THEME_NOT_FOUND, data);
+<span class="lineNum">     828 </span>            :                 }
+<a name="829"><span class="lineNum">     829 </span>            :         }</a>
+<span class="lineNum">     830 </span>            : 
+<span class="lineNum">     831 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<a name="832"><span class="lineNum">     832 </span>            : }</a>
+<a name="833"><span class="lineNum">     833 </span>            : </a>
+<span class="lineNum">     834 </span><span class="lineNoCov">          0 : static void cmd_layout(const char *data, SERVER_REC *server, WI_ITEM_REC *item)</span>
+<span class="lineNum">     835 </span>            : {
+<span class="lineNum">     836 </span><span class="lineNoCov">          0 :         command_runsub(&quot;layout&quot;, data, server, item);</span>
+<a name="837"><span class="lineNum">     837 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="838"><span class="lineNum">     838 </span>            : </a>
+<span class="lineNum">     839 </span>            : /* SYNTAX: FOREACH WINDOW &lt;command&gt; */
+<span class="lineNum">     840 </span><span class="lineNoCov">          0 : static void cmd_foreach_window(const char *data)</span>
+<a name="841"><span class="lineNum">     841 </span>            : {</a>
+<span class="lineNum">     842 </span>            :         WINDOW_REC *old;
+<span class="lineNum">     843 </span>            :         GSList *list;
+<span class="lineNum">     844 </span>            :         const char *cmdchars;
+<a name="845"><span class="lineNum">     845 </span>            :         char *str;</a>
+<span class="lineNum">     846 </span>            : 
+<span class="lineNum">     847 </span><span class="lineNoCov">          0 :         cmdchars = settings_get_str(&quot;cmdchars&quot;);</span>
+<span class="lineNum">     848 </span><span class="lineNoCov">          0 :         str = strchr(cmdchars, *data) != NULL ? g_strdup(data) :</span>
+<a name="849"><span class="lineNum">     849 </span><span class="lineNoCov">          0 :                 g_strdup_printf(&quot;%c%s&quot;, *cmdchars, data);</span></a>
+<span class="lineNum">     850 </span>            : 
+<span class="lineNum">     851 </span><span class="lineNoCov">          0 :         old = active_win;</span>
+<span class="lineNum">     852 </span>            : 
+<a name="853"><span class="lineNum">     853 </span><span class="lineNoCov">          0 :         list = g_slist_copy(windows);</span></a>
+<span class="lineNum">     854 </span><span class="lineNoCov">          0 :         while (list != NULL) {</span>
+<span class="lineNum">     855 </span><span class="lineNoCov">          0 :                 WINDOW_REC *rec = list-&gt;data;</span>
+<span class="lineNum">     856 </span>            : 
+<a name="857"><span class="lineNum">     857 </span><span class="lineNoCov">          0 :                 active_win = rec;</span></a>
+<span class="lineNum">     858 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;send command&quot;, 3, str, rec-&gt;active_server,</span>
+<span class="lineNum">     859 </span>            :                             rec-&gt;active);
+<span class="lineNum">     860 </span><span class="lineNoCov">          0 :                 list = g_slist_remove(list, list-&gt;data);</span>
+<a name="861"><span class="lineNum">     861 </span>            :         }</a>
+<span class="lineNum">     862 </span>            : 
+<span class="lineNum">     863 </span><span class="lineNoCov">          0 :         if (g_slist_find(windows, old) != NULL)</span>
+<span class="lineNum">     864 </span><span class="lineNoCov">          0 :                 active_win = old;</span>
+<a name="865"><span class="lineNum">     865 </span>            : </a>
+<span class="lineNum">     866 </span><span class="lineNoCov">          0 :         g_free(str);</span>
+<a name="867"><span class="lineNum">     867 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     868 </span>            : 
+<a name="869"><span class="lineNum">     869 </span><span class="lineCov">          1 : void window_commands_init(void)</span></a>
+<span class="lineNum">     870 </span>            : {
+<span class="lineNum">     871 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;active_window_ignore_refnum&quot;, TRUE);</span>
+<span class="lineNum">     872 </span>            : 
+<a name="873"><span class="lineNum">     873 </span><span class="lineCov">          1 :         command_bind(&quot;window&quot;, NULL, (SIGNAL_FUNC) cmd_window);</span></a>
+<span class="lineNum">     874 </span><span class="lineCov">          1 :         command_bind(&quot;window new&quot;, NULL, (SIGNAL_FUNC) cmd_window_new);</span>
+<span class="lineNum">     875 </span><span class="lineCov">          1 :         command_bind(&quot;window close&quot;, NULL, (SIGNAL_FUNC) cmd_window_close);</span>
+<span class="lineNum">     876 </span><span class="lineCov">          1 :         command_bind(&quot;window kill&quot;, NULL, (SIGNAL_FUNC) cmd_window_close);</span>
+<a name="877"><span class="lineNum">     877 </span><span class="lineCov">          1 :         command_bind(&quot;window server&quot;, NULL, (SIGNAL_FUNC) cmd_window_server);</span></a>
+<span class="lineNum">     878 </span><span class="lineCov">          1 :         command_bind(&quot;window refnum&quot;, NULL, (SIGNAL_FUNC) cmd_window_refnum);</span>
+<span class="lineNum">     879 </span><span class="lineCov">          1 :         command_bind(&quot;window goto&quot;, NULL, (SIGNAL_FUNC) cmd_window_goto);</span>
+<span class="lineNum">     880 </span><span class="lineCov">          1 :         command_bind(&quot;window previous&quot;, NULL, (SIGNAL_FUNC) cmd_window_previous);</span>
+<a name="881"><span class="lineNum">     881 </span><span class="lineCov">          1 :         command_bind(&quot;window next&quot;, NULL, (SIGNAL_FUNC) cmd_window_next);</span></a>
+<span class="lineNum">     882 </span><span class="lineCov">          1 :         command_bind(&quot;window last&quot;, NULL, (SIGNAL_FUNC) cmd_window_last);</span>
+<span class="lineNum">     883 </span><span class="lineCov">          1 :         command_bind(&quot;window level&quot;, NULL, (SIGNAL_FUNC) cmd_window_level);</span>
+<span class="lineNum">     884 </span><span class="lineCov">          1 :         command_bind(&quot;window immortal&quot;, NULL, (SIGNAL_FUNC) cmd_window_immortal);</span>
+<a name="885"><span class="lineNum">     885 </span><span class="lineCov">          1 :         command_bind(&quot;window item&quot;, NULL, (SIGNAL_FUNC) cmd_window_item);</span></a>
+<span class="lineNum">     886 </span><span class="lineCov">          1 :         command_bind(&quot;window item prev&quot;, NULL, (SIGNAL_FUNC) cmd_window_item_prev);</span>
+<span class="lineNum">     887 </span><span class="lineCov">          1 :         command_bind(&quot;window item next&quot;, NULL, (SIGNAL_FUNC) cmd_window_item_next);</span>
+<span class="lineNum">     888 </span><span class="lineCov">          1 :         command_bind(&quot;window item goto&quot;, NULL, (SIGNAL_FUNC) cmd_window_item_goto);</span>
+<a name="889"><span class="lineNum">     889 </span><span class="lineCov">          1 :         command_bind(&quot;window item move&quot;, NULL, (SIGNAL_FUNC) cmd_window_item_move);</span></a>
+<span class="lineNum">     890 </span><span class="lineCov">          1 :         command_bind(&quot;window number&quot;, NULL, (SIGNAL_FUNC) cmd_window_number);</span>
+<span class="lineNum">     891 </span><span class="lineCov">          1 :         command_bind(&quot;window name&quot;, NULL, (SIGNAL_FUNC) cmd_window_name);</span>
+<span class="lineNum">     892 </span><span class="lineCov">          1 :         command_bind(&quot;window history&quot;, NULL, (SIGNAL_FUNC) cmd_window_history);</span>
+<a name="893"><span class="lineNum">     893 </span><span class="lineCov">          1 :         command_bind(&quot;window move&quot;, NULL, (SIGNAL_FUNC) cmd_window_move);</span></a>
+<span class="lineNum">     894 </span><span class="lineCov">          1 :         command_bind(&quot;window move prev&quot;, NULL, (SIGNAL_FUNC) cmd_window_move_prev);</span>
+<span class="lineNum">     895 </span><span class="lineCov">          1 :         command_bind(&quot;window move next&quot;, NULL, (SIGNAL_FUNC) cmd_window_move_next);</span>
+<span class="lineNum">     896 </span><span class="lineCov">          1 :         command_bind(&quot;window move first&quot;, NULL, (SIGNAL_FUNC) cmd_window_move_first);</span>
+<a name="897"><span class="lineNum">     897 </span><span class="lineCov">          1 :         command_bind(&quot;window move last&quot;, NULL, (SIGNAL_FUNC) cmd_window_move_last);</span></a>
+<span class="lineNum">     898 </span><span class="lineCov">          1 :         command_bind(&quot;window list&quot;, NULL, (SIGNAL_FUNC) cmd_window_list);</span>
+<span class="lineNum">     899 </span><span class="lineCov">          1 :         command_bind(&quot;window theme&quot;, NULL, (SIGNAL_FUNC) cmd_window_theme);</span>
+<span class="lineNum">     900 </span><span class="lineCov">          1 :         command_bind(&quot;layout&quot;, NULL, (SIGNAL_FUNC) cmd_layout);</span>
+<a name="901"><span class="lineNum">     901 </span>            :         /* SYNTAX: LAYOUT SAVE */</a>
+<span class="lineNum">     902 </span><span class="lineCov">          1 :         command_bind(&quot;layout save&quot;, NULL, (SIGNAL_FUNC) windows_layout_save);</span>
+<span class="lineNum">     903 </span>            :         /* SYNTAX: LAYOUT RESET */
+<span class="lineNum">     904 </span><span class="lineCov">          1 :         command_bind(&quot;layout reset&quot;, NULL, (SIGNAL_FUNC) windows_layout_reset);</span>
+<a name="905"><span class="lineNum">     905 </span><span class="lineCov">          1 :         command_bind(&quot;foreach window&quot;, NULL, (SIGNAL_FUNC) cmd_foreach_window);</span></a>
+<span class="lineNum">     906 </span>            : 
+<span class="lineNum">     907 </span><span class="lineCov">          1 :         command_set_options(&quot;window number&quot;, &quot;sticky&quot;);</span>
+<span class="lineNum">     908 </span><span class="lineCov">          1 :         command_set_options(&quot;window server&quot;, &quot;sticky unsticky&quot;);</span>
+<a name="909"><span class="lineNum">     909 </span><span class="lineCov">          1 :         command_set_options(&quot;window theme&quot;, &quot;delete&quot;);</span></a>
+<span class="lineNum">     910 </span><span class="lineCov">          1 :         command_set_options(&quot;window history&quot;, &quot;clear&quot;);</span>
+<a name="911"><span class="lineNum">     911 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     912 </span>            : 
+<a name="913"><span class="lineNum">     913 </span><span class="lineCov">          1 : void window_commands_deinit(void)</span></a>
+<span class="lineNum">     914 </span>            : {
+<span class="lineNum">     915 </span><span class="lineCov">          1 :         command_unbind(&quot;window&quot;, (SIGNAL_FUNC) cmd_window);</span>
+<span class="lineNum">     916 </span><span class="lineCov">          1 :         command_unbind(&quot;window new&quot;, (SIGNAL_FUNC) cmd_window_new);</span>
+<a name="917"><span class="lineNum">     917 </span><span class="lineCov">          1 :         command_unbind(&quot;window close&quot;, (SIGNAL_FUNC) cmd_window_close);</span></a>
+<span class="lineNum">     918 </span><span class="lineCov">          1 :         command_unbind(&quot;window kill&quot;, (SIGNAL_FUNC) cmd_window_close);</span>
+<span class="lineNum">     919 </span><span class="lineCov">          1 :         command_unbind(&quot;window server&quot;, (SIGNAL_FUNC) cmd_window_server);</span>
+<span class="lineNum">     920 </span><span class="lineCov">          1 :         command_unbind(&quot;window refnum&quot;, (SIGNAL_FUNC) cmd_window_refnum);</span>
+<a name="921"><span class="lineNum">     921 </span><span class="lineCov">          1 :         command_unbind(&quot;window goto&quot;, (SIGNAL_FUNC) cmd_window_goto);</span></a>
+<span class="lineNum">     922 </span><span class="lineCov">          1 :         command_unbind(&quot;window previous&quot;, (SIGNAL_FUNC) cmd_window_previous);</span>
+<span class="lineNum">     923 </span><span class="lineCov">          1 :         command_unbind(&quot;window next&quot;, (SIGNAL_FUNC) cmd_window_next);</span>
+<span class="lineNum">     924 </span><span class="lineCov">          1 :         command_unbind(&quot;window last&quot;, (SIGNAL_FUNC) cmd_window_last);</span>
+<a name="925"><span class="lineNum">     925 </span><span class="lineCov">          1 :         command_unbind(&quot;window level&quot;, (SIGNAL_FUNC) cmd_window_level);</span></a>
+<span class="lineNum">     926 </span><span class="lineCov">          1 :         command_unbind(&quot;window immortal&quot;, (SIGNAL_FUNC) cmd_window_immortal);</span>
+<span class="lineNum">     927 </span><span class="lineCov">          1 :         command_unbind(&quot;window item&quot;, (SIGNAL_FUNC) cmd_window_item);</span>
+<span class="lineNum">     928 </span><span class="lineCov">          1 :         command_unbind(&quot;window item prev&quot;, (SIGNAL_FUNC) cmd_window_item_prev);</span>
+<a name="929"><span class="lineNum">     929 </span><span class="lineCov">          1 :         command_unbind(&quot;window item next&quot;, (SIGNAL_FUNC) cmd_window_item_next);</span></a>
+<span class="lineNum">     930 </span><span class="lineCov">          1 :         command_unbind(&quot;window item goto&quot;, (SIGNAL_FUNC) cmd_window_item_goto);</span>
+<span class="lineNum">     931 </span><span class="lineCov">          1 :         command_unbind(&quot;window item move&quot;, (SIGNAL_FUNC) cmd_window_item_move);</span>
+<span class="lineNum">     932 </span><span class="lineCov">          1 :         command_unbind(&quot;window number&quot;, (SIGNAL_FUNC) cmd_window_number);</span>
+<a name="933"><span class="lineNum">     933 </span><span class="lineCov">          1 :         command_unbind(&quot;window name&quot;, (SIGNAL_FUNC) cmd_window_name);</span></a>
+<span class="lineNum">     934 </span><span class="lineCov">          1 :         command_unbind(&quot;window history&quot;, (SIGNAL_FUNC) cmd_window_history);</span>
+<span class="lineNum">     935 </span><span class="lineCov">          1 :         command_unbind(&quot;window move&quot;, (SIGNAL_FUNC) cmd_window_move);</span>
+<span class="lineNum">     936 </span><span class="lineCov">          1 :         command_unbind(&quot;window move prev&quot;, (SIGNAL_FUNC) cmd_window_move_prev);</span>
+<a name="937"><span class="lineNum">     937 </span><span class="lineCov">          1 :         command_unbind(&quot;window move next&quot;, (SIGNAL_FUNC) cmd_window_move_next);</span></a>
+<span class="lineNum">     938 </span><span class="lineCov">          1 :         command_unbind(&quot;window move first&quot;, (SIGNAL_FUNC) cmd_window_move_first);</span>
+<span class="lineNum">     939 </span><span class="lineCov">          1 :         command_unbind(&quot;window move last&quot;, (SIGNAL_FUNC) cmd_window_move_last);</span>
+<span class="lineNum">     940 </span><span class="lineCov">          1 :         command_unbind(&quot;window list&quot;, (SIGNAL_FUNC) cmd_window_list);</span>
+<a name="941"><span class="lineNum">     941 </span><span class="lineCov">          1 :         command_unbind(&quot;window theme&quot;, (SIGNAL_FUNC) cmd_window_theme);</span></a>
+<span class="lineNum">     942 </span><span class="lineCov">          1 :         command_unbind(&quot;layout&quot;, (SIGNAL_FUNC) cmd_layout);</span>
+<span class="lineNum">     943 </span><span class="lineCov">          1 :         command_unbind(&quot;layout save&quot;, (SIGNAL_FUNC) windows_layout_save);</span>
+<span class="lineNum">     944 </span><span class="lineCov">          1 :         command_unbind(&quot;layout reset&quot;, (SIGNAL_FUNC) windows_layout_reset);</span>
+<a name="945"><span class="lineNum">     945 </span><span class="lineCov">          1 :         command_unbind(&quot;foreach window&quot;, (SIGNAL_FUNC) cmd_foreach_window);</span></a>
+<span class="lineNum">     946 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

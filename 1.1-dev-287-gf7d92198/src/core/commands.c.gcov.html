@@ -1,0 +1,1084 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/commands.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - commands.c<span style="font-size: 80%;"> (source / <a href="commands.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">246</td>
+            <td class="headerCovTableEntry">480</td>
+            <td class="headerCovTableEntryLo">51.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntry">33</td>
+            <td class="headerCovTableEntryLo">66.7 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  commands.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;misc.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;special-vars.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;window-item-def.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;servers.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;channels.h&quot;</a>
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;lib-config/iconfig.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;settings.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : </a>
+<span class="lineNum">      34 </span>            : GSList *commands;
+<span class="lineNum">      35 </span>            : char *current_command;
+<span class="lineNum">      36 </span>            : 
+<a name="37"><span class="lineNum">      37 </span>            : static int signal_default_command;</a>
+<span class="lineNum">      38 </span>            : 
+<a name="39"><span class="lineNum">      39 </span>            : static GSList *alias_runstack;</a>
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span><span class="lineCov">        543 : COMMAND_REC *command_find(const char *cmd)</span></a>
+<span class="lineNum">      42 </span>            : {
+<span class="lineNum">      43 </span>            :         GSList *tmp;
+<span class="lineNum">      44 </span>            : 
+<a name="45"><span class="lineNum">      45 </span><span class="lineCov">        543 :         g_return_val_if_fail(cmd != NULL, NULL);</span></a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span><span class="lineCov">      51449 :         for (tmp = commands; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">      48 </span><span class="lineCov">      51232 :                 COMMAND_REC *rec = tmp-&gt;data;</span>
+<a name="49"><span class="lineNum">      49 </span>            : </a>
+<span class="lineNum">      50 </span><span class="lineCov">      51232 :                 if (g_ascii_strcasecmp(rec-&gt;cmd, cmd) == 0)</span>
+<span class="lineNum">      51 </span><span class="lineCov">        326 :                         return rec;</span>
+<span class="lineNum">      52 </span>            :         }
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<span class="lineNum">      54 </span><span class="lineCov">        217 :         return NULL;</span>
+<a name="55"><span class="lineNum">      55 </span>            : }</a>
+<span class="lineNum">      56 </span>            : 
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">        293 : static COMMAND_MODULE_REC *command_module_find(COMMAND_REC *rec,</span></a>
+<span class="lineNum">      58 </span>            :                                                const char *module)
+<span class="lineNum">      59 </span>            : {
+<span class="lineNum">      60 </span>            :         GSList *tmp;
+<a name="61"><span class="lineNum">      61 </span>            : </a>
+<span class="lineNum">      62 </span><span class="lineCov">        293 :         g_return_val_if_fail(rec != NULL, NULL);</span>
+<span class="lineNum">      63 </span><span class="lineCov">        293 :         g_return_val_if_fail(module != NULL, NULL);</span>
+<span class="lineNum">      64 </span>            : 
+<a name="65"><span class="lineNum">      65 </span><span class="lineCov">        329 :         for (tmp = rec-&gt;modules; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">      66 </span><span class="lineCov">         85 :                 COMMAND_MODULE_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineCov">         85 :                 if (g_ascii_strcasecmp(rec-&gt;name, module) == 0)</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineCov">         49 :                         return rec;</span></a>
+<span class="lineNum">      70 </span>            :         }
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineCov">        244 :         return NULL;</span>
+<a name="73"><span class="lineNum">      73 </span>            : }</a>
+<a name="74"><span class="lineNum">      74 </span>            : </a>
+<span class="lineNum">      75 </span>            : static COMMAND_MODULE_REC *
+<span class="lineNum">      76 </span><span class="lineCov">        248 : command_module_find_and_remove(COMMAND_REC *rec, SIGNAL_FUNC func)</span>
+<a name="77"><span class="lineNum">      77 </span>            : {</a>
+<span class="lineNum">      78 </span>            :         GSList *tmp, *tmp2;
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span><span class="lineCov">        248 :         g_return_val_if_fail(rec != NULL, NULL);</span>
+<a name="81"><span class="lineNum">      81 </span><span class="lineCov">        248 :         g_return_val_if_fail(func != NULL, NULL);</span></a>
+<span class="lineNum">      82 </span>            : 
+<span class="lineNum">      83 </span><span class="lineCov">        280 :         for (tmp = rec-&gt;modules; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">      84 </span><span class="lineCov">        280 :                 COMMAND_MODULE_REC *rec = tmp-&gt;data;</span>
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<span class="lineNum">      86 </span><span class="lineCov">        317 :                 for (tmp2 = rec-&gt;callbacks; tmp2 != NULL; tmp2 = tmp2-&gt;next) {</span>
+<span class="lineNum">      87 </span><span class="lineCov">        285 :                         COMMAND_CALLBACK_REC *cb = tmp2-&gt;data;</span>
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineCov">        285 :                         if (cb-&gt;func == func) {</span></a>
+<span class="lineNum">      90 </span><span class="lineCov">        248 :                                 rec-&gt;callbacks =</span>
+<span class="lineNum">      91 </span><span class="lineCov">        248 :                                         g_slist_remove(rec-&gt;callbacks, cb);</span>
+<span class="lineNum">      92 </span><span class="lineCov">        248 :                                 g_free(cb);</span>
+<a name="93"><span class="lineNum">      93 </span><span class="lineCov">        248 :                                 return rec;</span></a>
+<span class="lineNum">      94 </span>            :                         }
+<span class="lineNum">      95 </span>            :                 }
+<span class="lineNum">      96 </span>            :         }
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="99"><span class="lineNum">      99 </span>            : }</a>
+<span class="lineNum">     100 </span>            : 
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 : int command_have_sub(const char *command)</span></a>
+<span class="lineNum">     102 </span>            : {
+<span class="lineNum">     103 </span>            :         GSList *tmp;
+<span class="lineNum">     104 </span>            :         int len;
+<a name="105"><span class="lineNum">     105 </span>            : </a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(command != NULL, FALSE);</span>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span>            :         /* find &quot;command &quot;s */
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :         len = strlen(command);</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :         for (tmp = commands; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 COMMAND_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     112 </span>            : 
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :                 if (g_ascii_strncasecmp(rec-&gt;cmd, command, len) == 0 &amp;&amp;</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :                     rec-&gt;cmd[len] == ' ')</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                         return TRUE;</span>
+<span class="lineNum">     116 </span>            :         }
+<a name="117"><span class="lineNum">     117 </span>            : </a>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :         return FALSE;</span>
+<span class="lineNum">     119 </span>            : }
+<a name="120"><span class="lineNum">     120 </span>            : </a>
+<a name="121"><span class="lineNum">     121 </span>            : static COMMAND_MODULE_REC *</a>
+<span class="lineNum">     122 </span><span class="lineCov">        293 : command_module_get(COMMAND_REC *rec, const char *module, int protocol)</span>
+<span class="lineNum">     123 </span>            : {
+<span class="lineNum">     124 </span>            :         COMMAND_MODULE_REC *modrec;
+<a name="125"><span class="lineNum">     125 </span>            : </a>
+<span class="lineNum">     126 </span><span class="lineCov">        293 :         g_return_val_if_fail(rec != NULL, NULL);</span>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineCov">        293 :         modrec = command_module_find(rec, module);</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineCov">        293 :         if (modrec == NULL) {</span></a>
+<span class="lineNum">     130 </span><span class="lineCov">        244 :                 modrec = g_new0(COMMAND_MODULE_REC, 1);</span>
+<span class="lineNum">     131 </span><span class="lineCov">        244 :                 modrec-&gt;name = g_strdup(module);</span>
+<span class="lineNum">     132 </span><span class="lineCov">        244 :                 modrec-&gt;protocol = -1;</span>
+<a name="133"><span class="lineNum">     133 </span><span class="lineCov">        244 :                 rec-&gt;modules = g_slist_append(rec-&gt;modules, modrec);</span></a>
+<span class="lineNum">     134 </span>            :         }
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineCov">        293 :         if (protocol != -1)</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineCov">         69 :                 modrec-&gt;protocol = protocol;</span></a>
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineCov">        293 :         return modrec;</span>
+<a name="140"><span class="lineNum">     140 </span>            : }</a>
+<a name="141"><span class="lineNum">     141 </span>            : </a>
+<span class="lineNum">     142 </span><span class="lineCov">        248 : void command_bind_full(const char *module, int priority, const char *cmd,</span>
+<span class="lineNum">     143 </span>            :                        int protocol, const char *category, SIGNAL_FUNC func,
+<span class="lineNum">     144 </span>            :                        void *user_data)
+<a name="145"><span class="lineNum">     145 </span>            : {</a>
+<span class="lineNum">     146 </span>            :         COMMAND_REC *rec;
+<span class="lineNum">     147 </span>            :         COMMAND_MODULE_REC *modrec;
+<span class="lineNum">     148 </span>            :         COMMAND_CALLBACK_REC *cb;
+<a name="149"><span class="lineNum">     149 </span>            :         char *str;</a>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineCov">        248 :         g_return_if_fail(module != NULL);</span>
+<span class="lineNum">     152 </span><span class="lineCov">        248 :         g_return_if_fail(cmd != NULL);</span>
+<a name="153"><span class="lineNum">     153 </span>            : </a>
+<span class="lineNum">     154 </span><span class="lineCov">        248 :         rec = command_find(cmd);</span>
+<span class="lineNum">     155 </span><span class="lineCov">        248 :         if (rec == NULL) {</span>
+<span class="lineNum">     156 </span><span class="lineCov">        217 :                 rec = g_new0(COMMAND_REC, 1);</span>
+<a name="157"><span class="lineNum">     157 </span><span class="lineCov">        217 :                 rec-&gt;cmd = g_strdup(cmd);</span></a>
+<span class="lineNum">     158 </span><span class="lineCov">        217 :                 rec-&gt;category = category == NULL ? NULL : g_strdup(category);</span>
+<span class="lineNum">     159 </span><span class="lineCov">        217 :                 commands = g_slist_append(commands, rec);</span>
+<span class="lineNum">     160 </span>            :         }
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">        248 :         modrec = command_module_get(rec, module, protocol);</span></a>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineCov">        248 :         cb = g_new0(COMMAND_CALLBACK_REC, 1);</span>
+<span class="lineNum">     164 </span><span class="lineCov">        248 :         cb-&gt;func = func;</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineCov">        248 :         cb-&gt;user_data = user_data;</span></a>
+<span class="lineNum">     166 </span><span class="lineCov">        248 :         modrec-&gt;callbacks = g_slist_append(modrec-&gt;callbacks, cb);</span>
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineCov">        248 :         if (func != NULL) {</span>
+<a name="169"><span class="lineNum">     169 </span><span class="lineCov">        248 :                 str = g_strconcat(&quot;command &quot;, cmd, NULL);</span></a>
+<span class="lineNum">     170 </span><span class="lineCov">        248 :                 signal_add_full(module, priority, str, func, user_data);</span>
+<span class="lineNum">     171 </span><span class="lineCov">        248 :                 g_free(str);</span>
+<span class="lineNum">     172 </span>            :         }
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<span class="lineNum">     174 </span><span class="lineCov">        248 :         signal_emit(&quot;commandlist new&quot;, 1, rec);</span>
+<a name="175"><span class="lineNum">     175 </span>            : }</a>
+<span class="lineNum">     176 </span>            : 
+<a name="177"><span class="lineNum">     177 </span><span class="lineCov">        217 : static void command_free(COMMAND_REC *rec)</span></a>
+<span class="lineNum">     178 </span>            : {
+<span class="lineNum">     179 </span><span class="lineCov">        217 :         commands = g_slist_remove(commands, rec);</span>
+<span class="lineNum">     180 </span><span class="lineCov">        217 :         signal_emit(&quot;commandlist remove&quot;, 1, rec);</span>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineCov">        217 :         g_free_not_null(rec-&gt;category);</span>
+<span class="lineNum">     183 </span><span class="lineCov">        217 :         g_strfreev(rec-&gt;options);</span>
+<span class="lineNum">     184 </span><span class="lineCov">        217 :         g_free(rec-&gt;cmd);</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineCov">        217 :         g_free(rec);</span></a>
+<a name="186"><span class="lineNum">     186 </span><span class="lineCov">        217 : }</span></a>
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span><span class="lineCov">        244 : static void command_module_free(COMMAND_MODULE_REC *modrec, COMMAND_REC *rec)</span>
+<a name="189"><span class="lineNum">     189 </span>            : {</a>
+<span class="lineNum">     190 </span><span class="lineCov">        244 :         rec-&gt;modules = g_slist_remove(rec-&gt;modules, modrec);</span>
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineCov">        244 :         g_slist_foreach(modrec-&gt;callbacks, (GFunc) g_free, NULL);</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineCov">        244 :         g_slist_free(modrec-&gt;callbacks);</span></a>
+<span class="lineNum">     194 </span><span class="lineCov">        244 :         g_free(modrec-&gt;name);</span>
+<span class="lineNum">     195 </span><span class="lineCov">        244 :         g_free_not_null(modrec-&gt;options);</span>
+<span class="lineNum">     196 </span><span class="lineCov">        244 :         g_free(modrec);</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineCov">        244 : }</span></a>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineCov">        242 : static void command_module_destroy(COMMAND_REC *rec,</span>
+<span class="lineNum">     200 </span>            :                                    COMMAND_MODULE_REC *modrec)
+<a name="201"><span class="lineNum">     201 </span>            : {</a>
+<span class="lineNum">     202 </span>            :         GSList *tmp, *freelist;
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineCov">        242 :         command_module_free(modrec, rec);</span>
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<span class="lineNum">     206 </span>            :         /* command_set_options() might have added module declaration of it's
+<span class="lineNum">     207 </span>            :            own without any signals .. check if they're the only ones left
+<span class="lineNum">     208 </span>            :            and if so, destroy them. */
+<a name="209"><span class="lineNum">     209 </span><span class="lineCov">        242 :         freelist = NULL;</span></a>
+<span class="lineNum">     210 </span><span class="lineCov">        244 :         for (tmp = rec-&gt;modules; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     211 </span><span class="lineCov">         27 :                 COMMAND_MODULE_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     212 </span>            : 
+<a name="213"><span class="lineNum">     213 </span><span class="lineCov">         27 :                 if (rec-&gt;callbacks == NULL)</span></a>
+<span class="lineNum">     214 </span><span class="lineCov">          2 :                         freelist = g_slist_append(freelist, rec);</span>
+<span class="lineNum">     215 </span>            :                 else {
+<span class="lineNum">     216 </span><span class="lineCov">         25 :                         g_slist_free(freelist);</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">         25 :                         freelist = NULL;</span></a>
+<span class="lineNum">     218 </span><span class="lineCov">         25 :                         break;</span>
+<span class="lineNum">     219 </span>            :                 }
+<span class="lineNum">     220 </span>            :         }
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span><span class="lineCov">        242 :         g_slist_foreach(freelist, (GFunc) command_module_free, rec);</span>
+<span class="lineNum">     223 </span><span class="lineCov">        242 :         g_slist_free(freelist);</span>
+<span class="lineNum">     224 </span>            : 
+<a name="225"><span class="lineNum">     225 </span><span class="lineCov">        242 :         if (rec-&gt;modules == NULL)</span></a>
+<span class="lineNum">     226 </span><span class="lineCov">        217 :                 command_free(rec);</span>
+<a name="227"><span class="lineNum">     227 </span><span class="lineCov">        242 : }</span></a>
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">        248 : void command_unbind_full(const char *cmd, SIGNAL_FUNC func, void *user_data)</span></a>
+<span class="lineNum">     230 </span>            : {
+<span class="lineNum">     231 </span>            :         COMMAND_REC *rec;
+<span class="lineNum">     232 </span>            :         COMMAND_MODULE_REC *modrec;
+<a name="233"><span class="lineNum">     233 </span>            :         char *str;</a>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineCov">        248 :         g_return_if_fail(cmd != NULL);</span>
+<span class="lineNum">     236 </span><span class="lineCov">        248 :         g_return_if_fail(func != NULL);</span>
+<a name="237"><span class="lineNum">     237 </span>            : </a>
+<span class="lineNum">     238 </span><span class="lineCov">        248 :         rec = command_find(cmd);</span>
+<span class="lineNum">     239 </span><span class="lineCov">        248 :         if (rec != NULL) {</span>
+<span class="lineNum">     240 </span><span class="lineCov">        248 :                 modrec = command_module_find_and_remove(rec, func);</span>
+<a name="241"><span class="lineNum">     241 </span><span class="lineCov">        248 :                 g_return_if_fail(modrec != NULL);</span></a>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineCov">        248 :                 if (modrec-&gt;callbacks == NULL)</span>
+<span class="lineNum">     244 </span><span class="lineCov">        242 :                         command_module_destroy(rec, modrec);</span>
+<a name="245"><span class="lineNum">     245 </span>            :         }</a>
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineCov">        248 :         str = g_strconcat(&quot;command &quot;, cmd, NULL);</span>
+<span class="lineNum">     248 </span><span class="lineCov">        248 :         signal_remove_data(str, func, user_data);</span>
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">        248 :         g_free(str);</span></a>
+<span class="lineNum">     250 </span>            : }
+<span class="lineNum">     251 </span>            : 
+<a name="252"><span class="lineNum">     252 </span>            : /* Expand `cmd' - returns `cmd' if not found, NULL if more than one</a>
+<a name="253"><span class="lineNum">     253 </span>            :    match is found */</a>
+<span class="lineNum">     254 </span><span class="lineCov">          2 : static const char *command_expand(char *cmd)</span>
+<span class="lineNum">     255 </span>            : {
+<span class="lineNum">     256 </span>            :         GSList *tmp;
+<a name="257"><span class="lineNum">     257 </span>            :         const char *match;</a>
+<span class="lineNum">     258 </span>            :         int len, multiple;
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineCov">          2 :         g_return_val_if_fail(cmd != NULL, NULL);</span>
+<a name="261"><span class="lineNum">     261 </span>            : </a>
+<span class="lineNum">     262 </span><span class="lineCov">          2 :         multiple = FALSE;</span>
+<span class="lineNum">     263 </span><span class="lineCov">          2 :         match = NULL;</span>
+<span class="lineNum">     264 </span><span class="lineCov">          2 :         len = strlen(cmd);</span>
+<a name="265"><span class="lineNum">     265 </span><span class="lineCov">        119 :         for (tmp = commands; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     266 </span><span class="lineCov">        119 :                 COMMAND_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     267 </span>            : 
+<span class="lineNum">     268 </span><span class="lineCov">        121 :                 if (g_ascii_strncasecmp(rec-&gt;cmd, cmd, len) == 0 &amp;&amp;</span>
+<a name="269"><span class="lineNum">     269 </span><span class="lineCov">          2 :                     strchr(rec-&gt;cmd+len, ' ') == NULL) {</span></a>
+<span class="lineNum">     270 </span><span class="lineCov">          2 :                         if (rec-&gt;cmd[len] == '\0') {</span>
+<span class="lineNum">     271 </span>            :                                 /* full match */
+<span class="lineNum">     272 </span><span class="lineCov">          2 :                                 return rec-&gt;cmd;</span>
+<a name="273"><span class="lineNum">     273 </span>            :                         }</a>
+<span class="lineNum">     274 </span>            : 
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                         if (match != NULL) {</span>
+<span class="lineNum">     276 </span>            :                                 /* multiple matches, we still need to check
+<a name="277"><span class="lineNum">     277 </span>            :                                    if there's some command left that is a</a>
+<span class="lineNum">     278 </span>            :                                    full match.. */
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                                 multiple = TRUE;</span>
+<span class="lineNum">     280 </span>            :                         }
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<span class="lineNum">     282 </span>            :                         /* check that this is the only match */
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                         match = rec-&gt;cmd;</span>
+<span class="lineNum">     284 </span>            :                 }
+<a name="285"><span class="lineNum">     285 </span>            :         }</a>
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :         if (multiple) {</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;error command&quot;, 2,</span>
+<a name="289"><span class="lineNum">     289 </span>            :                             GINT_TO_POINTER(CMDERR_AMBIGUOUS), cmd);</a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<span class="lineNum">     291 </span>            :         }
+<span class="lineNum">     292 </span>            : 
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :         return match != NULL ? match : cmd;</span></a>
+<a name="294"><span class="lineNum">     294 </span>            : }</a>
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 : void command_runsub(const char *cmd, const char *data,</span>
+<a name="297"><span class="lineNum">     297 </span>            :                     void *server, void *item)</a>
+<span class="lineNum">     298 </span>            : {
+<span class="lineNum">     299 </span>            :         const char *newcmd;
+<span class="lineNum">     300 </span>            :         char *orig, *subcmd, *defcmd, *args;
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :         while (*data == ' ') data++;</span>
+<a name="305"><span class="lineNum">     305 </span>            : </a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :         if (*data == '\0') {</span>
+<span class="lineNum">     307 </span>            :                 /* no subcommand given - list the subcommands */
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;list subcommands&quot;, 2, cmd);</span>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     310 </span>            :         }
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span>            :         /* get command.. */
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :         orig = subcmd = g_strdup_printf(&quot;command %s %s&quot;, cmd, data);</span></a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :         args = strchr(subcmd+8 + strlen(cmd)+1, ' ');</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :         if (args != NULL) *args++ = '\0'; else args = &quot;&quot;;</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         while (*args == ' ') args++;</span>
+<a name="317"><span class="lineNum">     317 </span>            : </a>
+<span class="lineNum">     318 </span>            :         /* check if this command can be expanded */
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :         newcmd = command_expand(subcmd+8);</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :         if (newcmd == NULL) {</span>
+<a name="321"><span class="lineNum">     321 </span>            :                 /* ambiguous command */</a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                 g_free(orig);</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     324 </span>            :         }
+<a name="325"><span class="lineNum">     325 </span>            : </a>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :         subcmd = g_strconcat(&quot;command &quot;, newcmd, NULL);</span>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :         ascii_strdown(subcmd);</span>
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :         if (!signal_emit(subcmd, 3, args, server, item)) {</span></a>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :                 defcmd = g_strdup_printf(&quot;default command %s&quot;, cmd);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :                 if (!signal_emit(defcmd, 3, data, server, item)) {</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;error command&quot;, 2,</span>
+<a name="333"><span class="lineNum">     333 </span>            :                                     GINT_TO_POINTER(CMDERR_UNKNOWN), subcmd+8);</a>
+<span class="lineNum">     334 </span>            :                 }
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :                 g_free(defcmd);</span>
+<span class="lineNum">     336 </span>            :         }
+<a name="337"><span class="lineNum">     337 </span>            : </a>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :         g_free(subcmd);</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :         g_free(orig);</span>
+<a name="340"><span class="lineNum">     340 </span>            : }</a>
+<a name="341"><span class="lineNum">     341 </span>            : </a>
+<span class="lineNum">     342 </span><span class="lineCov">          7 : static GSList *optlist_find(GSList *optlist, const char *option)</span>
+<span class="lineNum">     343 </span>            : {
+<span class="lineNum">     344 </span><span class="lineCov">        218 :         while (optlist != NULL) {</span>
+<a name="345"><span class="lineNum">     345 </span><span class="lineCov">        204 :                 char *name = optlist-&gt;data;</span></a>
+<span class="lineNum">     346 </span><span class="lineCov">        204 :                 if (iscmdtype(*name)) name++;</span>
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span><span class="lineCov">        204 :                 if (g_ascii_strcasecmp(name, option) == 0)</span>
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :                         return optlist;</span></a>
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineCov">        204 :                 optlist = optlist-&gt;next;</span>
+<span class="lineNum">     352 </span>            :         }
+<a name="353"><span class="lineNum">     353 </span>            : </a>
+<span class="lineNum">     354 </span><span class="lineCov">          7 :         return NULL;</span>
+<a name="355"><span class="lineNum">     355 </span>            : }</a>
+<span class="lineNum">     356 </span>            : 
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 : int command_have_option(const char *cmd, const char *option)</span></a>
+<span class="lineNum">     358 </span>            : {
+<span class="lineNum">     359 </span>            :         COMMAND_REC *rec;
+<span class="lineNum">     360 </span>            :         char **tmp;
+<a name="361"><span class="lineNum">     361 </span>            : </a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(cmd != NULL, FALSE);</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(option != NULL, FALSE);</span>
+<span class="lineNum">     364 </span>            : 
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :         rec = command_find(cmd);</span></a>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(rec != NULL, FALSE);</span>
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         if (rec-&gt;options == NULL)</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :                 return FALSE;</span></a>
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :         for (tmp = rec-&gt;options; *tmp != NULL; tmp++) {</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                 char *name = iscmdtype(**tmp) ? (*tmp)+1 : *tmp;</span>
+<a name="373"><span class="lineNum">     373 </span>            : </a>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                 if (g_ascii_strcasecmp(name, option) == 0)</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :                         return TRUE;</span>
+<span class="lineNum">     376 </span>            :         }
+<a name="377"><span class="lineNum">     377 </span>            : </a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         return FALSE;</span>
+<a name="379"><span class="lineNum">     379 </span>            : }</a>
+<span class="lineNum">     380 </span>            : 
+<a name="381"><span class="lineNum">     381 </span><span class="lineCov">         45 : static void command_calc_options(COMMAND_REC *rec, const char *options)</span></a>
+<span class="lineNum">     382 </span>            : {
+<span class="lineNum">     383 </span>            :         char **optlist, **tmp, *name, *str;
+<span class="lineNum">     384 </span>            :         GSList *list, *oldopt;
+<a name="385"><span class="lineNum">     385 </span>            : </a>
+<span class="lineNum">     386 </span><span class="lineCov">         45 :         optlist = g_strsplit(options, &quot; &quot;, -1);</span>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineCov">         45 :         if (rec-&gt;options == NULL) {</span>
+<a name="389"><span class="lineNum">     389 </span>            :                 /* first call - use specified args directly */</a>
+<span class="lineNum">     390 </span><span class="lineCov">         42 :                 rec-&gt;options = optlist;</span>
+<span class="lineNum">     391 </span><span class="lineCov">         42 :                 return;</span>
+<span class="lineNum">     392 </span>            :         }
+<a name="393"><span class="lineNum">     393 </span>            : </a>
+<span class="lineNum">     394 </span>            :         /* save old options to linked list */
+<span class="lineNum">     395 </span><span class="lineCov">          3 :         list = NULL;</span>
+<span class="lineNum">     396 </span><span class="lineCov">         65 :         for (tmp = rec-&gt;options; *tmp != NULL; tmp++)</span>
+<a name="397"><span class="lineNum">     397 </span><span class="lineCov">         62 :                 list = g_slist_append(list, g_strdup(*tmp));</span></a>
+<span class="lineNum">     398 </span><span class="lineCov">          3 :         g_strfreev(rec-&gt;options);</span>
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span>            :         /* merge the options */
+<a name="401"><span class="lineNum">     401 </span><span class="lineCov">         10 :         for (tmp = optlist; *tmp != NULL; tmp++) {</span></a>
+<span class="lineNum">     402 </span><span class="lineCov">          7 :                 name = iscmdtype(**tmp) ? (*tmp)+1 : *tmp;</span>
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineCov">          7 :                 oldopt = optlist_find(list, name);</span>
+<a name="405"><span class="lineNum">     405 </span><span class="lineCov">          7 :                 if (oldopt != NULL) {</span></a>
+<span class="lineNum">     406 </span>            :                         /* already specified - overwrite old definition */
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :                         g_free(oldopt-&gt;data);</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                         oldopt-&gt;data = g_strdup(*tmp);</span>
+<a name="409"><span class="lineNum">     409 </span>            :                 } else {</a>
+<span class="lineNum">     410 </span>            :                         /* new option, append to list */
+<span class="lineNum">     411 </span><span class="lineCov">          7 :                         list = g_slist_append(list, g_strdup(*tmp));</span>
+<span class="lineNum">     412 </span>            :                 }
+<a name="413"><span class="lineNum">     413 </span>            :         }</a>
+<span class="lineNum">     414 </span><span class="lineCov">          3 :         g_strfreev(optlist);</span>
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span>            :         /* linked list -&gt; string[] */
+<a name="417"><span class="lineNum">     417 </span><span class="lineCov">          3 :         str = gslist_to_string(list, &quot; &quot;);</span></a>
+<span class="lineNum">     418 </span><span class="lineCov">          3 :         rec-&gt;options = g_strsplit(str, &quot; &quot;, -1);</span>
+<span class="lineNum">     419 </span><span class="lineCov">          3 :         g_free(str);</span>
+<span class="lineNum">     420 </span>            : 
+<a name="421"><span class="lineNum">     421 </span><span class="lineCov">          3 :         g_slist_foreach(list, (GFunc) g_free, NULL);</span></a>
+<span class="lineNum">     422 </span><span class="lineCov">          3 :         g_slist_free(list);</span>
+<span class="lineNum">     423 </span>            : }
+<a name="424"><span class="lineNum">     424 </span>            : </a>
+<a name="425"><span class="lineNum">     425 </span>            : /* recalculate options to command from options in all modules */</a>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 : static void command_update_options(COMMAND_REC *rec)</span>
+<span class="lineNum">     427 </span>            : {
+<span class="lineNum">     428 </span>            :         GSList *tmp;
+<a name="429"><span class="lineNum">     429 </span>            : </a>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :         g_strfreev(rec-&gt;options);</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         rec-&gt;options = NULL;</span>
+<span class="lineNum">     432 </span>            : 
+<a name="433"><span class="lineNum">     433 </span><span class="lineNoCov">          0 :         for (tmp = rec-&gt;modules; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                 COMMAND_MODULE_REC *modrec = tmp-&gt;data;</span>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                 if (modrec-&gt;options != NULL)</span>
+<a name="437"><span class="lineNum">     437 </span><span class="lineNoCov">          0 :                         command_calc_options(rec, modrec-&gt;options);</span></a>
+<span class="lineNum">     438 </span>            :         }
+<a name="439"><span class="lineNum">     439 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     440 </span>            : 
+<a name="441"><span class="lineNum">     441 </span><span class="lineCov">         45 : void command_set_options_module(const char *module,</span></a>
+<span class="lineNum">     442 </span>            :                                 const char *cmd, const char *options)
+<span class="lineNum">     443 </span>            : {
+<span class="lineNum">     444 </span>            :         COMMAND_REC *rec;
+<a name="445"><span class="lineNum">     445 </span>            :         COMMAND_MODULE_REC *modrec;</a>
+<span class="lineNum">     446 </span>            :         int reload;
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span><span class="lineCov">         45 :         g_return_if_fail(module != NULL);</span>
+<a name="449"><span class="lineNum">     449 </span><span class="lineCov">         45 :         g_return_if_fail(cmd != NULL);</span></a>
+<span class="lineNum">     450 </span><span class="lineCov">         45 :         g_return_if_fail(options != NULL);</span>
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span><span class="lineCov">         45 :         rec = command_find(cmd);</span>
+<a name="453"><span class="lineNum">     453 </span><span class="lineCov">         45 :         g_return_if_fail(rec != NULL);</span></a>
+<span class="lineNum">     454 </span><span class="lineCov">         45 :         modrec = command_module_get(rec, module, -1);</span>
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span><span class="lineCov">         45 :         reload = modrec-&gt;options != NULL;</span>
+<a name="457"><span class="lineNum">     457 </span><span class="lineCov">         45 :         if (reload) {</span></a>
+<span class="lineNum">     458 </span>            :                 /* options already set for the module ..
+<span class="lineNum">     459 </span>            :                    we need to recalculate everything */
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 g_free(modrec-&gt;options);</span>
+<a name="461"><span class="lineNum">     461 </span>            :         }</a>
+<span class="lineNum">     462 </span>            : 
+<span class="lineNum">     463 </span><span class="lineCov">         45 :         modrec-&gt;options = g_strdup(options);</span>
+<span class="lineNum">     464 </span>            : 
+<a name="465"><span class="lineNum">     465 </span><span class="lineCov">         45 :         if (reload)</span></a>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :                 command_update_options(rec);</span>
+<span class="lineNum">     467 </span>            :         else
+<span class="lineNum">     468 </span><span class="lineCov">         45 :                 command_calc_options(rec, options);</span>
+<a name="469"><span class="lineNum">     469 </span>            : }</a>
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span><span class="lineCov">          4 : char *cmd_get_param(char **data)</span>
+<span class="lineNum">     472 </span>            : {
+<a name="473"><span class="lineNum">     473 </span>            :         char *pos;</a>
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span><span class="lineCov">          4 :         g_return_val_if_fail(data != NULL, NULL);</span>
+<span class="lineNum">     476 </span><span class="lineCov">          4 :         g_return_val_if_fail(*data != NULL, NULL);</span>
+<a name="477"><span class="lineNum">     477 </span>            : </a>
+<span class="lineNum">     478 </span><span class="lineCov">          4 :         while (**data == ' ') (*data)++;</span>
+<span class="lineNum">     479 </span><span class="lineCov">          4 :         pos = *data;</span>
+<span class="lineNum">     480 </span>            : 
+<a name="481"><span class="lineNum">     481 </span><span class="lineCov">          4 :         while (**data != '\0' &amp;&amp; **data != ' ') (*data)++;</span></a>
+<span class="lineNum">     482 </span><span class="lineCov">          4 :         if (**data == ' ') *(*data)++ = '\0';</span>
+<span class="lineNum">     483 </span>            : 
+<span class="lineNum">     484 </span><span class="lineCov">          4 :         return pos;</span>
+<a name="485"><span class="lineNum">     485 </span>            : }</a>
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span><span class="lineCov">          4 : char *cmd_get_quoted_param(char **data)</span>
+<span class="lineNum">     488 </span>            : {
+<a name="489"><span class="lineNum">     489 </span>            :         char *pos, quote;</a>
+<span class="lineNum">     490 </span>            : 
+<span class="lineNum">     491 </span><span class="lineCov">          4 :         g_return_val_if_fail(data != NULL, NULL);</span>
+<span class="lineNum">     492 </span><span class="lineCov">          4 :         g_return_val_if_fail(*data != NULL, NULL);</span>
+<a name="493"><span class="lineNum">     493 </span>            : </a>
+<span class="lineNum">     494 </span><span class="lineCov">          4 :         while (**data == ' ') (*data)++;</span>
+<span class="lineNum">     495 </span><span class="lineCov">          4 :         if (**data != '\'' &amp;&amp; **data != '&quot;')</span>
+<span class="lineNum">     496 </span><span class="lineCov">          4 :                 return cmd_get_param(data);</span>
+<a name="497"><span class="lineNum">     497 </span>            : </a>
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :         quote = **data; (*data)++;</span>
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :         pos = *data;</span>
+<a name="501"><span class="lineNum">     501 </span><span class="lineNoCov">          0 :         while (**data != '\0' &amp;&amp; (**data != quote ||</span></a>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :                                   ((*data)[1] != ' ' &amp;&amp; (*data)[1] != '\0'))) {</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :                 if (**data == '\\' &amp;&amp; (*data)[1] != '\0')</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                         g_memmove(*data, (*data)+1, strlen(*data));</span>
+<a name="505"><span class="lineNum">     505 </span><span class="lineNoCov">          0 :                 (*data)++;</span></a>
+<span class="lineNum">     506 </span>            :         }
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :         if (**data == quote) {</span>
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :                 *(*data)++ = '\0';</span></a>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :                 if (**data == ' ')</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :                         (*data)++;</span>
+<span class="lineNum">     512 </span>            :         }
+<a name="513"><span class="lineNum">     513 </span>            : </a>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :         return pos;</span>
+<span class="lineNum">     515 </span>            : }
+<span class="lineNum">     516 </span>            : 
+<a name="517"><span class="lineNum">     517 </span>            : /* Find specified option from list of options - the `option' might be</a>
+<a name="518"><span class="lineNum">     518 </span>            :    shortened version of the full command. Returns index where the</a>
+<span class="lineNum">     519 </span>            :    option was found, -1 if not found or -2 if there was multiple matches. */
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 : static int option_find(char **array, const char *option)</span>
+<a name="521"><span class="lineNum">     521 </span>            : {</a>
+<span class="lineNum">     522 </span>            :         char **tmp;
+<span class="lineNum">     523 </span>            :         int index, found, len, multiple;
+<span class="lineNum">     524 </span>            : 
+<a name="525"><span class="lineNum">     525 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(array != NULL, -1);</span></a>
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(option != NULL, -1);</span>
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :         len = strlen(option);</span>
+<a name="529"><span class="lineNum">     529 </span>            : </a>
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :         found = -1; index = 0; multiple = FALSE;</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :         for (tmp = array; *tmp != NULL; tmp++, index++) {</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :                 const char *text = *tmp + iscmdtype(**tmp);</span>
+<a name="533"><span class="lineNum">     533 </span>            : </a>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :                 if (g_ascii_strncasecmp(text, option, len) == 0) {</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :                         if (text[len] == '\0') {</span>
+<span class="lineNum">     536 </span>            :                                 /* full match */
+<a name="537"><span class="lineNum">     537 </span><span class="lineNoCov">          0 :                                 return index;</span></a>
+<span class="lineNum">     538 </span>            :                         }
+<span class="lineNum">     539 </span>            : 
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :                         if (found != -1) {</span>
+<a name="541"><span class="lineNum">     541 </span>            :                                 /* multiple matches - we still need to check</a>
+<span class="lineNum">     542 </span>            :                                    if there's a full match left.. */
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :                                 multiple = TRUE;</span>
+<span class="lineNum">     544 </span>            :                         }
+<a name="545"><span class="lineNum">     545 </span>            : </a>
+<span class="lineNum">     546 </span>            :                         /* partial match, check that it's the only one */
+<span class="lineNum">     547 </span><span class="lineNoCov">          0 :                         found = index;</span>
+<span class="lineNum">     548 </span>            :                 }
+<a name="549"><span class="lineNum">     549 </span>            :         }</a>
+<span class="lineNum">     550 </span>            : 
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 :         if (multiple)</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :                 return -2;</span>
+<a name="553"><span class="lineNum">     553 </span>            : </a>
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 :         return found;</span>
+<a name="555"><span class="lineNum">     555 </span>            : }</a>
+<span class="lineNum">     556 </span>            : 
+<a name="557"><span class="lineNum">     557 </span><span class="lineNoCov">          0 : static int get_cmd_options(char **data, int ignore_unknown,</span></a>
+<span class="lineNum">     558 </span>            :                            const char *cmd, GHashTable *options)
+<span class="lineNum">     559 </span>            : {
+<span class="lineNum">     560 </span>            :         COMMAND_REC *rec;
+<a name="561"><span class="lineNum">     561 </span>            :         char *option, *arg, **optlist;</a>
+<span class="lineNum">     562 </span>            :         int pos;
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span>            :         /* get option definitions */
+<a name="565"><span class="lineNum">     565 </span><span class="lineNoCov">          0 :         rec = cmd == NULL ? NULL : command_find(cmd);</span></a>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :         optlist = rec == NULL ? NULL : rec-&gt;options;</span>
+<span class="lineNum">     567 </span>            : 
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :         option = NULL; pos = -1;</span>
+<a name="569"><span class="lineNum">     569 </span>            :         for (;;) {</a>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :                 if (**data == '\0' || **data == '-') {</span>
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :                         if (option != NULL &amp;&amp; *optlist[pos] == '+') {</span>
+<span class="lineNum">     572 </span>            :                                 /* required argument missing! */
+<a name="573"><span class="lineNum">     573 </span><span class="lineNoCov">          0 :                                 *data = optlist[pos] + 1;</span></a>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :                                 return CMDERR_OPTION_ARG_MISSING;</span>
+<span class="lineNum">     575 </span>            :                         }
+<span class="lineNum">     576 </span>            :                 }
+<a name="577"><span class="lineNum">     577 </span><span class="lineNoCov">          0 :                 if (**data == '-') {</span></a>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :                         (*data)++;</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :                         if (**data == '-' &amp;&amp; (*data)[1] == ' ') {</span>
+<span class="lineNum">     580 </span>            :                                 /* -- option means end of options even
+<a name="581"><span class="lineNum">     581 </span>            :                                    if next word starts with - */</a>
+<span class="lineNum">     582 </span><span class="lineNoCov">          0 :                                 (*data)++;</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 :                                 while (**data == ' ') (*data)++;</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">          0 :                                 break;</span>
+<a name="585"><span class="lineNum">     585 </span>            :                         }</a>
+<span class="lineNum">     586 </span>            : 
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 :                         if (**data == '\0')</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :                                 option = &quot;-&quot;;</span>
+<a name="589"><span class="lineNum">     589 </span><span class="lineNoCov">          0 :                         else if (**data != ' ')</span></a>
+<span class="lineNum">     590 </span><span class="lineNoCov">          0 :                                 option = cmd_get_param(data);</span>
+<span class="lineNum">     591 </span>            :                         else {
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :                                 option = &quot;-&quot;;</span>
+<a name="593"><span class="lineNum">     593 </span><span class="lineNoCov">          0 :                                 (*data)++;</span></a>
+<span class="lineNum">     594 </span>            :                         }
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span>            :                         /* check if this option can have argument */
+<a name="597"><span class="lineNum">     597 </span><span class="lineNoCov">          0 :                         pos = optlist == NULL ? -1 :</span></a>
+<span class="lineNum">     598 </span>            :                                 option_find(optlist, option);
+<span class="lineNum">     599 </span>            : 
+<span class="lineNum">     600 </span><span class="lineNoCov">          0 :                         if (pos == -1 &amp;&amp; optlist != NULL &amp;&amp;</span>
+<a name="601"><span class="lineNum">     601 </span><span class="lineNoCov">          0 :                             is_numeric(option, '\0')) {</span></a>
+<span class="lineNum">     602 </span>            :                                 /* check if we want -&lt;number&gt; option */
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :                                 pos = option_find(optlist, &quot;#&quot;);</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :                                 if (pos != -1) {</span>
+<a name="605"><span class="lineNum">     605 </span><span class="lineNoCov">          0 :                                         g_hash_table_insert(options, &quot;#&quot;,</span></a>
+<span class="lineNum">     606 </span>            :                                                             option);
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :                                         pos = -3;</span>
+<span class="lineNum">     608 </span>            :                                 }
+<a name="609"><span class="lineNum">     609 </span>            :                         }</a>
+<span class="lineNum">     610 </span>            : 
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :                         if (pos == -1 &amp;&amp; !ignore_unknown) {</span>
+<span class="lineNum">     612 </span>            :                                 /* unknown option! */
+<a name="613"><span class="lineNum">     613 </span><span class="lineNoCov">          0 :                                 *data = option;</span></a>
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :                                 return CMDERR_OPTION_UNKNOWN;</span>
+<span class="lineNum">     615 </span>            :                         }
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :                         if (pos == -2 &amp;&amp; !ignore_unknown) {</span>
+<a name="617"><span class="lineNum">     617 </span>            :                                 /* multiple matches */</a>
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 :                                 *data = option;</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :                                 return CMDERR_OPTION_AMBIGUOUS;</span>
+<span class="lineNum">     620 </span>            :                         }
+<a name="621"><span class="lineNum">     621 </span><span class="lineNoCov">          0 :                         if (pos &gt;= 0) {</span></a>
+<span class="lineNum">     622 </span>            :                                 /* if we used a shortcut of parameter, put
+<span class="lineNum">     623 </span>            :                                    the whole parameter name in options table */
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 :                                 option = optlist[pos] +</span>
+<a name="625"><span class="lineNum">     625 </span><span class="lineNoCov">          0 :                                         iscmdtype(*optlist[pos]);</span></a>
+<span class="lineNum">     626 </span>            :                         }
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :                         if (options != NULL &amp;&amp; pos != -3)</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 :                                 g_hash_table_insert(options, option, &quot;&quot;);</span>
+<a name="629"><span class="lineNum">     629 </span>            : </a>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :                         if (pos &lt; 0 || !iscmdtype(*optlist[pos]) ||</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">          0 :                             *optlist[pos] == '!')</span>
+<span class="lineNum">     632 </span><span class="lineNoCov">          0 :                                 option = NULL;</span>
+<a name="633"><span class="lineNum">     633 </span>            : </a>
+<span class="lineNum">     634 </span><span class="lineNoCov">          0 :                         while (**data == ' ') (*data)++;</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     636 </span>            :                 }
+<a name="637"><span class="lineNum">     637 </span>            : </a>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :                 if (option == NULL)</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     640 </span>            : 
+<a name="641"><span class="lineNum">     641 </span><span class="lineNoCov">          0 :                 if (*optlist[pos] == '@' &amp;&amp; !is_numeric(*data, ' '))</span></a>
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 :                         break; /* expected a numeric argument */</span>
+<span class="lineNum">     643 </span>            : 
+<span class="lineNum">     644 </span>            :                 /* save the argument */
+<a name="645"><span class="lineNum">     645 </span><span class="lineNoCov">          0 :                 arg = cmd_get_quoted_param(data);</span></a>
+<span class="lineNum">     646 </span><span class="lineNoCov">          0 :                 if (options != NULL) {</span>
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 :                         g_hash_table_remove(options, option);</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :                         g_hash_table_insert(options, option, arg);</span>
+<a name="649"><span class="lineNum">     649 </span>            :                 }</a>
+<span class="lineNum">     650 </span><span class="lineNoCov">          0 :                 option = NULL;</span>
+<span class="lineNum">     651 </span>            : 
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :                 while (**data == ' ') (*data)++;</span>
+<a name="653"><span class="lineNum">     653 </span>            :         }</a>
+<span class="lineNum">     654 </span>            : 
+<span class="lineNum">     655 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">     656 </span>            : }
+<a name="657"><span class="lineNum">     657 </span>            : </a>
+<span class="lineNum">     658 </span>            : typedef struct {
+<span class="lineNum">     659 </span>            :         char *data;
+<span class="lineNum">     660 </span>            :         GHashTable *options;
+<a name="661"><span class="lineNum">     661 </span>            : } CMD_TEMP_REC;</a>
+<a name="662"><span class="lineNum">     662 </span>            : </a>
+<span class="lineNum">     663 </span>            : static const char *
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 : get_optional_channel(WI_ITEM_REC *active_item, char **data, int require_name)</span>
+<a name="665"><span class="lineNum">     665 </span>            : {</a>
+<span class="lineNum">     666 </span>            :         CHANNEL_REC *chanrec;
+<span class="lineNum">     667 </span>            :         const char *ret;
+<span class="lineNum">     668 </span>            :         char *tmp, *origtmp, *channel;
+<a name="669"><span class="lineNum">     669 </span>            : </a>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :         if (active_item == NULL || active_item-&gt;server == NULL) {</span>
+<span class="lineNum">     671 </span>            :                 /* no active channel in window, channel required */
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :                 return cmd_get_param(data);</span>
+<a name="673"><span class="lineNum">     673 </span>            :         }</a>
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :         origtmp = tmp = g_strdup(*data);</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :         channel = cmd_get_param(&amp;tmp);</span>
+<a name="677"><span class="lineNum">     677 </span>            : </a>
+<span class="lineNum">     678 </span><span class="lineNoCov">          0 :         if (g_strcmp0(channel, &quot;*&quot;) == 0 &amp;&amp; IS_CHANNEL(active_item) &amp;&amp;</span>
+<span class="lineNum">     679 </span>            :             !require_name) {
+<span class="lineNum">     680 </span>            :                 /* &quot;*&quot; means active channel */
+<a name="681"><span class="lineNum">     681 </span><span class="lineNoCov">          0 :                 cmd_get_param(data);</span></a>
+<span class="lineNum">     682 </span><span class="lineNoCov">          0 :                 ret = window_item_get_target(active_item);</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :         } else if (IS_CHANNEL(active_item) &amp;&amp;</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :                    !server_ischannel(active_item-&gt;server, channel)) {</span>
+<a name="685"><span class="lineNum">     685 </span>            :                 /* we don't have channel parameter - use active channel */</a>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :                 ret = window_item_get_target(active_item);</span>
+<span class="lineNum">     687 </span>            :         } else {
+<span class="lineNum">     688 </span>            :                 /* Find the channel first and use it's name if found.
+<a name="689"><span class="lineNum">     689 </span>            :                    This allows automatic !channel -&gt; !XXXXXchannel replaces. */</a>
+<span class="lineNum">     690 </span><span class="lineNoCov">          0 :                 channel = cmd_get_param(data);</span>
+<span class="lineNum">     691 </span>            : 
+<span class="lineNum">     692 </span><span class="lineNoCov">          0 :                 chanrec = channel_find(active_item-&gt;server, channel);</span>
+<a name="693"><span class="lineNum">     693 </span><span class="lineNoCov">          0 :                 ret = chanrec == NULL ? channel : chanrec-&gt;name;</span></a>
+<span class="lineNum">     694 </span>            :         }
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span><span class="lineNoCov">          0 :         g_free(origtmp);</span>
+<a name="697"><span class="lineNum">     697 </span><span class="lineNoCov">          0 :         return ret;</span></a>
+<a name="698"><span class="lineNum">     698 </span>            : }</a>
+<span class="lineNum">     699 </span>            : 
+<span class="lineNum">     700 </span><span class="lineCov">          2 : int cmd_get_params(const char *data, gpointer *free_me, int count, ...)</span>
+<a name="701"><span class="lineNum">     701 </span>            : {</a>
+<span class="lineNum">     702 </span>            :         WI_ITEM_REC *item;
+<span class="lineNum">     703 </span>            :         CMD_TEMP_REC *rec;
+<span class="lineNum">     704 </span>            :         GHashTable **opthash;
+<a name="705"><span class="lineNum">     705 </span>            :         char **str, *arg, *datad;</a>
+<span class="lineNum">     706 </span>            :         va_list args;
+<span class="lineNum">     707 </span>            :         int cnt, error, ignore_unknown, require_name;
+<span class="lineNum">     708 </span>            : 
+<a name="709"><span class="lineNum">     709 </span><span class="lineCov">          2 :         g_return_val_if_fail(data != NULL, FALSE);</span></a>
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span><span class="lineCov">          2 :         va_start(args, count);</span>
+<span class="lineNum">     712 </span>            : 
+<a name="713"><span class="lineNum">     713 </span><span class="lineCov">          2 :         rec = g_new0(CMD_TEMP_REC, 1);</span></a>
+<span class="lineNum">     714 </span><span class="lineCov">          2 :         rec-&gt;data = g_strdup(data);</span>
+<span class="lineNum">     715 </span><span class="lineCov">          2 :         *free_me = rec;</span>
+<span class="lineNum">     716 </span>            : 
+<a name="717"><span class="lineNum">     717 </span><span class="lineCov">          2 :         datad = rec-&gt;data;</span></a>
+<span class="lineNum">     718 </span><span class="lineCov">          2 :         error = FALSE;</span>
+<span class="lineNum">     719 </span>            : 
+<span class="lineNum">     720 </span><span class="lineCov">          2 :         item = (count &amp; PARAM_FLAG_OPTCHAN) == 0 ? NULL:</span>
+<a name="721"><span class="lineNum">     721 </span>            :                 (WI_ITEM_REC *) va_arg(args, WI_ITEM_REC *);</a>
+<span class="lineNum">     722 </span>            : 
+<span class="lineNum">     723 </span><span class="lineCov">          2 :         if (count &amp; PARAM_FLAG_OPTIONS) {</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :                 arg = (char *) va_arg(args, char *);</span>
+<a name="725"><span class="lineNum">     725 </span><span class="lineNoCov">          0 :                 opthash = (GHashTable **) va_arg(args, GHashTable **);</span></a>
+<span class="lineNum">     726 </span>            : 
+<span class="lineNum">     727 </span><span class="lineNoCov">          0 :                 rec-&gt;options = *opthash =</span>
+<span class="lineNum">     728 </span><span class="lineNoCov">          0 :                         g_hash_table_new((GHashFunc) g_istr_hash,</span>
+<a name="729"><span class="lineNum">     729 </span>            :                                          (GCompareFunc) g_istr_equal);</a>
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span><span class="lineNoCov">          0 :                 ignore_unknown = count &amp; PARAM_FLAG_UNKNOWN_OPTIONS;</span>
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 :                 error = get_cmd_options(&amp;datad, ignore_unknown,</span>
+<a name="733"><span class="lineNum">     733 </span>            :                                         arg, *opthash);</a>
+<span class="lineNum">     734 </span>            :         }
+<span class="lineNum">     735 </span>            : 
+<span class="lineNum">     736 </span><span class="lineCov">          2 :         if (!error) {</span>
+<a name="737"><span class="lineNum">     737 </span>            :                 /* and now handle the string */</a>
+<span class="lineNum">     738 </span><span class="lineCov">          2 :                 cnt = PARAM_WITHOUT_FLAGS(count);</span>
+<span class="lineNum">     739 </span><span class="lineCov">          2 :                 if (count &amp; PARAM_FLAG_OPTCHAN) {</span>
+<span class="lineNum">     740 </span>            :                         /* optional channel as first parameter */
+<a name="741"><span class="lineNum">     741 </span><span class="lineNoCov">          0 :                         require_name = (count &amp; PARAM_FLAG_OPTCHAN_NAME) ==</span></a>
+<span class="lineNum">     742 </span>            :                                 PARAM_FLAG_OPTCHAN_NAME;
+<span class="lineNum">     743 </span><span class="lineNoCov">          0 :                         arg = (char *) get_optional_channel(item, &amp;datad, require_name);</span>
+<span class="lineNum">     744 </span>            : 
+<a name="745"><span class="lineNum">     745 </span><span class="lineNoCov">          0 :                         str = (char **) va_arg(args, char **);</span></a>
+<span class="lineNum">     746 </span><span class="lineNoCov">          0 :                         if (str != NULL) *str = arg;</span>
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 :                         cnt--;</span>
+<span class="lineNum">     748 </span>            :                 }
+<a name="749"><span class="lineNum">     749 </span>            : </a>
+<span class="lineNum">     750 </span><span class="lineCov">          8 :                 while (cnt-- &gt; 0) {</span>
+<span class="lineNum">     751 </span><span class="lineCov">          4 :                         if (cnt == 0 &amp;&amp; count &amp; PARAM_FLAG_GETREST) {</span>
+<span class="lineNum">     752 </span>            :                                 /* get rest */
+<a name="753"><span class="lineNum">     753 </span><span class="lineNoCov">          0 :                                 arg = datad;</span></a>
+<span class="lineNum">     754 </span>            : 
+<span class="lineNum">     755 </span>            :                                 /* strip the trailing whitespace */
+<span class="lineNum">     756 </span><span class="lineNoCov">          0 :                                 if (count &amp; PARAM_FLAG_STRIP_TRAILING_WS) {</span>
+<a name="757"><span class="lineNum">     757 </span><span class="lineNoCov">          0 :                                         arg = g_strchomp(arg);</span></a>
+<span class="lineNum">     758 </span>            :                                 }
+<span class="lineNum">     759 </span>            :                         } else {
+<span class="lineNum">     760 </span><span class="lineCov">          8 :                                 arg = (count &amp; PARAM_FLAG_NOQUOTES) ?</span>
+<a name="761"><span class="lineNum">     761 </span><span class="lineCov">          4 :                                         cmd_get_param(&amp;datad) :</span></a>
+<span class="lineNum">     762 </span>            :                                         cmd_get_quoted_param(&amp;datad);
+<span class="lineNum">     763 </span>            :                         }
+<span class="lineNum">     764 </span>            : 
+<a name="765"><span class="lineNum">     765 </span><span class="lineCov">          4 :                         str = (char **) va_arg(args, char **);</span></a>
+<span class="lineNum">     766 </span><span class="lineCov">          4 :                         if (str != NULL) *str = arg;</span>
+<span class="lineNum">     767 </span>            :                 }
+<span class="lineNum">     768 </span>            :         }
+<a name="769"><span class="lineNum">     769 </span><span class="lineCov">          2 :         va_end(args);</span></a>
+<span class="lineNum">     770 </span>            : 
+<span class="lineNum">     771 </span><span class="lineCov">          2 :         if (error) {</span>
+<span class="lineNum">     772 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;error command&quot;, 2, GINT_TO_POINTER(error), datad);</span>
+<a name="773"><span class="lineNum">     773 </span><span class="lineNoCov">          0 :                 signal_stop();</span></a>
+<span class="lineNum">     774 </span>            : 
+<span class="lineNum">     775 </span><span class="lineNoCov">          0 :                 cmd_params_free(rec);</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">          0 :                 *free_me = NULL;</span>
+<a name="777"><span class="lineNum">     777 </span>            :         }</a>
+<span class="lineNum">     778 </span>            : 
+<span class="lineNum">     779 </span><span class="lineCov">          2 :         return !error;</span>
+<a name="780"><span class="lineNum">     780 </span>            : }</a>
+<a name="781"><span class="lineNum">     781 </span>            : </a>
+<span class="lineNum">     782 </span><span class="lineCov">          2 : void cmd_params_free(void *free_me)</span>
+<span class="lineNum">     783 </span>            : {
+<span class="lineNum">     784 </span><span class="lineCov">          2 :         CMD_TEMP_REC *rec = free_me;</span>
+<a name="785"><span class="lineNum">     785 </span>            : </a>
+<span class="lineNum">     786 </span><span class="lineCov">          2 :         if (rec-&gt;options != NULL) g_hash_table_destroy(rec-&gt;options);</span>
+<span class="lineNum">     787 </span><span class="lineCov">          2 :         g_free(rec-&gt;data);</span>
+<span class="lineNum">     788 </span><span class="lineCov">          2 :         g_free(rec);</span>
+<a name="789"><span class="lineNum">     789 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     790 </span>            : 
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 : static void command_module_unbind_all(COMMAND_REC *rec,</span>
+<span class="lineNum">     792 </span>            :                                       COMMAND_MODULE_REC *modrec)
+<a name="793"><span class="lineNum">     793 </span>            : {</a>
+<span class="lineNum">     794 </span>            :         GSList *tmp, *next;
+<span class="lineNum">     795 </span>            : 
+<span class="lineNum">     796 </span><span class="lineNoCov">          0 :         for (tmp = modrec-&gt;callbacks; tmp != NULL; tmp = next) {</span>
+<a name="797"><span class="lineNum">     797 </span><span class="lineNoCov">          0 :                 COMMAND_CALLBACK_REC *cb = tmp-&gt;data;</span></a>
+<span class="lineNum">     798 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span>
+<span class="lineNum">     799 </span>            : 
+<span class="lineNum">     800 </span><span class="lineNoCov">          0 :                 command_unbind_full(rec-&gt;cmd, cb-&gt;func, cb-&gt;user_data);</span>
+<a name="801"><span class="lineNum">     801 </span>            :         }</a>
+<span class="lineNum">     802 </span>            : 
+<span class="lineNum">     803 </span><span class="lineNoCov">          0 :         if (g_slist_find(commands, rec) != NULL) {</span>
+<span class="lineNum">     804 </span>            :                 /* this module might have removed some options
+<a name="805"><span class="lineNum">     805 </span>            :                    from command, update them. */</a>
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 :                 command_update_options(rec);</span>
+<span class="lineNum">     807 </span>            :         }
+<a name="808"><span class="lineNum">     808 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="809"><span class="lineNum">     809 </span>            : </a>
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 : void commands_remove_module(const char *module)</span>
+<span class="lineNum">     811 </span>            : {
+<span class="lineNum">     812 </span>            :         GSList *tmp, *next, *modlist;
+<a name="813"><span class="lineNum">     813 </span>            : </a>
+<span class="lineNum">     814 </span><span class="lineNoCov">          0 :         g_return_if_fail(module != NULL);</span>
+<span class="lineNum">     815 </span>            : 
+<span class="lineNum">     816 </span><span class="lineNoCov">          0 :         for (tmp = commands; tmp != NULL; tmp = next) {</span>
+<a name="817"><span class="lineNum">     817 </span><span class="lineNoCov">          0 :                 COMMAND_REC *rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     818 </span>            : 
+<span class="lineNum">     819 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">          0 :                 modlist = gslist_find_string(rec-&gt;modules, module);</span>
+<a name="821"><span class="lineNum">     821 </span><span class="lineNoCov">          0 :                 if (modlist != NULL)</span></a>
+<span class="lineNum">     822 </span><span class="lineNoCov">          0 :                         command_module_unbind_all(rec, modlist-&gt;data);</span>
+<span class="lineNum">     823 </span>            :         }
+<a name="824"><span class="lineNum">     824 </span>            : }</a>
+<a name="825"><span class="lineNum">     825 </span>            : </a>
+<span class="lineNum">     826 </span><span class="lineCov">          2 : static int cmd_protocol_match(COMMAND_REC *cmd, SERVER_REC *server)</span>
+<span class="lineNum">     827 </span>            : {
+<span class="lineNum">     828 </span>            :         GSList *tmp;
+<a name="829"><span class="lineNum">     829 </span>            : </a>
+<span class="lineNum">     830 </span><span class="lineCov">          2 :         for (tmp = cmd-&gt;modules; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     831 </span><span class="lineCov">          2 :                 COMMAND_MODULE_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     832 </span>            : 
+<a name="833"><span class="lineNum">     833 </span><span class="lineCov">          2 :                 if (rec-&gt;protocol == -1) {</span></a>
+<span class="lineNum">     834 </span>            :                         /* at least one module accepts the command
+<span class="lineNum">     835 </span>            :                            without specific protocol */
+<span class="lineNum">     836 </span><span class="lineCov">          2 :                         return 1;</span>
+<a name="837"><span class="lineNum">     837 </span>            :                 }</a>
+<span class="lineNum">     838 </span>            : 
+<span class="lineNum">     839 </span><span class="lineNoCov">          0 :                 if (server != NULL &amp;&amp; rec-&gt;protocol == server-&gt;chat_type) {</span>
+<span class="lineNum">     840 </span>            :                         /* matching protocol found */
+<a name="841"><span class="lineNum">     841 </span><span class="lineNoCov">          0 :                         return 1;</span></a>
+<span class="lineNum">     842 </span>            :                 }
+<span class="lineNum">     843 </span>            :         }
+<span class="lineNum">     844 </span>            : 
+<a name="845"><span class="lineNum">     845 </span><span class="lineNoCov">          0 :         return 0;</span></a>
+<span class="lineNum">     846 </span>            : }
+<span class="lineNum">     847 </span>            : 
+<span class="lineNum">     848 </span>            : #define alias_runstack_push(alias) \
+<a name="849"><span class="lineNum">     849 </span>            :         alias_runstack = g_slist_append(alias_runstack, alias)</a>
+<span class="lineNum">     850 </span>            : 
+<span class="lineNum">     851 </span>            : #define alias_runstack_pop(alias) \
+<span class="lineNum">     852 </span>            :         alias_runstack = g_slist_remove(alias_runstack, alias)
+<a name="853"><span class="lineNum">     853 </span>            : </a>
+<span class="lineNum">     854 </span>            : #define alias_runstack_find(alias) \
+<a name="855"><span class="lineNum">     855 </span>            :         (gslist_find_icase_string(alias_runstack, alias) != NULL)</a>
+<span class="lineNum">     856 </span>            : 
+<a name="857"><span class="lineNum">     857 </span><span class="lineCov">          2 : static void parse_command(const char *command, int expand_aliases,</span></a>
+<span class="lineNum">     858 </span>            :                           SERVER_REC *server, void *item)
+<span class="lineNum">     859 </span>            : {
+<span class="lineNum">     860 </span>            :         COMMAND_REC *rec;
+<a name="861"><span class="lineNum">     861 </span>            :         const char *alias, *newcmd;</a>
+<span class="lineNum">     862 </span>            :         char *cmd, *orig, *args, *oldcmd;
+<span class="lineNum">     863 </span>            : 
+<span class="lineNum">     864 </span><span class="lineCov">          2 :         g_return_if_fail(command != NULL);</span>
+<a name="865"><span class="lineNum">     865 </span>            : </a>
+<span class="lineNum">     866 </span><span class="lineCov">          2 :         cmd = orig = g_strconcat(&quot;command &quot;, command, NULL);</span>
+<span class="lineNum">     867 </span><span class="lineCov">          2 :         args = strchr(cmd+8, ' ');</span>
+<span class="lineNum">     868 </span><span class="lineCov">          2 :         if (args != NULL) *args++ = '\0'; else args = &quot;&quot;;</span>
+<a name="869"><span class="lineNum">     869 </span>            : </a>
+<span class="lineNum">     870 </span>            :         /* check if there's an alias for command. Don't allow
+<span class="lineNum">     871 </span>            :            recursive aliases */
+<span class="lineNum">     872 </span><span class="lineCov">          4 :         alias = !expand_aliases || alias_runstack_find(cmd+8) ? NULL :</span>
+<a name="873"><span class="lineNum">     873 </span><span class="lineCov">          2 :                 alias_find(cmd+8);</span></a>
+<span class="lineNum">     874 </span><span class="lineCov">          2 :         if (alias != NULL) {</span>
+<span class="lineNum">     875 </span><span class="lineNoCov">          0 :                 alias_runstack_push(cmd+8);</span>
+<span class="lineNum">     876 </span><span class="lineNoCov">          0 :                 eval_special_string(alias, args, server, item);</span>
+<a name="877"><span class="lineNum">     877 </span><span class="lineNoCov">          0 :                 alias_runstack_pop(cmd+8);</span></a>
+<span class="lineNum">     878 </span><span class="lineNoCov">          0 :                 g_free(orig);</span>
+<span class="lineNum">     879 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     880 </span>            :         }
+<a name="881"><span class="lineNum">     881 </span>            : </a>
+<span class="lineNum">     882 </span>            :         /* check if this command can be expanded */
+<span class="lineNum">     883 </span><span class="lineCov">          2 :         newcmd = command_expand(cmd+8);</span>
+<span class="lineNum">     884 </span><span class="lineCov">          2 :         if (newcmd == NULL) {</span>
+<a name="885"><span class="lineNum">     885 </span>            :                 /* ambiguous command */</a>
+<span class="lineNum">     886 </span><span class="lineNoCov">          0 :                 g_free(orig);</span>
+<span class="lineNum">     887 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     888 </span>            :         }
+<a name="889"><span class="lineNum">     889 </span>            : </a>
+<span class="lineNum">     890 </span><span class="lineCov">          2 :         rec = command_find(newcmd);</span>
+<span class="lineNum">     891 </span><span class="lineCov">          2 :         if (rec != NULL &amp;&amp; !cmd_protocol_match(rec, server)) {</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">          0 :                 g_free(orig);</span>
+<a name="893"><span class="lineNum">     893 </span>            : </a>
+<span class="lineNum">     894 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;error command&quot;, 2,</span>
+<span class="lineNum">     895 </span>            :                             GINT_TO_POINTER(server == NULL ?
+<span class="lineNum">     896 </span>            :                                             CMDERR_NOT_CONNECTED :
+<a name="897"><span class="lineNum">     897 </span>            :                                             CMDERR_ILLEGAL_PROTO));</a>
+<span class="lineNum">     898 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     899 </span>            :         }
+<span class="lineNum">     900 </span>            : 
+<a name="901"><span class="lineNum">     901 </span><span class="lineCov">          2 :         cmd = g_strconcat(&quot;command &quot;, newcmd, NULL);</span></a>
+<span class="lineNum">     902 </span><span class="lineCov">          2 :         ascii_strdown(cmd);</span>
+<span class="lineNum">     903 </span>            : 
+<span class="lineNum">     904 </span><span class="lineCov">          2 :         oldcmd = current_command;</span>
+<a name="905"><span class="lineNum">     905 </span><span class="lineCov">          2 :         current_command = cmd+8;</span></a>
+<span class="lineNum">     906 </span><span class="lineCov">          2 :         if (server != NULL) server_ref(server);</span>
+<span class="lineNum">     907 </span><span class="lineCov">          2 :         if (!signal_emit(cmd, 3, args, server, item)) {</span>
+<span class="lineNum">     908 </span><span class="lineNoCov">          0 :                 signal_emit_id(signal_default_command, 3,</span>
+<a name="909"><span class="lineNum">     909 </span>            :                                command, server, item);</a>
+<span class="lineNum">     910 </span>            :         }
+<span class="lineNum">     911 </span><span class="lineCov">          2 :         if (server != NULL) {</span>
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :                 if (server-&gt;connection_lost)</span>
+<a name="913"><span class="lineNum">     913 </span><span class="lineNoCov">          0 :                         server_disconnect(server);</span></a>
+<span class="lineNum">     914 </span><span class="lineNoCov">          0 :                 server_unref(server);</span>
+<span class="lineNum">     915 </span>            :         }
+<span class="lineNum">     916 </span><span class="lineCov">          2 :         current_command = oldcmd;</span>
+<a name="917"><span class="lineNum">     917 </span>            : </a>
+<span class="lineNum">     918 </span><span class="lineCov">          2 :         g_free(cmd);</span>
+<span class="lineNum">     919 </span><span class="lineCov">          2 :         g_free(orig);</span>
+<a name="920"><span class="lineNum">     920 </span>            : }</a>
+<a name="921"><span class="lineNum">     921 </span>            : </a>
+<span class="lineNum">     922 </span><span class="lineCov">          2 : static void event_command(const char *line, SERVER_REC *server, void *item)</span>
+<span class="lineNum">     923 </span>            : {
+<span class="lineNum">     924 </span>            :         char *cmdchar;
+<a name="925"><span class="lineNum">     925 </span><span class="lineCov">          2 :         int expand_aliases = TRUE;</span></a>
+<span class="lineNum">     926 </span>            : 
+<span class="lineNum">     927 </span><span class="lineCov">          2 :         g_return_if_fail(line != NULL);</span>
+<span class="lineNum">     928 </span>            : 
+<a name="929"><span class="lineNum">     929 </span><span class="lineCov">          4 :         cmdchar = *line == '\0' ? NULL :</span></a>
+<span class="lineNum">     930 </span><span class="lineCov">          2 :                 strchr(settings_get_str(&quot;cmdchars&quot;), *line);</span>
+<span class="lineNum">     931 </span><span class="lineCov">          2 :         if (cmdchar != NULL &amp;&amp; line[1] == ' ') {</span>
+<span class="lineNum">     932 </span>            :                 /* &quot;/ text&quot; = same as sending &quot;text&quot; to active channel. */
+<a name="933"><span class="lineNum">     933 </span><span class="lineNoCov">          0 :                 line += 2;</span></a>
+<span class="lineNum">     934 </span><span class="lineNoCov">          0 :                 cmdchar = NULL;</span>
+<span class="lineNum">     935 </span>            :         }
+<span class="lineNum">     936 </span><span class="lineCov">          2 :         if (cmdchar == NULL) {</span>
+<a name="937"><span class="lineNum">     937 </span>            :                 /* non-command - let someone else handle this */</a>
+<span class="lineNum">     938 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;send text&quot;, 3, line, server, item);</span>
+<span class="lineNum">     939 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     940 </span>            :         }
+<a name="941"><span class="lineNum">     941 </span>            : </a>
+<span class="lineNum">     942 </span>            :         /* same cmdchar twice ignores aliases */
+<span class="lineNum">     943 </span><span class="lineCov">          2 :         line++;</span>
+<span class="lineNum">     944 </span><span class="lineCov">          2 :         if (*line == *cmdchar) {</span>
+<a name="945"><span class="lineNum">     945 </span><span class="lineNoCov">          0 :                 line++;</span></a>
+<span class="lineNum">     946 </span><span class="lineNoCov">          0 :                 expand_aliases = FALSE;</span>
+<span class="lineNum">     947 </span>            :         }
+<span class="lineNum">     948 </span>            : 
+<a name="949"><span class="lineNum">     949 </span>            :         /* ^command hides the output - we'll do this at fe-common but</a>
+<span class="lineNum">     950 </span>            :            we have to skip the ^ char here.. */
+<span class="lineNum">     951 </span><span class="lineCov">          2 :         if (*line == '^') line++;</span>
+<span class="lineNum">     952 </span>            : 
+<a name="953"><span class="lineNum">     953 </span><span class="lineCov">          2 :         parse_command(line, expand_aliases, server, item);</span></a>
+<span class="lineNum">     954 </span>            : }
+<span class="lineNum">     955 </span>            : 
+<a name="956"><span class="lineNum">     956 </span>            : static int eval_recursion_depth=0;</a>
+<a name="957"><span class="lineNum">     957 </span>            : /* SYNTAX: EVAL &lt;command(s)&gt; */</a>
+<span class="lineNum">     958 </span><span class="lineNoCov">          0 : static void cmd_eval(const char *data, SERVER_REC *server, void *item)</span>
+<span class="lineNum">     959 </span>            : {
+<span class="lineNum">     960 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="961"><span class="lineNum">     961 </span><span class="lineNoCov">          0 :         if (eval_recursion_depth &gt; 100)</span></a>
+<span class="lineNum">     962 </span><span class="lineNoCov">          0 :                 cmd_return_error(CMDERR_EVAL_MAX_RECURSE);</span>
+<span class="lineNum">     963 </span>            : 
+<span class="lineNum">     964 </span>            : 
+<a name="965"><span class="lineNum">     965 </span><span class="lineNoCov">          0 :         eval_recursion_depth++;</span></a>
+<span class="lineNum">     966 </span><span class="lineNoCov">          0 :         eval_special_string(data, &quot;&quot;, server, item);</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">          0 :         eval_recursion_depth--;</span>
+<span class="lineNum">     968 </span>            : }
+<a name="969"><span class="lineNum">     969 </span>            : </a>
+<span class="lineNum">     970 </span>            : /* SYNTAX: CD &lt;directory&gt; */
+<span class="lineNum">     971 </span><span class="lineNoCov">          0 : static void cmd_cd(const char *data)</span>
+<span class="lineNum">     972 </span>            : {
+<a name="973"><span class="lineNum">     973 </span>            :         char *str;</a>
+<span class="lineNum">     974 </span>            : 
+<span class="lineNum">     975 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     976 </span><span class="lineNoCov">          0 :         if (*data == '\0') return;</span>
+<a name="977"><span class="lineNum">     977 </span>            : </a>
+<span class="lineNum">     978 </span><span class="lineNoCov">          0 :         str = convert_home(data);</span>
+<span class="lineNum">     979 </span><span class="lineNoCov">          0 :         if (chdir(str) != 0) {</span>
+<span class="lineNum">     980 </span><span class="lineNoCov">          0 :                 g_warning(&quot;Failed to chdir(): %s&quot;, strerror(errno));</span>
+<a name="981"><span class="lineNum">     981 </span>            :         }</a>
+<span class="lineNum">     982 </span><span class="lineNoCov">          0 :         g_free(str);</span>
+<a name="983"><span class="lineNum">     983 </span>            : }</a>
+<span class="lineNum">     984 </span>            : 
+<a name="985"><span class="lineNum">     985 </span><span class="lineCov">          1 : void commands_init(void)</span></a>
+<span class="lineNum">     986 </span>            : {
+<span class="lineNum">     987 </span><span class="lineCov">          1 :         commands = NULL;</span>
+<span class="lineNum">     988 </span><span class="lineCov">          1 :         current_command = NULL;</span>
+<a name="989"><span class="lineNum">     989 </span><span class="lineCov">          1 :         alias_runstack = NULL;</span></a>
+<span class="lineNum">     990 </span>            : 
+<span class="lineNum">     991 </span><span class="lineCov">          1 :         signal_default_command = signal_get_uniq_id(&quot;default command&quot;);</span>
+<span class="lineNum">     992 </span>            : 
+<a name="993"><span class="lineNum">     993 </span><span class="lineCov">          1 :         settings_add_str(&quot;misc&quot;, &quot;cmdchars&quot;, &quot;/&quot;);</span></a>
+<span class="lineNum">     994 </span><span class="lineCov">          1 :         signal_add(&quot;send command&quot;, (SIGNAL_FUNC) event_command);</span>
+<span class="lineNum">     995 </span>            : 
+<span class="lineNum">     996 </span><span class="lineCov">          1 :         command_bind(&quot;eval&quot;, NULL, (SIGNAL_FUNC) cmd_eval);</span>
+<a name="997"><span class="lineNum">     997 </span><span class="lineCov">          1 :         command_bind(&quot;cd&quot;, NULL, (SIGNAL_FUNC) cmd_cd);</span></a>
+<a name="998"><span class="lineNum">     998 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     999 </span>            : 
+<span class="lineNum">    1000 </span><span class="lineCov">          1 : void commands_deinit(void)</span>
+<a name="1001"><span class="lineNum">    1001 </span>            : {</a>
+<span class="lineNum">    1002 </span><span class="lineCov">          1 :         g_free_not_null(current_command);</span>
+<span class="lineNum">    1003 </span>            : 
+<span class="lineNum">    1004 </span><span class="lineCov">          1 :         signal_remove(&quot;send command&quot;, (SIGNAL_FUNC) event_command);</span>
+<a name="1005"><span class="lineNum">    1005 </span>            : </a>
+<span class="lineNum">    1006 </span><span class="lineCov">          1 :         command_unbind(&quot;eval&quot;, (SIGNAL_FUNC) cmd_eval);</span>
+<span class="lineNum">    1007 </span><span class="lineCov">          1 :         command_unbind(&quot;cd&quot;, (SIGNAL_FUNC) cmd_cd);</span>
+<span class="lineNum">    1008 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

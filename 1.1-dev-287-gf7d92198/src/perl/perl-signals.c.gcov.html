@@ -1,0 +1,678 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/perl/perl-signals.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/perl</a> - perl-signals.c<span style="font-size: 80%;"> (source / <a href="perl-signals.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">37</td>
+            <td class="headerCovTableEntry">295</td>
+            <td class="headerCovTableEntryLo">12.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntry">23</td>
+            <td class="headerCovTableEntryLo">34.8 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  perl-signals.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #define NEED_PERL_H</a>
+<span class="lineNum">      22 </span>            : #define PERL_NO_GET_CONTEXT
+<span class="lineNum">      23 </span>            : #include &quot;module.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;modules.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;signals.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      28 </span>            : 
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;perl-core.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;perl-common.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;perl-signals.h&quot;
+<span class="lineNum">      32 </span>            : 
+<a name="33"><span class="lineNum">      33 </span>            : typedef struct {</a>
+<span class="lineNum">      34 </span>            :         PERL_SCRIPT_REC *script;
+<span class="lineNum">      35 </span>            :         int signal_id;
+<span class="lineNum">      36 </span>            :         char *signal;
+<a name="37"><span class="lineNum">      37 </span>            :         SV *func;</a>
+<span class="lineNum">      38 </span>            : } PERL_SIGNAL_REC;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : typedef struct {
+<a name="41"><span class="lineNum">      41 </span>            :         char *signal;</a>
+<span class="lineNum">      42 </span>            :         char *args[7];
+<span class="lineNum">      43 </span>            :         int dynamic;
+<span class="lineNum">      44 </span>            : } PERL_SIGNAL_ARGS_REC;
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span>            : #include &quot;perl-signals-list.h&quot;
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : static GHashTable *signals;
+<a name="49"><span class="lineNum">      49 </span>            : static GHashTable *perl_signal_args_hash;</a>
+<a name="50"><span class="lineNum">      50 </span>            : static GSList *perl_signal_args_partial;</a>
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 : static PERL_SIGNAL_ARGS_REC *perl_signal_args_find(int signal_id)</span>
+<a name="53"><span class="lineNum">      53 </span>            : {</a>
+<span class="lineNum">      54 </span>            :         PERL_SIGNAL_ARGS_REC *rec;
+<span class="lineNum">      55 </span>            :         GSList *tmp;
+<span class="lineNum">      56 </span>            :         const char *signame;
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(perl_signal_args_hash,</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :                                   GINT_TO_POINTER(signal_id));</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :         if (rec != NULL) return rec;</span>
+<a name="61"><span class="lineNum">      61 </span>            : </a>
+<span class="lineNum">      62 </span>            :         /* try to find by name */
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :         signame = signal_get_id_str(signal_id);</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :         for (tmp = perl_signal_args_partial; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 :                 rec = tmp-&gt;data;</span></a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :                 if (strncmp(rec-&gt;signal, signame, strlen(rec-&gt;signal)) == 0)</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :                         return rec;</span>
+<a name="69"><span class="lineNum">      69 </span>            :         }</a>
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="72"><span class="lineNum">      72 </span>            : }</a>
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 : void perl_signal_args_to_c(</span>
+<span class="lineNum">      75 </span>            :         void (*callback)(void *, void **), void *cb_arg,
+<span class="lineNum">      76 </span>            :         int signal_id, SV **args, size_t n_args)
+<a name="77"><span class="lineNum">      77 </span>            : {</a>
+<span class="lineNum">      78 </span>            :         union {
+<span class="lineNum">      79 </span>            :                 int v_int;
+<span class="lineNum">      80 </span>            :                 unsigned long v_ulong;
+<a name="81"><span class="lineNum">      81 </span>            :                 GSList *v_gslist;</a>
+<span class="lineNum">      82 </span>            :                 GList *v_glist;
+<span class="lineNum">      83 </span>            :         } saved_args[SIGNAL_MAX_ARGUMENTS];
+<span class="lineNum">      84 </span>            :         void *p[SIGNAL_MAX_ARGUMENTS];
+<a name="85"><span class="lineNum">      85 </span>            :         PERL_SIGNAL_ARGS_REC *rec;</a>
+<span class="lineNum">      86 </span>            :         size_t n;
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         if (!(rec = perl_signal_args_find(signal_id))) {</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :                 const char *name = signal_get_id_str(signal_id);</span></a>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                 if (!name) {</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                         croak(&quot;%d is not a known signal id&quot;, signal_id);</span>
+<span class="lineNum">      92 </span>            :                 }
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :                 croak(&quot;\&quot;%s\&quot; is not a registered signal&quot;, name);</span></a>
+<span class="lineNum">      94 </span>            :         }
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         for (n = 0; n &lt; SIGNAL_MAX_ARGUMENTS &amp;&amp; n &lt; n_args &amp;&amp; rec-&gt;args[n] != NULL; ++n) {</span>
+<a name="97"><span class="lineNum">      97 </span>            :                 void *c_arg;</a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :                 SV *arg = args[n];</span>
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :                 if (!SvOK(arg)) {</span>
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :                         c_arg = NULL;</span></a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                 } else if (g_strcmp0(rec-&gt;args[n], &quot;string&quot;) == 0) {</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :                         c_arg = SvPV_nolen(arg);</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                 } else if (g_strcmp0(rec-&gt;args[n], &quot;int&quot;) == 0) {</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :                         c_arg = (void *)SvIV(arg);</span></a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :                 } else if (g_strcmp0(rec-&gt;args[n], &quot;ulongptr&quot;) == 0) {</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :                         saved_args[n].v_ulong = SvUV(arg);</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                         c_arg = &amp;saved_args[n].v_ulong;</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 } else if (g_strcmp0(rec-&gt;args[n], &quot;intptr&quot;) == 0) {</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                         saved_args[n].v_int = SvIV(SvRV(arg));</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                         c_arg = &amp;saved_args[n].v_int;</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                 } else if (strncmp(rec-&gt;args[n], &quot;glistptr_&quot;, 9) == 0) {</span>
+<a name="113"><span class="lineNum">     113 </span>            :                         GList *gl;</a>
+<span class="lineNum">     114 </span>            :                         int is_str;
+<span class="lineNum">     115 </span>            :                         AV *av;
+<span class="lineNum">     116 </span>            :                         SV *t;
+<a name="117"><span class="lineNum">     117 </span>            :                         int count;</a>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :                         t = SvRV(arg);</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                         if (SvTYPE(t) != SVt_PVAV) {</span>
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :                                 croak(&quot;Not an ARRAY reference&quot;);</span></a>
+<span class="lineNum">     122 </span>            :                         }
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                         av = (AV *)t;</span>
+<span class="lineNum">     124 </span>            : 
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                         is_str = g_strcmp0(rec-&gt;args[n]+9, &quot;char*&quot;) == 0;</span></a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                         gl = NULL;</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                         count = av_len(av) + 1;</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                         while (count-- &gt; 0) {</span></a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                                 SV **px = av_fetch(av, count, 0);</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                                 SV *x = px ? *px : NULL;</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                                 gl = g_list_prepend(</span>
+<a name="133"><span class="lineNum">     133 </span>            :                                         gl,</a>
+<span class="lineNum">     134 </span>            :                                         x == NULL ? NULL :
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                                         is_str ? g_strdup(SvPV_nolen(x)) :</span>
+<span class="lineNum">     136 </span>            :                                         irssi_ref_object(x)
+<a name="137"><span class="lineNum">     137 </span>            :                                 );</a>
+<span class="lineNum">     138 </span>            :                         }
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                         saved_args[n].v_glist = gl;</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                         c_arg = &amp;saved_args[n].v_glist;</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 } else if (strncmp(rec-&gt;args[n], &quot;gslist_&quot;, 7) == 0) {</span></a>
+<span class="lineNum">     142 </span>            :                         GSList *gsl;
+<span class="lineNum">     143 </span>            :                         AV *av;
+<span class="lineNum">     144 </span>            :                         SV *t;
+<a name="145"><span class="lineNum">     145 </span>            :                         int count;</a>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                         t = SvRV(arg);</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                         if (SvTYPE(t) != SVt_PVAV) {</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :                                 croak(&quot;Not an ARRAY reference&quot;);</span></a>
+<span class="lineNum">     150 </span>            :                         }
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :                         av = (AV *)t;</span>
+<span class="lineNum">     152 </span>            : 
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">          0 :                         gsl = NULL;</span></a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :                         count = av_len(av) + 1;</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                         while (count-- &gt; 0) {</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :                                 SV **x = av_fetch(av, count, 0);</span>
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 :                                 gsl = g_slist_prepend(</span></a>
+<span class="lineNum">     158 </span>            :                                         gsl,
+<span class="lineNum">     159 </span>            :                                         x == NULL ? NULL :
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :                                         irssi_ref_object(*x)</span>
+<a name="161"><span class="lineNum">     161 </span>            :                                 );</a>
+<span class="lineNum">     162 </span>            :                         }
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                         c_arg = saved_args[n].v_gslist = gsl;</span>
+<span class="lineNum">     164 </span>            :                 } else {
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :                         c_arg = irssi_ref_object(arg);</span></a>
+<span class="lineNum">     166 </span>            :                 }
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                 p[n] = c_arg;</span>
+<a name="169"><span class="lineNum">     169 </span>            :         }</a>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :         for (; n &lt; SIGNAL_MAX_ARGUMENTS; ++n) {</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :                 p[n] = NULL;</span>
+<a name="173"><span class="lineNum">     173 </span>            :         }</a>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :         callback(cb_arg, p);</span>
+<span class="lineNum">     176 </span>            : 
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 :         for (n = 0; n &lt; SIGNAL_MAX_ARGUMENTS &amp;&amp; n &lt; n_args &amp;&amp; rec-&gt;args[n] != NULL; ++n) {</span></a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                 SV *arg = args[n];</span>
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 if (!SvOK(arg)) {</span>
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :                         continue;</span></a>
+<span class="lineNum">     182 </span>            :                 }
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                 if (g_strcmp0(rec-&gt;args[n], &quot;intptr&quot;) == 0) {</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineNoCov">          0 :                         SV *t = SvRV(arg);</span></a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :                         SvIOK_only(t);</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                         SvIV_set(t, saved_args[n].v_int);</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 } else if (strncmp(rec-&gt;args[n], &quot;gslist_&quot;, 7) == 0) {</span>
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :                         g_slist_free(saved_args[n].v_gslist);</span></a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                 } else if (strncmp(rec-&gt;args[n], &quot;glistptr_&quot;, 9) == 0) {</span>
+<span class="lineNum">     191 </span>            :                         int is_iobject, is_str;
+<span class="lineNum">     192 </span>            :                         AV *av;
+<a name="193"><span class="lineNum">     193 </span>            :                         GList *gl, *tmp;</a>
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                         is_iobject = g_strcmp0(rec-&gt;args[n]+9, &quot;iobject&quot;) == 0;</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                         is_str = g_strcmp0(rec-&gt;args[n]+9, &quot;char*&quot;) == 0;</span>
+<a name="197"><span class="lineNum">     197 </span>            : </a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                         av = (AV *)SvRV(arg);</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                         av_clear(av);</span>
+<span class="lineNum">     200 </span>            : 
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :                         gl = saved_args[n].v_glist;</span></a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                         for (tmp = gl; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                                 av_push(av,</span>
+<span class="lineNum">     204 </span>            :                                         is_iobject ? iobject_bless((SERVER_REC *)tmp-&gt;data) :
+<a name="205"><span class="lineNum">     205 </span>            :                                         is_str ? new_pv(tmp-&gt;data) :</a>
+<span class="lineNum">     206 </span>            :                                         irssi_bless_plain(rec-&gt;args[n]+9, tmp-&gt;data)
+<span class="lineNum">     207 </span>            :                                 );
+<span class="lineNum">     208 </span>            :                         }
+<a name="209"><span class="lineNum">     209 </span>            : </a>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                         if (is_str) {</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                                 g_list_foreach(gl, (GFunc)g_free, NULL);</span>
+<span class="lineNum">     212 </span>            :                         }
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :                         g_list_free(gl);</span></a>
+<span class="lineNum">     214 </span>            :                 }
+<span class="lineNum">     215 </span>            :         }
+<a name="216"><span class="lineNum">     216 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="217"><span class="lineNum">     217 </span>            : </a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 : static void perl_call_signal(PERL_SCRIPT_REC *script, SV *func,</span>
+<span class="lineNum">     219 </span>            :                              int signal_id, gconstpointer *args)
+<span class="lineNum">     220 </span>            : {
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :         dSP;</span></a>
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span>            :         PERL_SIGNAL_ARGS_REC *rec;
+<span class="lineNum">     224 </span>            :         SV *sv, *perlarg, *saved_args[SIGNAL_MAX_ARGUMENTS];
+<a name="225"><span class="lineNum">     225 </span>            :         AV *av;</a>
+<span class="lineNum">     226 </span>            :         void *arg;
+<span class="lineNum">     227 </span>            :         int n;
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span>            : </a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :         ENTER;</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :         SAVETMPS;</span>
+<span class="lineNum">     232 </span>            : 
+<a name="233"><span class="lineNum">     233 </span><span class="lineNoCov">          0 :         PUSHMARK(sp);</span></a>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            :         /* push signal argument to perl stack */
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :         rec = perl_signal_args_find(signal_id);</span>
+<a name="237"><span class="lineNum">     237 </span>            : </a>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :         memset(saved_args, 0, sizeof(saved_args));</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :         for (n = 0; n &lt; SIGNAL_MAX_ARGUMENTS &amp;&amp;</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                     rec != NULL &amp;&amp; rec-&gt;args[n] != NULL; n++) {</span>
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :                 arg = (void *) args[n];</span></a>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :                 if (strncmp(rec-&gt;args[n], &quot;glistptr_&quot;, 9) == 0) {</span>
+<span class="lineNum">     244 </span>            :                         /* pointer to linked list - push as AV */
+<a name="245"><span class="lineNum">     245 </span>            :                         GList *tmp, **ptr;</a>
+<span class="lineNum">     246 </span>            :                         int is_iobject, is_str;
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :                         is_iobject = g_strcmp0(rec-&gt;args[n]+9, &quot;iobject&quot;) == 0;</span>
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :                         is_str = g_strcmp0(rec-&gt;args[n]+9, &quot;char*&quot;) == 0;</span></a>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :                         av = newAV();</span>
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                         ptr = arg;</span>
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :                         for (tmp = *ptr; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                                 sv = is_iobject ? iobject_bless((SERVER_REC *) tmp-&gt;data) :</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                                         is_str ? new_pv(tmp-&gt;data) :</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                                         irssi_bless_plain(rec-&gt;args[n]+9, tmp-&gt;data);</span>
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :                                 av_push(av, sv);</span></a>
+<span class="lineNum">     258 </span>            :                         }
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :                         saved_args[n] = perlarg = newRV_noinc((SV *) av);</span>
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :                 } else if (g_strcmp0(rec-&gt;args[n], &quot;int&quot;) == 0)</span></a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                         perlarg = newSViv((IV)arg);</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                 else if (arg == NULL)</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                         perlarg = &amp;PL_sv_undef;</span>
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :                 else if (g_strcmp0(rec-&gt;args[n], &quot;string&quot;) == 0)</span></a>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :                         perlarg = new_pv(arg);</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :                 else if (g_strcmp0(rec-&gt;args[n], &quot;ulongptr&quot;) == 0)</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                         perlarg = newSViv(*(unsigned long *) arg);</span>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 else if (g_strcmp0(rec-&gt;args[n], &quot;intptr&quot;) == 0)</span></a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                         saved_args[n] = perlarg = newRV_noinc(newSViv(*(int *) arg));</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                 else if (strncmp(rec-&gt;args[n], &quot;gslist_&quot;, 7) == 0) {</span>
+<span class="lineNum">     272 </span>            :                         /* linked list - push as AV */
+<a name="273"><span class="lineNum">     273 </span>            :                         GSList *tmp;</a>
+<span class="lineNum">     274 </span>            :                         int is_iobject;
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                         is_iobject = g_strcmp0(rec-&gt;args[n]+7, &quot;iobject&quot;) == 0;</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :                         av = newAV();</span></a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                         for (tmp = arg; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                                 sv = is_iobject ? iobject_bless((SERVER_REC *) tmp-&gt;data) :</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :                                         irssi_bless_plain(rec-&gt;args[n]+7, tmp-&gt;data);</span>
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :                                 av_push(av, sv);</span></a>
+<span class="lineNum">     282 </span>            :                         }
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                         perlarg = newRV_noinc((SV *) av);</span>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 } else if (g_strcmp0(rec-&gt;args[n], &quot;iobject&quot;) == 0) {</span></a>
+<span class="lineNum">     286 </span>            :                         /* &quot;irssi object&quot; - any struct that has
+<span class="lineNum">     287 </span>            :                            &quot;int type; int chat_type&quot; as it's first
+<span class="lineNum">     288 </span>            :                            variables (server, channel, ..) */
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :                         perlarg = iobject_bless((SERVER_REC *) arg);</span></a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 } else if (g_strcmp0(rec-&gt;args[n], &quot;siobject&quot;) == 0) {</span>
+<span class="lineNum">     291 </span>            :                         /* &quot;simple irssi object&quot; - any struct that has
+<span class="lineNum">     292 </span>            :                            int type; as it's first variable (dcc) */
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :                         perlarg = simple_iobject_bless((SERVER_REC *) arg);</span></a>
+<span class="lineNum">     294 </span>            :                 } else {
+<span class="lineNum">     295 </span>            :                         /* blessed object */
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :                         perlarg = plain_bless(arg, rec-&gt;args[n]);</span>
+<a name="297"><span class="lineNum">     297 </span>            :                 }</a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 XPUSHs(sv_2mortal(perlarg));</span>
+<span class="lineNum">     299 </span>            :         }
+<span class="lineNum">     300 </span>            : 
+<a name="301"><span class="lineNum">     301 </span><span class="lineNoCov">          0 :         PUTBACK;</span></a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         perl_call_sv(func, G_EVAL|G_DISCARD);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         SPAGAIN;</span>
+<span class="lineNum">     304 </span>            : 
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :         if (SvTRUE(ERRSV)) {</span></a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 char *error = g_strdup(SvPV_nolen(ERRSV));</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;script error&quot;, 2, script, error);</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 g_free(error);</span>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 rec = NULL;</span></a>
+<span class="lineNum">     310 </span>            :         }
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span>            :         /* restore arguments the perl script modified */
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :         for (n = 0; n &lt; SIGNAL_MAX_ARGUMENTS &amp;&amp;</span></a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                     rec != NULL &amp;&amp; rec-&gt;args[n] != NULL; n++) {</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                 arg = (void *) args[n];</span>
+<span class="lineNum">     316 </span>            : 
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :                 if (saved_args[n] == NULL)</span></a>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                 if (g_strcmp0(rec-&gt;args[n], &quot;intptr&quot;) == 0) {</span>
+<a name="321"><span class="lineNum">     321 </span><span class="lineNoCov">          0 :                         int *val = arg;</span></a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                         *val = SvIV(SvRV(saved_args[n]));</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 } else if (strncmp(rec-&gt;args[n], &quot;glistptr_&quot;, 9) == 0) {</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                         GList **ret = arg;</span>
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :                         GList *out = NULL;</span></a>
+<span class="lineNum">     326 </span>            :                         void *val;
+<span class="lineNum">     327 </span>            :                         int count;
+<span class="lineNum">     328 </span>            : 
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :                         av = (AV *) SvRV(saved_args[n]);</span></a>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :                         count = av_len(av);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :                         while (count-- &gt;= 0) {</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :                                 sv = av_shift(av);</span>
+<a name="333"><span class="lineNum">     333 </span><span class="lineNoCov">          0 :                                 if (SvPOKp(sv))</span></a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :                                         val = g_strdup(SvPV_nolen(sv));</span>
+<span class="lineNum">     335 </span>            :                                 else
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                                         val = GINT_TO_POINTER(SvIV(sv));</span>
+<a name="337"><span class="lineNum">     337 </span>            : </a>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                                 out = g_list_append(out, val);</span>
+<span class="lineNum">     339 </span>            :                         }
+<span class="lineNum">     340 </span>            : 
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :                         if (g_strcmp0(rec-&gt;args[n]+9, &quot;char*&quot;) == 0)</span></a>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                                 g_list_foreach(*ret, (GFunc) g_free, NULL);</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                         g_list_free(*ret);</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                         *ret = out;</span>
+<a name="345"><span class="lineNum">     345 </span>            :                 }</a>
+<span class="lineNum">     346 </span>            :         }
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :         FREETMPS;</span>
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :         LEAVE;</span></a>
+<a name="350"><span class="lineNum">     350 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 : static void sig_func(const void *p1, const void *p2,</span>
+<a name="353"><span class="lineNum">     353 </span>            :                      const void *p3, const void *p4,</a>
+<span class="lineNum">     354 </span>            :                      const void *p5, const void *p6)
+<span class="lineNum">     355 </span>            : {
+<span class="lineNum">     356 </span>            :         PERL_SIGNAL_REC *rec;
+<a name="357"><span class="lineNum">     357 </span>            :         const void *args[6];</a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :         args[0] = p1; args[1] = p2; args[2] = p3;</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :         args[3] = p4; args[4] = p5; args[5] = p6;</span>
+<a name="361"><span class="lineNum">     361 </span>            : </a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         rec = signal_get_user_data();</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :         perl_call_signal(rec-&gt;script, rec-&gt;func, signal_get_emitted_id(), args);</span>
+<a name="364"><span class="lineNum">     364 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="365"><span class="lineNum">     365 </span>            : </a>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 : static void perl_signal_add_full_int(const char *signal, SV *func,</span>
+<span class="lineNum">     367 </span>            :                                      int priority, int command,
+<span class="lineNum">     368 </span>            :                                      const char *category)
+<a name="369"><span class="lineNum">     369 </span>            : {</a>
+<span class="lineNum">     370 </span>            :         PERL_SCRIPT_REC *script;
+<span class="lineNum">     371 </span>            :         PERL_SIGNAL_REC *rec;
+<span class="lineNum">     372 </span>            :         GSList **siglist;
+<a name="373"><span class="lineNum">     373 </span>            :         void *signal_idp;</a>
+<span class="lineNum">     374 </span>            : 
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :         g_return_if_fail(signal != NULL);</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :         g_return_if_fail(func != NULL);</span>
+<a name="377"><span class="lineNum">     377 </span>            : </a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         script = perl_script_find_package(perl_get_package());</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         g_return_if_fail(script != NULL);</span>
+<span class="lineNum">     380 </span>            : 
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :         rec = g_new(PERL_SIGNAL_REC, 1);</span></a>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :         rec-&gt;script = script;</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :         rec-&gt;signal_id = signal_get_uniq_id(signal);</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :         rec-&gt;signal = g_strdup(signal);</span>
+<a name="385"><span class="lineNum">     385 </span><span class="lineNoCov">          0 :         rec-&gt;func = perl_func_sv_inc(func, perl_get_package());</span></a>
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :         if (command || strncmp(signal, &quot;command &quot;, 8) == 0) {</span>
+<span class="lineNum">     388 </span>            :                 /* we used Irssi::signal_add() instead of
+<a name="389"><span class="lineNum">     389 </span>            :                    Irssi::command_bind() - oh well, allow this.. */</a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                 command_bind_full(MODULE_NAME, priority, signal+8, -1,</span>
+<span class="lineNum">     391 </span>            :                                   category, sig_func, rec);
+<span class="lineNum">     392 </span>            :         } else {
+<a name="393"><span class="lineNum">     393 </span><span class="lineNoCov">          0 :                 signal_add_full_id(MODULE_NAME, priority, rec-&gt;signal_id,</span></a>
+<span class="lineNum">     394 </span>            :                                    sig_func, rec);
+<span class="lineNum">     395 </span>            :         }
+<span class="lineNum">     396 </span>            : 
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :         signal_idp = GINT_TO_POINTER(rec-&gt;signal_id);</span></a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :         siglist = g_hash_table_lookup(signals, signal_idp);</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :         if (siglist == NULL) {</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                 siglist = g_new0(GSList *, 1);</span>
+<a name="401"><span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 g_hash_table_insert(signals, signal_idp, siglist);</span></a>
+<span class="lineNum">     402 </span>            :         }
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         *siglist = g_slist_append(*siglist, rec);</span>
+<a name="405"><span class="lineNum">     405 </span>            : }</a>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 : void perl_signal_add_full(const char *signal, SV *func, int priority)</span>
+<span class="lineNum">     408 </span>            : {
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :         perl_signal_add_full_int(signal, func, priority, FALSE, NULL);</span></a>
+<a name="410"><span class="lineNum">     410 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 : static void perl_signal_destroy(PERL_SIGNAL_REC *rec)</span>
+<a name="413"><span class="lineNum">     413 </span>            : {</a>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :         if (strncmp(rec-&gt;signal, &quot;command &quot;, 8) == 0)</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                 command_unbind_full(rec-&gt;signal+8, sig_func, rec);</span>
+<span class="lineNum">     416 </span>            :         else
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 :                 signal_remove_id(rec-&gt;signal_id, sig_func, rec);</span></a>
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :         SvREFCNT_dec(rec-&gt;func);</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :         g_free(rec-&gt;signal);</span>
+<a name="421"><span class="lineNum">     421 </span><span class="lineNoCov">          0 :         g_free(rec);</span></a>
+<a name="422"><span class="lineNum">     422 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 : static void perl_signal_remove_list_one(GSList **siglist, PERL_SIGNAL_REC *rec)</span>
+<a name="425"><span class="lineNum">     425 </span>            : {</a>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :         *siglist = g_slist_remove(*siglist, rec);</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :         if (*siglist == NULL) {</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                 g_free(siglist);</span>
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 :                 g_hash_table_remove(signals, GINT_TO_POINTER(rec-&gt;signal_id));</span></a>
+<span class="lineNum">     430 </span>            :         }
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :         perl_signal_destroy(rec);</span>
+<a name="433"><span class="lineNum">     433 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span>            : #define sv_func_cmp(f1, f2) \
+<span class="lineNum">     436 </span>            :         ((SvROK(f1) &amp;&amp; SvROK(f2) &amp;&amp; SvRV(f1) == SvRV(f2)) || \
+<a name="437"><span class="lineNum">     437 </span>            :          (SvPOK(f1) &amp;&amp; SvPOK(f2) &amp;&amp; \</a>
+<a name="438"><span class="lineNum">     438 </span>            :           g_strcmp0(SvPV_nolen(f1), SvPV_nolen(f2)) == 0))</a>
+<span class="lineNum">     439 </span>            : 
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 : static void perl_signal_remove_list(GSList **list, SV *func)</span>
+<a name="441"><span class="lineNum">     441 </span>            : {</a>
+<span class="lineNum">     442 </span>            :         GSList *tmp;
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :         for (tmp = *list; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="445"><span class="lineNum">     445 </span><span class="lineNoCov">          0 :                 PERL_SIGNAL_REC *rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     446 </span>            : 
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                 if (sv_func_cmp(rec-&gt;func, func)) {</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :                         perl_signal_remove_list_one(list, rec);</span>
+<a name="449"><span class="lineNum">     449 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     450 </span>            :                 }
+<span class="lineNum">     451 </span>            :         }
+<a name="452"><span class="lineNum">     452 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="453"><span class="lineNum">     453 </span>            : </a>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 : void perl_signal_remove(const char *signal, SV *func)</span>
+<span class="lineNum">     455 </span>            : {
+<span class="lineNum">     456 </span>            :         GSList **list;
+<a name="457"><span class="lineNum">     457 </span>            :         void *signal_idp;</a>
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :         signal_idp = GINT_TO_POINTER(signal_get_uniq_id(signal));</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :         list = g_hash_table_lookup(signals, signal_idp);</span>
+<a name="461"><span class="lineNum">     461 </span>            : </a>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :         if (list != NULL) {</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                 func = perl_func_sv_inc(func, perl_get_package());</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                 perl_signal_remove_list(list, func);</span>
+<a name="465"><span class="lineNum">     465 </span><span class="lineNoCov">          0 :                 SvREFCNT_dec(func);</span></a>
+<span class="lineNum">     466 </span>            :         }
+<a name="467"><span class="lineNum">     467 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     468 </span>            : 
+<a name="469"><span class="lineNum">     469 </span><span class="lineNoCov">          0 : void perl_command_bind_to(const char *cmd, const char *category,</span></a>
+<span class="lineNum">     470 </span>            :                           SV *func, int priority)
+<span class="lineNum">     471 </span>            : {
+<span class="lineNum">     472 </span>            :         char *signal;
+<a name="473"><span class="lineNum">     473 </span>            : </a>
+<span class="lineNum">     474 </span><span class="lineNoCov">          0 :         signal = g_strconcat(&quot;command &quot;, cmd, NULL);</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :         perl_signal_add_full_int(signal, func, priority, TRUE, category);</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 :         g_free(signal);</span>
+<a name="477"><span class="lineNum">     477 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 : void perl_command_runsub(const char *cmd, const char *data,</span>
+<span class="lineNum">     480 </span>            :                          SERVER_REC *server, WI_ITEM_REC *item)
+<a name="481"><span class="lineNum">     481 </span>            : {</a>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :         command_runsub(cmd, data, server, item);</span>
+<a name="483"><span class="lineNum">     483 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     484 </span>            : 
+<a name="485"><span class="lineNum">     485 </span><span class="lineNoCov">          0 : void perl_command_unbind(const char *cmd, SV *func)</span></a>
+<span class="lineNum">     486 </span>            : {
+<span class="lineNum">     487 </span>            :         char *signal;
+<span class="lineNum">     488 </span>            : 
+<a name="489"><span class="lineNum">     489 </span>            :         /* perl_signal_remove() calls command_unbind() */</a>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :         signal = g_strconcat(&quot;command &quot;, cmd, NULL);</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :         perl_signal_remove(signal, func);</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :         g_free(signal);</span>
+<a name="493"><span class="lineNum">     493 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 : static int signal_destroy_hash(void *key, GSList **list, PERL_SCRIPT_REC *script)</span>
+<span class="lineNum">     496 </span>            : {
+<a name="497"><span class="lineNum">     497 </span>            :         GSList *tmp, *next;</a>
+<span class="lineNum">     498 </span>            : 
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :         for (tmp = *list; tmp != NULL; tmp = next) {</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :                 PERL_SIGNAL_REC *rec = tmp-&gt;data;</span>
+<a name="501"><span class="lineNum">     501 </span>            : </a>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :                 if (script == NULL || rec-&gt;script == script) {</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :                         *list = g_slist_remove(*list, rec);</span>
+<a name="505"><span class="lineNum">     505 </span><span class="lineNoCov">          0 :                         perl_signal_destroy(rec);</span></a>
+<span class="lineNum">     506 </span>            :                 }
+<span class="lineNum">     507 </span>            :         }
+<span class="lineNum">     508 </span>            : 
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :         if (*list != NULL)</span></a>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :         g_free(list);</span>
+<a name="513"><span class="lineNum">     513 </span><span class="lineNoCov">          0 :         return TRUE;</span></a>
+<span class="lineNum">     514 </span>            : }
+<a name="515"><span class="lineNum">     515 </span>            : </a>
+<span class="lineNum">     516 </span>            : /* destroy all signals used by script */
+<a name="517"><span class="lineNum">     517 </span><span class="lineCov">          1 : void perl_signal_remove_script(PERL_SCRIPT_REC *script)</span></a>
+<span class="lineNum">     518 </span>            : {
+<span class="lineNum">     519 </span><span class="lineCov">          1 :         g_hash_table_foreach_remove(signals, (GHRFunc) signal_destroy_hash,</span>
+<span class="lineNum">     520 </span>            :                                     script);
+<a name="521"><span class="lineNum">     521 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     522 </span>            : 
+<span class="lineNum">     523 </span><span class="lineCov">          1 : void perl_signals_start(void)</span>
+<span class="lineNum">     524 </span>            : {
+<a name="525"><span class="lineNum">     525 </span><span class="lineCov">          1 :         signals = g_hash_table_new(NULL, NULL);</span></a>
+<a name="526"><span class="lineNum">     526 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span><span class="lineCov">          1 : void perl_signals_stop(void)</span>
+<a name="529"><span class="lineNum">     529 </span>            : {</a>
+<span class="lineNum">     530 </span><span class="lineCov">          1 :         g_hash_table_foreach(signals, (GHFunc) signal_destroy_hash, NULL);</span>
+<span class="lineNum">     531 </span><span class="lineCov">          1 :         g_hash_table_destroy(signals);</span>
+<span class="lineNum">     532 </span><span class="lineCov">          1 :         signals = NULL;</span>
+<a name="533"><span class="lineNum">     533 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     534 </span>            : 
+<span class="lineNum">     535 </span><span class="lineCov">        195 : static void register_signal_rec(PERL_SIGNAL_ARGS_REC *rec)</span>
+<span class="lineNum">     536 </span>            : {
+<a name="537"><span class="lineNum">     537 </span><span class="lineCov">        195 :         if (rec-&gt;signal[strlen(rec-&gt;signal)-1] == ' ') {</span></a>
+<span class="lineNum">     538 </span><span class="lineCov">          9 :                 perl_signal_args_partial =</span>
+<span class="lineNum">     539 </span><span class="lineCov">          9 :                         g_slist_append(perl_signal_args_partial, rec);</span>
+<span class="lineNum">     540 </span>            :         } else {
+<a name="541"><span class="lineNum">     541 </span><span class="lineCov">        186 :                 int signal_id = signal_get_uniq_id(rec-&gt;signal);</span></a>
+<span class="lineNum">     542 </span><span class="lineCov">        186 :                 g_hash_table_insert(perl_signal_args_hash,</span>
+<span class="lineNum">     543 </span><span class="lineCov">        186 :                                     GINT_TO_POINTER(signal_id), rec);</span>
+<span class="lineNum">     544 </span>            :         }
+<a name="545"><span class="lineNum">     545 </span><span class="lineCov">        195 : }</span></a>
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineNoCov">          0 : void perl_signal_register(const char *signal, const char **args)</span>
+<span class="lineNum">     548 </span>            : {
+<a name="549"><span class="lineNum">     549 </span>            :         PERL_SIGNAL_ARGS_REC *rec;</a>
+<span class="lineNum">     550 </span>            :         int i;
+<span class="lineNum">     551 </span>            : 
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :         if (perl_signal_args_find(signal_get_uniq_id(signal)) != NULL)</span>
+<a name="553"><span class="lineNum">     553 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     554 </span>            : 
+<span class="lineNum">     555 </span><span class="lineNoCov">          0 :         rec = g_new0(PERL_SIGNAL_ARGS_REC, 1);</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; 6 &amp;&amp; args[i] != NULL; i++)</span>
+<a name="557"><span class="lineNum">     557 </span><span class="lineNoCov">          0 :                 rec-&gt;args[i] = g_strdup(args[i]);</span></a>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :         rec-&gt;dynamic = TRUE;</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :         rec-&gt;signal = g_strdup(signal);</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :         register_signal_rec(rec);</span>
+<a name="561"><span class="lineNum">     561 </span>            : }</a>
+<span class="lineNum">     562 </span>            : 
+<span class="lineNum">     563 </span><span class="lineCov">          1 : void perl_signals_init(void)</span>
+<span class="lineNum">     564 </span>            : {
+<a name="565"><span class="lineNum">     565 </span>            :         int n;</a>
+<span class="lineNum">     566 </span>            : 
+<span class="lineNum">     567 </span><span class="lineCov">          1 :         perl_signal_args_hash = g_hash_table_new((GHashFunc) g_direct_hash,</span>
+<span class="lineNum">     568 </span>            :                                                  (GCompareFunc) g_direct_equal);
+<a name="569"><span class="lineNum">     569 </span><span class="lineCov">          1 :         perl_signal_args_partial = NULL;</span></a>
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span><span class="lineCov">        196 :         for (n = 0; perl_signal_args[n].signal != NULL; n++)</span>
+<span class="lineNum">     572 </span><span class="lineCov">        195 :                 register_signal_rec(&amp;perl_signal_args[n]);</span>
+<a name="573"><span class="lineNum">     573 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     574 </span>            : 
+<span class="lineNum">     575 </span><span class="lineCov">        193 : static void signal_args_free(PERL_SIGNAL_ARGS_REC *rec)</span>
+<span class="lineNum">     576 </span>            : {
+<a name="577"><span class="lineNum">     577 </span>            :         int i;</a>
+<span class="lineNum">     578 </span>            : 
+<span class="lineNum">     579 </span><span class="lineCov">        193 :         if (!rec-&gt;dynamic)</span>
+<span class="lineNum">     580 </span><span class="lineCov">        193 :                 return;</span>
+<a name="581"><span class="lineNum">     581 </span>            : </a>
+<span class="lineNum">     582 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; 6 &amp;&amp; rec-&gt;args[i] != NULL; i++)</span>
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 :                 g_free(rec-&gt;args[i]);</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">          0 :         g_free(rec-&gt;signal);</span>
+<a name="585"><span class="lineNum">     585 </span><span class="lineNoCov">          0 :         g_free(rec);</span></a>
+<a name="586"><span class="lineNum">     586 </span>            : }</a>
+<span class="lineNum">     587 </span>            : 
+<span class="lineNum">     588 </span><span class="lineCov">        184 : static void signal_args_hash_free(void *key, PERL_SIGNAL_ARGS_REC *rec)</span>
+<a name="589"><span class="lineNum">     589 </span>            : {</a>
+<span class="lineNum">     590 </span><span class="lineCov">        184 :         signal_args_free(rec);</span>
+<a name="591"><span class="lineNum">     591 </span><span class="lineCov">        184 : }</span></a>
+<span class="lineNum">     592 </span>            : 
+<a name="593"><span class="lineNum">     593 </span><span class="lineCov">          1 : void perl_signals_deinit(void)</span></a>
+<span class="lineNum">     594 </span>            : {
+<span class="lineNum">     595 </span><span class="lineCov">          1 :         g_slist_foreach(perl_signal_args_partial,</span>
+<span class="lineNum">     596 </span>            :                         (GFunc) signal_args_free, NULL);
+<a name="597"><span class="lineNum">     597 </span><span class="lineCov">          1 :         g_slist_free(perl_signal_args_partial);</span></a>
+<span class="lineNum">     598 </span>            : 
+<span class="lineNum">     599 </span><span class="lineCov">          1 :         g_hash_table_foreach(perl_signal_args_hash,</span>
+<span class="lineNum">     600 </span>            :                              (GHFunc) signal_args_hash_free, NULL);
+<a name="601"><span class="lineNum">     601 </span><span class="lineCov">          1 :         g_hash_table_destroy(perl_signal_args_hash);</span></a>
+<span class="lineNum">     602 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

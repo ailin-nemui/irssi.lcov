@@ -1,0 +1,824 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/servers.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - servers.c<span style="font-size: 80%;"> (source / <a href="servers.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntry">386</td>
+            <td class="headerCovTableEntryLo">5.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">27</td>
+            <td class="headerCovTableEntryLo">14.8 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  server.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;net-disconnect.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;net-nonblock.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;net-sendbuffer.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;rawlog.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;settings.h&quot;</a>
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : #include &quot;chat-protocols.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;servers.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;servers-reconnect.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;servers-setup.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;channels.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;queries.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span>            : GSList *servers, *lookup_servers;
+<a name="39"><span class="lineNum">      39 </span>            : </a>
+<span class="lineNum">      40 </span>            : /* connection to server failed */
+<a name="41"><span class="lineNum">      41 </span><span class="lineNoCov">          0 : void server_connect_failed(SERVER_REC *server, const char *msg)</span></a>
+<span class="lineNum">      42 </span>            : {
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_SERVER(server));</span>
+<span class="lineNum">      44 </span>            : 
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :         lookup_servers = g_slist_remove(lookup_servers, server);</span></a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :         signal_emit(&quot;server connect failed&quot;, 2, server, msg);</span>
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :         if (server-&gt;connect_tag != -1) {</span></a>
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :                 g_source_remove(server-&gt;connect_tag);</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :                 server-&gt;connect_tag = -1;</span>
+<span class="lineNum">      52 </span>            :         }
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :         if (server-&gt;handle != NULL) {</span></a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :                 net_sendbuffer_destroy(server-&gt;handle, TRUE);</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :                 server-&gt;handle = NULL;</span>
+<span class="lineNum">      56 </span>            :         }
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :         if (server-&gt;connect_pipe[0] != NULL) {</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :                 g_io_channel_shutdown(server-&gt;connect_pipe[0], TRUE, NULL);</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :                 g_io_channel_unref(server-&gt;connect_pipe[0]);</span>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :                 g_io_channel_shutdown(server-&gt;connect_pipe[1], TRUE, NULL);</span></a>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :                 g_io_channel_unref(server-&gt;connect_pipe[1]);</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :                 server-&gt;connect_pipe[0] = NULL;</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 server-&gt;connect_pipe[1] = NULL;</span>
+<a name="65"><span class="lineNum">      65 </span>            :         }</a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :         server_unref(server);</span>
+<span class="lineNum">      68 </span>            : }
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span>            : /* generate tag from server's address */
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 : static char *server_create_address_tag(const char *address)</span>
+<span class="lineNum">      72 </span>            : {
+<a name="73"><span class="lineNum">      73 </span>            :         const char *start, *end;</a>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(address != NULL, NULL);</span>
+<span class="lineNum">      76 </span>            : 
+<a name="77"><span class="lineNum">      77 </span>            :         /* try to generate a reasonable server tag */</a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         if (strchr(address, '.') == NULL) {</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :                 start = end = NULL;</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :         } else if (g_ascii_strncasecmp(address, &quot;irc&quot;, 3) == 0 ||</span>
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :             g_ascii_strncasecmp(address, &quot;chat&quot;, 4) == 0) {</span></a>
+<span class="lineNum">      82 </span>            :                 /* irc-2.cs.hut.fi -&gt; hut, chat.bt.net -&gt; bt */
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :                 end = strrchr(address, '.');</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :                 start = end-1;</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :                 while (start &gt; address &amp;&amp; *start != '.') start--;</span></a>
+<span class="lineNum">      86 </span>            :         } else {
+<span class="lineNum">      87 </span>            :                 /* efnet.cs.hut.fi -&gt; efnet */
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :                 end = strchr(address, '.');</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :                 start = end;</span></a>
+<span class="lineNum">      90 </span>            :         }
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         if (start == end) start = address; else start++;</span>
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :         if (end == NULL) end = address + strlen(address);</span></a>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         return g_strndup(start, (int) (end-start));</span>
+<span class="lineNum">      96 </span>            : }
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<a name="98"><span class="lineNum">      98 </span>            : /* create unique tag for server. prefer ircnet's name or</a>
+<span class="lineNum">      99 </span>            :    generate it from server's address */
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 : static char *server_create_tag(SERVER_CONNECT_REC *conn)</span>
+<a name="101"><span class="lineNum">     101 </span>            : {</a>
+<span class="lineNum">     102 </span>            :         GString *str;
+<span class="lineNum">     103 </span>            :         char *tag;
+<span class="lineNum">     104 </span>            :         int num;
+<a name="105"><span class="lineNum">     105 </span>            : </a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_SERVER_CONNECT(conn), NULL);</span>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         tag = conn-&gt;chatnet != NULL &amp;&amp; *conn-&gt;chatnet != '\0' ?</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 g_strdup(conn-&gt;chatnet) :</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 server_create_address_tag(conn-&gt;address);</span>
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :         if (conn-&gt;tag != NULL &amp;&amp; server_find_tag(conn-&gt;tag) == NULL &amp;&amp;</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :             server_find_lookup_tag(conn-&gt;tag) == NULL &amp;&amp;</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :             strncmp(conn-&gt;tag, tag, strlen(tag)) == 0) {</span>
+<span class="lineNum">     115 </span>            :                 /* use the existing tag if it begins with the same ID -
+<span class="lineNum">     116 </span>            :                    this is useful when you have several connections to
+<a name="117"><span class="lineNum">     117 </span>            :                    same server and you want to keep the same tags with</a>
+<span class="lineNum">     118 </span>            :                    the servers (or it would cause problems when rejoining
+<span class="lineNum">     119 </span>            :                    /LAYOUT SAVEd channels). */
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                 g_free(tag);</span>
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :                 return g_strdup(conn-&gt;tag);</span></a>
+<span class="lineNum">     122 </span>            :         }
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span>            : 
+<a name="125"><span class="lineNum">     125 </span>            :         /* then just append numbers after tag until unused is found.. */</a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :         str = g_string_new(tag);</span>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :         num = 2;</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :         while (server_find_tag(str-&gt;str) != NULL ||</span></a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                server_find_lookup_tag(str-&gt;str) != NULL) {</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 g_string_printf(str, &quot;%s%d&quot;, tag, num);</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                 num++;</span>
+<a name="133"><span class="lineNum">     133 </span>            :         }</a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :         g_free(tag);</span>
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         tag = str-&gt;str;</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :         g_string_free(str, FALSE);</span></a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :         return tag;</span>
+<span class="lineNum">     139 </span>            : }
+<a name="140"><span class="lineNum">     140 </span>            : </a>
+<a name="141"><span class="lineNum">     141 </span>            : /* Connection to server finished, fill the rest of the fields */</a>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 : void server_connect_finished(SERVER_REC *server)</span>
+<span class="lineNum">     143 </span>            : {
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :         server-&gt;connect_time = time(NULL);</span>
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         servers = g_slist_append(servers, server);</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :         signal_emit(&quot;server connected&quot;, 1, server);</span>
+<a name="148"><span class="lineNum">     148 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 : static void server_connect_callback_init(SERVER_REC *server, GIOChannel *handle)</span>
+<span class="lineNum">     151 </span>            : {
+<span class="lineNum">     152 </span>            :         int error;
+<a name="153"><span class="lineNum">     153 </span>            : </a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_SERVER(server));</span>
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :         error = net_geterror(handle);</span>
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 :         if (error != 0) {</span></a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :                 server-&gt;connection_lost = TRUE;</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                 server_connect_failed(server, g_strerror(error));</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="161"><span class="lineNum">     161 </span>            :         }</a>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         lookup_servers = g_slist_remove(lookup_servers, server);</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         g_source_remove(server-&gt;connect_tag);</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :         server-&gt;connect_tag = -1;</span></a>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :         server_connect_finished(server);</span>
+<a name="168"><span class="lineNum">     168 </span>            : }</a>
+<a name="169"><span class="lineNum">     169 </span>            : </a>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 : static void server_connect_callback_init_ssl(SERVER_REC *server, GIOChannel *handle)</span>
+<span class="lineNum">     171 </span>            : {
+<span class="lineNum">     172 </span>            :         int error;
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_SERVER(server));</span>
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :         error = irssi_ssl_handshake(handle);</span>
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 :         if (error == -1) {</span></a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :                 server-&gt;connection_lost = TRUE;</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :                 server_connect_failed(server, NULL);</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="181"><span class="lineNum">     181 </span>            :         }</a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         if (error &amp; 1) {</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                 if (server-&gt;connect_tag != -1)</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                         g_source_remove(server-&gt;connect_tag);</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineNoCov">          0 :                 server-&gt;connect_tag = g_input_add(handle, error == 1 ? G_INPUT_READ : G_INPUT_WRITE,</span></a>
+<span class="lineNum">     186 </span>            :                                                   (GInputFunction)
+<span class="lineNum">     187 </span>            :                                                   server_connect_callback_init_ssl,
+<span class="lineNum">     188 </span>            :                                                   server);
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     190 </span>            :         }
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :         lookup_servers = g_slist_remove(lookup_servers, server);</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :         if (server-&gt;connect_tag != -1) {</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                 g_source_remove(server-&gt;connect_tag);</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                 server-&gt;connect_tag = -1;</span>
+<span class="lineNum">     196 </span>            :         }
+<a name="197"><span class="lineNum">     197 </span>            : </a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :         server_connect_finished(server);</span>
+<a name="199"><span class="lineNum">     199 </span>            : }</a>
+<span class="lineNum">     200 </span>            : 
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 : static void server_real_connect(SERVER_REC *server, IPADDR *ip,</span></a>
+<span class="lineNum">     202 </span>            :                                 const char *unix_socket)
+<span class="lineNum">     203 </span>            : {
+<span class="lineNum">     204 </span>            :         GIOChannel *handle;
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :         IPADDR *own_ip = NULL;</span></a>
+<span class="lineNum">     206 </span>            :         const char *errmsg;
+<span class="lineNum">     207 </span>            :         char *errmsg2;
+<span class="lineNum">     208 </span>            :         char ipaddr[MAX_IP_LEN];
+<a name="209"><span class="lineNum">     209 </span>            :         int port;</a>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :         g_return_if_fail(ip != NULL || unix_socket != NULL);</span>
+<span class="lineNum">     212 </span>            : 
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :         signal_emit(&quot;server connecting&quot;, 2, server, ip);</span></a>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :         if (server-&gt;connrec-&gt;no_connect)</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="217"><span class="lineNum">     217 </span>            : </a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :         if (ip != NULL) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                 own_ip = IPADDR_IS_V6(ip) ? server-&gt;connrec-&gt;own_ip6 : server-&gt;connrec-&gt;own_ip4;</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                 port = server-&gt;connrec-&gt;proxy != NULL ?</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :                         server-&gt;connrec-&gt;proxy_port : server-&gt;connrec-&gt;port;</span></a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                 handle = server-&gt;connrec-&gt;use_tls ?</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                         net_connect_ip_ssl(ip, port, own_ip, server) : net_connect_ip(ip, port, own_ip);</span>
+<span class="lineNum">     224 </span>            :         } else {
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :                 handle = net_connect_unix(unix_socket);</span></a>
+<span class="lineNum">     226 </span>            :         }
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :         if (handle == NULL) {</span>
+<a name="229"><span class="lineNum">     229 </span>            :                 /* failed */</a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 errmsg = g_strerror(errno);</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 errmsg2 = NULL;</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                 if (errno == EADDRNOTAVAIL) {</span>
+<a name="233"><span class="lineNum">     233 </span><span class="lineNoCov">          0 :                         if (own_ip != NULL) {</span></a>
+<span class="lineNum">     234 </span>            :                                 /* show the IP which is causing the error */
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                                 net_ip2host(own_ip, ipaddr);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                                 errmsg2 = g_strconcat(errmsg, &quot;: &quot;, ipaddr, NULL);</span>
+<a name="237"><span class="lineNum">     237 </span>            :                         }</a>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :                         server-&gt;no_reconnect = TRUE;</span>
+<span class="lineNum">     239 </span>            :                 }
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                 if (server-&gt;connrec-&gt;use_tls &amp;&amp; errno == ENOSYS)</span>
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :                         server-&gt;no_reconnect = TRUE;</span></a>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :                 server-&gt;connection_lost = TRUE;</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                 server_connect_failed(server, errmsg2 ? errmsg2 : errmsg);</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :                 g_free(errmsg2);</span></a>
+<span class="lineNum">     246 </span>            :         } else {
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                 server-&gt;handle = net_sendbuffer_create(handle, 0);</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :                 if (server-&gt;connrec-&gt;use_tls)</span>
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :                         server_connect_callback_init_ssl(server, handle);</span></a>
+<span class="lineNum">     250 </span>            :                 else
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                 server-&gt;connect_tag =</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                         g_input_add(handle, G_INPUT_WRITE | G_INPUT_READ,</span>
+<a name="253"><span class="lineNum">     253 </span>            :                                     (GInputFunction)</a>
+<span class="lineNum">     254 </span>            :                                     server_connect_callback_init,
+<span class="lineNum">     255 </span>            :                                     server);
+<span class="lineNum">     256 </span>            :         }
+<a name="257"><span class="lineNum">     257 </span>            : }</a>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 : static void server_connect_callback_readpipe(SERVER_REC *server)</span>
+<span class="lineNum">     260 </span>            : {
+<a name="261"><span class="lineNum">     261 </span>            :         RESOLVED_IP_REC iprec;</a>
+<span class="lineNum">     262 </span>            :         IPADDR *ip;
+<span class="lineNum">     263 </span>            :         const char *errormsg;
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :         char *servername = NULL;</span>
+<a name="265"><span class="lineNum">     265 </span>            : </a>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :         g_source_remove(server-&gt;connect_tag);</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         server-&gt;connect_tag = -1;</span>
+<span class="lineNum">     268 </span>            : 
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :         net_gethostbyname_return(server-&gt;connect_pipe[0], &amp;iprec);</span></a>
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         g_io_channel_shutdown(server-&gt;connect_pipe[0], TRUE, NULL);</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :         g_io_channel_unref(server-&gt;connect_pipe[0]);</span>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :         g_io_channel_shutdown(server-&gt;connect_pipe[1], TRUE, NULL);</span></a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :         g_io_channel_unref(server-&gt;connect_pipe[1]);</span>
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :         server-&gt;connect_pipe[0] = NULL;</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :         server-&gt;connect_pipe[1] = NULL;</span></a>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span>            :         /* figure out if we should use IPv4 or v6 address */
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :         if (iprec.error != 0) {</span>
+<a name="281"><span class="lineNum">     281 </span>            :                 /* error */</a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                 ip = NULL;</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         } else if (server-&gt;connrec-&gt;family == AF_INET) {</span>
+<span class="lineNum">     284 </span>            :                 /* force IPv4 connection */
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 ip = iprec.ip4.family == 0 ? NULL : &amp;iprec.ip4;</span></a>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                 servername = iprec.host4;</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :         } else if (server-&gt;connrec-&gt;family == AF_INET6) {</span>
+<span class="lineNum">     288 </span>            :                 /* force IPv6 connection */
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :                 ip = iprec.ip6.family == 0 ? NULL : &amp;iprec.ip6;</span></a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 servername = iprec.host6;</span>
+<span class="lineNum">     291 </span>            :         } else {
+<span class="lineNum">     292 </span>            :                 /* pick the one that was found, or if both do it like
+<a name="293"><span class="lineNum">     293 </span>            :                    /SET resolve_prefer_ipv6 says. */</a>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :                 if (iprec.ip4.family == 0 ||</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                     (iprec.ip6.family != 0 &amp;&amp;</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :                      settings_get_bool(&quot;resolve_prefer_ipv6&quot;))) {</span>
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :                         ip = &amp;iprec.ip6;</span></a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                         servername = iprec.host6;</span>
+<span class="lineNum">     299 </span>            :                 } else {
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :                         ip = &amp;iprec.ip4;</span>
+<a name="301"><span class="lineNum">     301 </span><span class="lineNoCov">          0 :                         servername = iprec.host4;</span></a>
+<span class="lineNum">     302 </span>            :                 }
+<span class="lineNum">     303 </span>            :         }
+<span class="lineNum">     304 </span>            : 
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :         if (ip != NULL) {</span></a>
+<span class="lineNum">     306 </span>            :                 /* host lookup ok */
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 if (servername) {</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                         g_free(server-&gt;connrec-&gt;address);</span>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :                         server-&gt;connrec-&gt;address = g_strdup(servername);</span></a>
+<span class="lineNum">     310 </span>            :                 }
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                 server_real_connect(server, ip, NULL);</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                 errormsg = NULL;</span>
+<a name="313"><span class="lineNum">     313 </span>            :         } else {</a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                 if (iprec.error == 0 || net_hosterror_notfound(iprec.error)) {</span>
+<span class="lineNum">     315 </span>            :                         /* IP wasn't found for the host, don't try to
+<span class="lineNum">     316 </span>            :                            reconnect back to this server */
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :                         server-&gt;dns_error = TRUE;</span></a>
+<span class="lineNum">     318 </span>            :                 }
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                 if (iprec.error == 0) {</span>
+<a name="321"><span class="lineNum">     321 </span>            :                         /* forced IPv4 or IPv6 address but it wasn't found */</a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                         errormsg = server-&gt;connrec-&gt;family == AF_INET ?</span>
+<span class="lineNum">     323 </span>            :                                 &quot;IPv4 address not found for host&quot; :
+<span class="lineNum">     324 </span>            :                                 &quot;IPv6 address not found for host&quot;;
+<a name="325"><span class="lineNum">     325 </span>            :                 } else {</a>
+<span class="lineNum">     326 </span>            :                         /* gethostbyname() failed */
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                         errormsg = iprec.errorstr != NULL ? iprec.errorstr :</span>
+<span class="lineNum">     328 </span>            :                                 &quot;Host lookup failed&quot;;
+<a name="329"><span class="lineNum">     329 </span>            :                 }</a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :                 server-&gt;connection_lost = TRUE;</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :                 server_connect_failed(server, errormsg);</span>
+<a name="333"><span class="lineNum">     333 </span>            :         }</a>
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :         g_free(iprec.errorstr);</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         g_free(iprec.host4);</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :         g_free(iprec.host6);</span></a>
+<a name="338"><span class="lineNum">     338 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 : SERVER_REC *server_connect(SERVER_CONNECT_REC *conn)</span>
+<a name="341"><span class="lineNum">     341 </span>            : {</a>
+<span class="lineNum">     342 </span>            :         CHAT_PROTOCOL_REC *proto;
+<span class="lineNum">     343 </span>            :         SERVER_REC *server;
+<span class="lineNum">     344 </span>            : 
+<a name="345"><span class="lineNum">     345 </span><span class="lineNoCov">          0 :         proto = CHAT_PROTOCOL(conn);</span></a>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :         server = proto-&gt;server_init_connect(conn);</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :         proto-&gt;server_connect(server);</span>
+<span class="lineNum">     348 </span>            : 
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :         return server;</span></a>
+<span class="lineNum">     350 </span>            : }
+<a name="351"><span class="lineNum">     351 </span>            : </a>
+<span class="lineNum">     352 </span>            : /* initializes server record but doesn't start connecting */
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 : void server_connect_init(SERVER_REC *server)</span></a>
+<span class="lineNum">     354 </span>            : {
+<span class="lineNum">     355 </span>            :         const char *str;
+<span class="lineNum">     356 </span>            : 
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 :         g_return_if_fail(server != NULL);</span></a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :         MODULE_DATA_INIT(server);</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :         server-&gt;type = module_get_uniq_id(&quot;SERVER&quot;, 0);</span>
+<a name="361"><span class="lineNum">     361 </span><span class="lineNoCov">          0 :         server_ref(server);</span></a>
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :         server-&gt;nick = g_strdup(server-&gt;connrec-&gt;nick);</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         if (server-&gt;connrec-&gt;username == NULL || *server-&gt;connrec-&gt;username == '\0') {</span>
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :                 g_free_not_null(server-&gt;connrec-&gt;username);</span></a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                 str = g_get_user_name();</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                 if (*str == '\0') str = &quot;unknown&quot;;</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :                 server-&gt;connrec-&gt;username = g_strdup(str);</span></a>
+<span class="lineNum">     370 </span>            :         }
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :         if (server-&gt;connrec-&gt;realname == NULL || *server-&gt;connrec-&gt;realname == '\0') {</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                 g_free_not_null(server-&gt;connrec-&gt;realname);</span>
+<a name="373"><span class="lineNum">     373 </span>            : </a>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                 str = g_get_real_name();</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :                 if (*str == '\0') str = server-&gt;connrec-&gt;username;</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                 server-&gt;connrec-&gt;realname = g_strdup(str);</span>
+<a name="377"><span class="lineNum">     377 </span>            :         }</a>
+<span class="lineNum">     378 </span>            : 
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         server-&gt;tag = server_create_tag(server-&gt;connrec);</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :         server-&gt;connect_tag = -1;</span>
+<a name="381"><span class="lineNum">     381 </span>            : }</a>
+<a name="382"><span class="lineNum">     382 </span>            : </a>
+<span class="lineNum">     383 </span>            : /* starts connecting to server */
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 : int server_start_connect(SERVER_REC *server)</span>
+<a name="385"><span class="lineNum">     385 </span>            : {</a>
+<span class="lineNum">     386 </span>            :         const char *connect_address;
+<span class="lineNum">     387 </span>            :         int fd[2];
+<span class="lineNum">     388 </span>            : 
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(server != NULL, FALSE);</span></a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         if (!server-&gt;connrec-&gt;unix_socket &amp;&amp; server-&gt;connrec-&gt;port &lt;= 0)</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<span class="lineNum">     392 </span>            : 
+<a name="393"><span class="lineNum">     393 </span><span class="lineNoCov">          0 :         server-&gt;rawlog = rawlog_create();</span></a>
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :         if (server-&gt;connrec-&gt;connect_handle != NULL) {</span>
+<span class="lineNum">     396 </span>            :                 /* already connected */
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :                 GIOChannel *handle = server-&gt;connrec-&gt;connect_handle;</span></a>
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                 server-&gt;connrec-&gt;connect_handle = NULL;</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                 server-&gt;handle = net_sendbuffer_create(handle, 0);</span>
+<a name="401"><span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 server_connect_finished(server);</span></a>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :         } else if (server-&gt;connrec-&gt;unix_socket) {</span>
+<span class="lineNum">     403 </span>            :                 /* connect with unix socket */
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :                 server_real_connect(server, NULL, server-&gt;connrec-&gt;address);</span>
+<a name="405"><span class="lineNum">     405 </span>            :         } else {</a>
+<span class="lineNum">     406 </span>            :                 /* resolve host name */
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :                 if (pipe(fd) != 0) {</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                         g_warning(&quot;server_connect(): pipe() failed.&quot;);</span>
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :                         g_free(server-&gt;tag);</span></a>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                         g_free(server-&gt;nick);</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :                         return FALSE;</span>
+<span class="lineNum">     412 </span>            :                 }
+<a name="413"><span class="lineNum">     413 </span>            : </a>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :                 server-&gt;connect_pipe[0] = g_io_channel_new(fd[0]);</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                 server-&gt;connect_pipe[1] = g_io_channel_new(fd[1]);</span>
+<span class="lineNum">     416 </span>            : 
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 :                 connect_address = server-&gt;connrec-&gt;proxy != NULL ?</span></a>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :                         server-&gt;connrec-&gt;proxy : server-&gt;connrec-&gt;address;</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :                 server-&gt;connect_pid =</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :                         net_gethostbyname_nonblock(connect_address,</span>
+<a name="421"><span class="lineNum">     421 </span>            :                                                    server-&gt;connect_pipe[1],</a>
+<span class="lineNum">     422 </span>            :                                                    settings_get_bool(&quot;resolve_reverse_lookup&quot;));
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :                 server-&gt;connect_tag =</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                         g_input_add(server-&gt;connect_pipe[0], G_INPUT_READ,</span>
+<a name="425"><span class="lineNum">     425 </span>            :                                     (GInputFunction)</a>
+<span class="lineNum">     426 </span>            :                                     server_connect_callback_readpipe,
+<span class="lineNum">     427 </span>            :                                     server);
+<span class="lineNum">     428 </span>            : 
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 :                 lookup_servers = g_slist_append(lookup_servers, server);</span></a>
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;server looking&quot;, 1, server);</span>
+<span class="lineNum">     432 </span>            :         }
+<a name="433"><span class="lineNum">     433 </span><span class="lineNoCov">          0 :         return TRUE;</span></a>
+<a name="434"><span class="lineNum">     434 </span>            : }</a>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 : static int server_remove_channels(SERVER_REC *server)</span>
+<a name="437"><span class="lineNum">     437 </span>            : {</a>
+<span class="lineNum">     438 </span>            :         GSList *tmp, *next;
+<span class="lineNum">     439 </span>            :         int found;
+<span class="lineNum">     440 </span>            : 
+<a name="441"><span class="lineNum">     441 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(server != NULL, FALSE);</span></a>
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :         found = FALSE;</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :         for (tmp = server-&gt;channels; tmp != NULL; tmp = next) {</span>
+<a name="445"><span class="lineNum">     445 </span><span class="lineNoCov">          0 :                 CHANNEL_REC *channel = tmp-&gt;data;</span></a>
+<span class="lineNum">     446 </span>            : 
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :                 channel_destroy(channel);</span>
+<a name="449"><span class="lineNum">     449 </span><span class="lineNoCov">          0 :                 found = TRUE;</span></a>
+<span class="lineNum">     450 </span>            :         }
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :         while (server-&gt;queries != NULL)</span>
+<a name="453"><span class="lineNum">     453 </span><span class="lineNoCov">          0 :                 query_change_server(server-&gt;queries-&gt;data, NULL);</span></a>
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :         g_slist_free(server-&gt;channels);</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :         g_slist_free(server-&gt;queries);</span>
+<a name="457"><span class="lineNum">     457 </span>            : </a>
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :         return found;</span>
+<a name="459"><span class="lineNum">     459 </span>            : }</a>
+<span class="lineNum">     460 </span>            : 
+<a name="461"><span class="lineNum">     461 </span><span class="lineNoCov">          0 : void server_disconnect(SERVER_REC *server)</span></a>
+<span class="lineNum">     462 </span>            : {
+<span class="lineNum">     463 </span>            :         int chans;
+<span class="lineNum">     464 </span>            : 
+<a name="465"><span class="lineNum">     465 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_SERVER(server));</span></a>
+<span class="lineNum">     466 </span>            : 
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :         if (server-&gt;disconnected)</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="469"><span class="lineNum">     469 </span>            : </a>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :         if (server-&gt;connect_tag != -1) {</span>
+<span class="lineNum">     471 </span>            :                 /* still connecting to server.. */
+<span class="lineNum">     472 </span><span class="lineNoCov">          0 :                 if (server-&gt;connect_pid != -1)</span>
+<a name="473"><span class="lineNum">     473 </span><span class="lineNoCov">          0 :                         net_disconnect_nonblock(server-&gt;connect_pid);</span></a>
+<span class="lineNum">     474 </span><span class="lineNoCov">          0 :                 server_connect_failed(server, NULL);</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     476 </span>            :         }
+<a name="477"><span class="lineNum">     477 </span>            : </a>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :         servers = g_slist_remove(servers, server);</span>
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :         server-&gt;disconnected = TRUE;</span>
+<a name="481"><span class="lineNum">     481 </span><span class="lineNoCov">          0 :         signal_emit(&quot;server disconnected&quot;, 1, server);</span></a>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span>            :         /* close all channels */
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :         chans = server_remove_channels(server);</span>
+<a name="485"><span class="lineNum">     485 </span>            : </a>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :         if (server-&gt;handle != NULL) {</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                 if (!chans || server-&gt;connection_lost)</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :                         net_sendbuffer_destroy(server-&gt;handle, TRUE);</span>
+<a name="489"><span class="lineNum">     489 </span>            :                 else {</a>
+<span class="lineNum">     490 </span>            :                         /* we were on some channels, try to let the server
+<span class="lineNum">     491 </span>            :                            disconnect so that our quit message is guaranteed
+<span class="lineNum">     492 </span>            :                            to get displayed */
+<a name="493"><span class="lineNum">     493 </span><span class="lineNoCov">          0 :                         net_disconnect_later(net_sendbuffer_handle(server-&gt;handle));</span></a>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :                         net_sendbuffer_destroy(server-&gt;handle, FALSE);</span>
+<span class="lineNum">     495 </span>            :                 }
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :                 server-&gt;handle = NULL;</span>
+<a name="497"><span class="lineNum">     497 </span>            :         }</a>
+<span class="lineNum">     498 </span>            : 
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :         if (server-&gt;readtag &gt; 0) {</span>
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :                 g_source_remove(server-&gt;readtag);</span>
+<a name="501"><span class="lineNum">     501 </span><span class="lineNoCov">          0 :                 server-&gt;readtag = -1;</span></a>
+<span class="lineNum">     502 </span>            :         }
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :         server_unref(server);</span>
+<a name="505"><span class="lineNum">     505 </span>            : }</a>
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineNoCov">          0 : void server_ref(SERVER_REC *server)</span>
+<span class="lineNum">     508 </span>            : {
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_SERVER(server));</span></a>
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :         server-&gt;refcount++;</span>
+<a name="512"><span class="lineNum">     512 </span>            : }</a>
+<a name="513"><span class="lineNum">     513 </span>            : </a>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 : int server_unref(SERVER_REC *server)</span>
+<span class="lineNum">     515 </span>            : {
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_SERVER(server), FALSE);</span>
+<a name="517"><span class="lineNum">     517 </span>            : </a>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :         if (--server-&gt;refcount &gt; 0)</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :                 return TRUE;</span>
+<span class="lineNum">     520 </span>            : 
+<a name="521"><span class="lineNum">     521 </span><span class="lineNoCov">          0 :         if (g_slist_find(servers, server) != NULL) {</span></a>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :                 g_warning(&quot;Non-referenced server wasn't disconnected&quot;);</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :                 server_disconnect(server);</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                 return TRUE;</span>
+<a name="525"><span class="lineNum">     525 </span>            :         }</a>
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :         MODULE_DATA_DEINIT(server);</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :         server_connect_unref(server-&gt;connrec);</span>
+<a name="529"><span class="lineNum">     529 </span><span class="lineNoCov">          0 :         if (server-&gt;rawlog != NULL) rawlog_destroy(server-&gt;rawlog);</span></a>
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :         g_free(server-&gt;version);</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :         g_free(server-&gt;away_reason);</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :         g_free(server-&gt;nick);</span>
+<a name="533"><span class="lineNum">     533 </span><span class="lineNoCov">          0 :         g_free(server-&gt;tag);</span></a>
+<span class="lineNum">     534 </span>            : 
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :         server-&gt;type = 0;</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :         g_free(server);</span>
+<a name="537"><span class="lineNum">     537 </span><span class="lineNoCov">          0 :         return FALSE;</span></a>
+<a name="538"><span class="lineNum">     538 </span>            : }</a>
+<span class="lineNum">     539 </span>            : 
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 : SERVER_REC *server_find_tag(const char *tag)</span>
+<a name="541"><span class="lineNum">     541 </span>            : {</a>
+<span class="lineNum">     542 </span>            :         GSList *tmp;
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(tag != NULL, NULL);</span>
+<a name="545"><span class="lineNum">     545 </span><span class="lineNoCov">          0 :         if (*tag == '\0') return NULL;</span></a>
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineNoCov">          0 :         for (tmp = servers; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :                 SERVER_REC *server = tmp-&gt;data;</span>
+<a name="549"><span class="lineNum">     549 </span>            : </a>
+<span class="lineNum">     550 </span><span class="lineNoCov">          0 :                 if (g_ascii_strcasecmp(server-&gt;tag, tag) == 0)</span>
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 :                         return server;</span>
+<span class="lineNum">     552 </span>            :         }
+<a name="553"><span class="lineNum">     553 </span>            : </a>
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="555"><span class="lineNum">     555 </span>            : }</a>
+<span class="lineNum">     556 </span>            : 
+<a name="557"><span class="lineNum">     557 </span><span class="lineNoCov">          0 : SERVER_REC *server_find_lookup_tag(const char *tag)</span></a>
+<span class="lineNum">     558 </span>            : {
+<span class="lineNum">     559 </span>            :         GSList *tmp;
+<span class="lineNum">     560 </span>            : 
+<a name="561"><span class="lineNum">     561 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(tag != NULL, NULL);</span></a>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :         if (*tag == '\0') return NULL;</span>
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :         for (tmp = lookup_servers; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="565"><span class="lineNum">     565 </span><span class="lineNoCov">          0 :                 SERVER_REC *server = tmp-&gt;data;</span></a>
+<span class="lineNum">     566 </span>            : 
+<span class="lineNum">     567 </span><span class="lineNoCov">          0 :                 if (g_ascii_strcasecmp(server-&gt;tag, tag) == 0)</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :                         return server;</span>
+<a name="569"><span class="lineNum">     569 </span>            :         }</a>
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="572"><span class="lineNum">     572 </span>            : }</a>
+<a name="573"><span class="lineNum">     573 </span>            : </a>
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 : SERVER_REC *server_find_chatnet(const char *chatnet)</span>
+<span class="lineNum">     575 </span>            : {
+<span class="lineNum">     576 </span>            :         GSList *tmp;
+<a name="577"><span class="lineNum">     577 </span>            : </a>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(chatnet != NULL, NULL);</span>
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :         if (*chatnet == '\0') return NULL;</span>
+<span class="lineNum">     580 </span>            : 
+<a name="581"><span class="lineNum">     581 </span><span class="lineNoCov">          0 :         for (tmp = servers; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     582 </span><span class="lineNoCov">          0 :                 SERVER_REC *server = tmp-&gt;data;</span>
+<span class="lineNum">     583 </span>            : 
+<span class="lineNum">     584 </span><span class="lineNoCov">          0 :                 if (server-&gt;connrec-&gt;chatnet != NULL &amp;&amp;</span>
+<a name="585"><span class="lineNum">     585 </span><span class="lineNoCov">          0 :                     g_ascii_strcasecmp(server-&gt;connrec-&gt;chatnet, chatnet) == 0)</span></a>
+<span class="lineNum">     586 </span><span class="lineNoCov">          0 :                         return server;</span>
+<span class="lineNum">     587 </span>            :         }
+<span class="lineNum">     588 </span>            : 
+<a name="589"><span class="lineNum">     589 </span><span class="lineNoCov">          0 :         return NULL;</span></a>
+<a name="590"><span class="lineNum">     590 </span>            : }</a>
+<span class="lineNum">     591 </span>            : 
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 : void server_connect_ref(SERVER_CONNECT_REC *conn)</span>
+<a name="593"><span class="lineNum">     593 </span>            : {</a>
+<span class="lineNum">     594 </span><span class="lineNoCov">          0 :         conn-&gt;refcount++;</span>
+<a name="595"><span class="lineNum">     595 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     596 </span>            : 
+<a name="597"><span class="lineNum">     597 </span><span class="lineNoCov">          0 : void server_connect_unref(SERVER_CONNECT_REC *conn)</span></a>
+<span class="lineNum">     598 </span>            : {
+<span class="lineNum">     599 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_SERVER_CONNECT(conn));</span>
+<span class="lineNum">     600 </span>            : 
+<a name="601"><span class="lineNum">     601 </span><span class="lineNoCov">          0 :         if (--conn-&gt;refcount &gt; 0)</span></a>
+<span class="lineNum">     602 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :         if (conn-&gt;refcount &lt; 0) {</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :                 g_warning(&quot;Connection '%s' refcount = %d&quot;,</span>
+<a name="605"><span class="lineNum">     605 </span>            :                           conn-&gt;tag, conn-&gt;refcount);</a>
+<span class="lineNum">     606 </span>            :         }
+<span class="lineNum">     607 </span>            : 
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :         CHAT_PROTOCOL(conn)-&gt;destroy_server_connect(conn);</span>
+<a name="609"><span class="lineNum">     609 </span>            : </a>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :         if (conn-&gt;connect_handle != NULL)</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :                 net_disconnect(conn-&gt;connect_handle);</span>
+<span class="lineNum">     612 </span>            : 
+<a name="613"><span class="lineNum">     613 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;proxy);</span></a>
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;proxy_string);</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;proxy_string_after);</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;proxy_password);</span>
+<a name="617"><span class="lineNum">     617 </span>            : </a>
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;tag);</span>
+<span class="lineNum">     619 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;address);</span>
+<span class="lineNum">     620 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;chatnet);</span>
+<a name="621"><span class="lineNum">     621 </span>            : </a>
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;own_ip4);</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;own_ip6);</span>
+<span class="lineNum">     624 </span>            : 
+<a name="625"><span class="lineNum">     625 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;password);</span></a>
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;nick);</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;username);</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;realname);</span>
+<a name="629"><span class="lineNum">     629 </span>            : </a>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;tls_cert);</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;tls_pkey);</span>
+<span class="lineNum">     632 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;tls_pass);</span>
+<a name="633"><span class="lineNum">     633 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;tls_cafile);</span></a>
+<span class="lineNum">     634 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;tls_capath);</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;tls_ciphers);</span>
+<span class="lineNum">     636 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;tls_pinned_cert);</span>
+<a name="637"><span class="lineNum">     637 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;tls_pinned_pubkey);</span></a>
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;channels);</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">          0 :         g_free_not_null(conn-&gt;away_reason);</span>
+<a name="641"><span class="lineNum">     641 </span>            : </a>
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 :         conn-&gt;type = 0;</span>
+<span class="lineNum">     643 </span><span class="lineNoCov">          0 :         g_free(conn);</span>
+<a name="644"><span class="lineNum">     644 </span>            : }</a>
+<a name="645"><span class="lineNum">     645 </span>            : </a>
+<span class="lineNum">     646 </span><span class="lineNoCov">          0 : void server_change_nick(SERVER_REC *server, const char *nick)</span>
+<span class="lineNum">     647 </span>            : {
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :         g_free(server-&gt;nick);</span>
+<a name="649"><span class="lineNum">     649 </span><span class="lineNoCov">          0 :         server-&gt;nick = g_strdup(nick);</span></a>
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :         signal_emit(&quot;server nick changed&quot;, 1, server);</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 : }</span>
+<a name="653"><span class="lineNum">     653 </span>            : </a>
+<span class="lineNum">     654 </span>            : /* Update own IPv4 and IPv6 records */
+<span class="lineNum">     655 </span><span class="lineNoCov">          0 : void server_connect_own_ip_save(SERVER_CONNECT_REC *conn,</span>
+<span class="lineNum">     656 </span>            :                                 IPADDR *ip4, IPADDR *ip6)
+<a name="657"><span class="lineNum">     657 </span>            : {</a>
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :         if (ip4 == NULL || ip4-&gt;family == 0)</span>
+<span class="lineNum">     659 </span><span class="lineNoCov">          0 :                 g_free_and_null(conn-&gt;own_ip4);</span>
+<span class="lineNum">     660 </span><span class="lineNoCov">          0 :         if (ip6 == NULL || ip6-&gt;family == 0)</span>
+<a name="661"><span class="lineNum">     661 </span><span class="lineNoCov">          0 :                 g_free_and_null(conn-&gt;own_ip6);</span></a>
+<span class="lineNum">     662 </span>            : 
+<span class="lineNum">     663 </span><span class="lineNoCov">          0 :         if (ip4 != NULL &amp;&amp; ip4-&gt;family != 0) {</span>
+<span class="lineNum">     664 </span>            :                 /* IPv4 address was found */
+<a name="665"><span class="lineNum">     665 </span><span class="lineNoCov">          0 :                 if (conn-&gt;own_ip4 == NULL)</span></a>
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :                         conn-&gt;own_ip4 = g_new0(IPADDR, 1);</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :                 memcpy(conn-&gt;own_ip4, ip4, sizeof(IPADDR));</span>
+<span class="lineNum">     668 </span>            :         }
+<a name="669"><span class="lineNum">     669 </span>            : </a>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :         if (ip6 != NULL &amp;&amp; ip6-&gt;family != 0) {</span>
+<span class="lineNum">     671 </span>            :                 /* IPv6 address was found */
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :                 if (conn-&gt;own_ip6 == NULL)</span>
+<a name="673"><span class="lineNum">     673 </span><span class="lineNoCov">          0 :                         conn-&gt;own_ip6 = g_new0(IPADDR, 1);</span></a>
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :                 memcpy(conn-&gt;own_ip6, ip6, sizeof(IPADDR));</span>
+<span class="lineNum">     675 </span>            :         }
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 : }</span>
+<a name="677"><span class="lineNum">     677 </span>            : </a>
+<a name="678"><span class="lineNum">     678 </span>            : /* `optlist' should contain only one unknown key - the server tag.</a>
+<span class="lineNum">     679 </span>            :    returns NULL if there was unknown -option */
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 : SERVER_REC *cmd_options_get_server(const char *cmd,</span>
+<a name="681"><span class="lineNum">     681 </span>            :                                    GHashTable *optlist,</a>
+<span class="lineNum">     682 </span>            :                                    SERVER_REC *defserver)
+<span class="lineNum">     683 </span>            : {
+<span class="lineNum">     684 </span>            :         SERVER_REC *server;
+<a name="685"><span class="lineNum">     685 </span>            :         GList *list;</a>
+<span class="lineNum">     686 </span>            : 
+<span class="lineNum">     687 </span>            :         /* get all the options, then remove the known ones. there should
+<span class="lineNum">     688 </span>            :            be only one left - the server tag. */
+<a name="689"><span class="lineNum">     689 </span><span class="lineNoCov">          0 :         list = optlist_remove_known(cmd, optlist);</span></a>
+<span class="lineNum">     690 </span><span class="lineNoCov">          0 :         if (list == NULL)</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">          0 :                 return defserver;</span>
+<span class="lineNum">     692 </span>            : 
+<a name="693"><span class="lineNum">     693 </span><span class="lineNoCov">          0 :         server = server_find_tag(list-&gt;data);</span></a>
+<span class="lineNum">     694 </span><span class="lineNoCov">          0 :         if (server == NULL || list-&gt;next != NULL) {</span>
+<span class="lineNum">     695 </span>            :                 /* unknown option (not server tag) */
+<span class="lineNum">     696 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;error command&quot;, 2,</span>
+<a name="697"><span class="lineNum">     697 </span>            :                             GINT_TO_POINTER(CMDERR_OPTION_UNKNOWN),</a>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :                             server == NULL ? list-&gt;data : list-&gt;next-&gt;data);</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">          0 :                 signal_stop();</span>
+<span class="lineNum">     700 </span>            : 
+<a name="701"><span class="lineNum">     701 </span><span class="lineNoCov">          0 :                 server = NULL;</span></a>
+<span class="lineNum">     702 </span>            :         }
+<span class="lineNum">     703 </span>            : 
+<span class="lineNum">     704 </span><span class="lineNoCov">          0 :         g_list_free(list);</span>
+<a name="705"><span class="lineNum">     705 </span><span class="lineNoCov">          0 :         return server;</span></a>
+<a name="706"><span class="lineNum">     706 </span>            : }</a>
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span><span class="lineCov">          2 : static void disconnect_servers(GSList *servers, int chat_type)</span>
+<a name="709"><span class="lineNum">     709 </span>            : {</a>
+<span class="lineNum">     710 </span>            :         GSList *tmp, *next;
+<span class="lineNum">     711 </span>            : 
+<span class="lineNum">     712 </span><span class="lineCov">          2 :         for (tmp = servers; tmp != NULL; tmp = next) {</span>
+<a name="713"><span class="lineNum">     713 </span><span class="lineNoCov">          0 :                 SERVER_REC *rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     714 </span>            : 
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">          0 :                 if (rec-&gt;chat_type == chat_type)</span>
+<a name="717"><span class="lineNum">     717 </span><span class="lineNoCov">          0 :                         server_disconnect(rec);</span></a>
+<span class="lineNum">     718 </span>            :         }
+<a name="719"><span class="lineNum">     719 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     720 </span>            : 
+<a name="721"><span class="lineNum">     721 </span><span class="lineCov">          1 : static void sig_chat_protocol_deinit(CHAT_PROTOCOL_REC *proto)</span></a>
+<span class="lineNum">     722 </span>            : {
+<span class="lineNum">     723 </span><span class="lineCov">          1 :         disconnect_servers(servers, proto-&gt;id);</span>
+<span class="lineNum">     724 </span><span class="lineCov">          1 :         disconnect_servers(lookup_servers, proto-&gt;id);</span>
+<a name="725"><span class="lineNum">     725 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     726 </span>            : 
+<span class="lineNum">     727 </span><span class="lineCov">          1 : void servers_init(void)</span>
+<span class="lineNum">     728 </span>            : {
+<a name="729"><span class="lineNum">     729 </span><span class="lineCov">          1 :         settings_add_bool(&quot;server&quot;, &quot;resolve_prefer_ipv6&quot;, FALSE);</span></a>
+<span class="lineNum">     730 </span><span class="lineCov">          1 :         settings_add_bool(&quot;server&quot;, &quot;resolve_reverse_lookup&quot;, FALSE);</span>
+<span class="lineNum">     731 </span><span class="lineCov">          1 :         lookup_servers = servers = NULL;</span>
+<span class="lineNum">     732 </span>            : 
+<a name="733"><span class="lineNum">     733 </span><span class="lineCov">          1 :         signal_add(&quot;chat protocol deinit&quot;, (SIGNAL_FUNC) sig_chat_protocol_deinit);</span></a>
+<span class="lineNum">     734 </span>            : 
+<span class="lineNum">     735 </span><span class="lineCov">          1 :         servers_reconnect_init();</span>
+<span class="lineNum">     736 </span><span class="lineCov">          1 :         servers_setup_init();</span>
+<a name="737"><span class="lineNum">     737 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     738 </span>            : 
+<span class="lineNum">     739 </span><span class="lineCov">          1 : void servers_deinit(void)</span>
+<span class="lineNum">     740 </span>            : {
+<a name="741"><span class="lineNum">     741 </span><span class="lineCov">          1 :         signal_remove(&quot;chat protocol deinit&quot;, (SIGNAL_FUNC) sig_chat_protocol_deinit);</span></a>
+<span class="lineNum">     742 </span>            : 
+<span class="lineNum">     743 </span><span class="lineCov">          1 :         servers_setup_deinit();</span>
+<span class="lineNum">     744 </span><span class="lineCov">          1 :         servers_reconnect_deinit();</span>
+<a name="745"><span class="lineNum">     745 </span>            : </a>
+<span class="lineNum">     746 </span><span class="lineCov">          1 :         module_uniq_destroy(&quot;SERVER&quot;);</span>
+<span class="lineNum">     747 </span><span class="lineCov">          1 :         module_uniq_destroy(&quot;SERVER CONNECT&quot;);</span>
+<span class="lineNum">     748 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

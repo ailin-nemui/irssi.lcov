@@ -1,0 +1,241 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/irc/fe-irc-server.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/irc</a> - fe-irc-server.c<span style="font-size: 80%;"> (source / <a href="fe-irc-server.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">79</td>
+            <td class="headerCovTableEntryLo">11.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntryLo">40.0 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  fe-irc-server.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;commands.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;misc.h&quot;</a>
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : #include &quot;servers-setup.h&quot;
+<span class="lineNum">      28 </span>            : 
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;levels.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;irc-chatnets.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;irc-servers.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;irc-channels.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;servers-reconnect.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;irc-servers-setup.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;fe-windows.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : #include &quot;printtext.h&quot;</a>
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span><span class="lineNoCov">          0 : const char *get_visible_target(IRC_SERVER_REC *server, const char *target)</span>
+<span class="lineNum">      40 </span>            : {
+<a name="41"><span class="lineNum">      41 </span>            :         IRC_CHANNEL_REC *channel;</a>
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :         if (*target == '!') {</span>
+<span class="lineNum">      44 </span>            :                 /* visible_name of !channels is different - don't bother
+<a name="45"><span class="lineNum">      45 </span>            :                    checking other types for now, they'll just slow up */</a>
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :                 channel = irc_channel_find(server, target);</span>
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :                 if (channel != NULL)</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :                         return channel-&gt;visible_name;</span>
+<a name="49"><span class="lineNum">      49 </span>            :         }</a>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :         return target;</span>
+<span class="lineNum">      52 </span>            : }
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<span class="lineNum">      54 </span>            : /* SYNTAX: SERVER ADD|MODIFY [-4 | -6] [-ssl] [-ssl_cert &lt;cert&gt;] [-ssl_pkey &lt;pkey&gt;] [-ssl_pass &lt;password&gt;]
+<span class="lineNum">      55 </span>            :                              [-ssl_verify] [-ssl_cafile &lt;cafile&gt;] [-ssl_capath &lt;capath&gt;]
+<span class="lineNum">      56 </span>            :                              [-ssl_ciphers &lt;list&gt;]
+<a name="57"><span class="lineNum">      57 </span>            :                              [-auto | -noauto] [-network &lt;network&gt;] [-host &lt;hostname&gt;]</a>
+<span class="lineNum">      58 </span>            :                              [-cmdspeed &lt;ms&gt;] [-cmdmax &lt;count&gt;] [-port &lt;port&gt;]
+<a name="59"><span class="lineNum">      59 </span>            :                              &lt;address&gt; [&lt;port&gt; [&lt;password&gt;]] */</a>
+<span class="lineNum">      60 </span>            : /* NOTE: -network replaces the old -ircnet flag. */
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 : static void sig_server_add_fill(IRC_SERVER_SETUP_REC *rec,</span></a>
+<span class="lineNum">      62 </span>            :                                 GHashTable *optlist)
+<span class="lineNum">      63 </span>            : {
+<span class="lineNum">      64 </span>            :         IRC_CHATNET_REC *ircnet;
+<a name="65"><span class="lineNum">      65 </span>            :         char *value;</a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :         value = g_hash_table_lookup(optlist, &quot;network&quot;);</span>
+<span class="lineNum">      68 </span>            :         /* For backwards compatibility, also allow the old name 'ircnet'.
+<a name="69"><span class="lineNum">      69 </span>            :            But of course only if -network was not given. */</a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :         if (!value)</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                 value = g_hash_table_lookup(optlist, &quot;ircnet&quot;);</span>
+<span class="lineNum">      72 </span>            : 
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :         if (value != NULL) {</span></a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :                 g_free_and_null(rec-&gt;chatnet);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :                 if (*value != '\0') {</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :                         ircnet = ircnet_find(value);</span>
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :                         rec-&gt;chatnet = ircnet != NULL ?</span></a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :                                 g_strdup(ircnet-&gt;name) : g_strdup(value);</span>
+<span class="lineNum">      79 </span>            :                 }
+<span class="lineNum">      80 </span>            :         }
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         value = g_hash_table_lookup(optlist, &quot;cmdspeed&quot;);</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :         if (value != NULL &amp;&amp; *value != '\0') rec-&gt;cmd_queue_speed = atoi(value);</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         value = g_hash_table_lookup(optlist, &quot;cmdmax&quot;);</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :         if (value != NULL &amp;&amp; *value != '\0') rec-&gt;max_cmds_at_once = atoi(value);</span></a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         value = g_hash_table_lookup(optlist, &quot;querychans&quot;);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :         if (value != NULL &amp;&amp; *value != '\0') rec-&gt;max_query_chans = atoi(value);</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 : }</span>
+<a name="89"><span class="lineNum">      89 </span>            : </a>
+<span class="lineNum">      90 </span>            : /* SYNTAX: SERVER LIST */
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 : static void cmd_server_list(const char *data)</span>
+<span class="lineNum">      92 </span>            : {
+<a name="93"><span class="lineNum">      93 </span>            :         GString *str;</a>
+<span class="lineNum">      94 </span>            :         GSList *tmp;
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         str = g_string_new(NULL);</span>
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :         printformat(NULL, NULL, MSGLEVEL_CLIENTCRAP, IRCTXT_SETUPSERVER_HEADER);</span></a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         for (tmp = setupservers; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :                 IRC_SERVER_SETUP_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     100 </span>            : 
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :                 if (!IS_IRC_SERVER_SETUP(rec))</span></a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                 g_string_truncate(str, 0);</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :                 if (rec-&gt;password != NULL)</span></a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :                         g_string_append(str, &quot;(pass), &quot;);</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :                 if (rec-&gt;autoconnect)</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                         g_string_append(str, &quot;autoconnect, &quot;);</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 if (rec-&gt;no_proxy)</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                         g_string_append(str, &quot;noproxy, &quot;);</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 if (rec-&gt;use_tls) {</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                         g_string_append(str, &quot;tls, &quot;);</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :                         if (rec-&gt;tls_cert) {</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :                                 g_string_append_printf(str, &quot;tls_cert: %s, &quot;, rec-&gt;tls_cert);</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                                 if (rec-&gt;tls_pkey)</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :                                         g_string_append_printf(str, &quot;tls_pkey: %s, &quot;, rec-&gt;tls_pkey);</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :                                 if (rec-&gt;tls_pass)</span></a>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :                                         g_string_append_printf(str, &quot;(pass), &quot;);</span>
+<span class="lineNum">     119 </span>            :                         }
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                         if (rec-&gt;tls_verify)</span>
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :                                 g_string_append(str, &quot;tls_verify, &quot;);</span></a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                         if (rec-&gt;tls_cafile)</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                                 g_string_append_printf(str, &quot;tls_cafile: %s, &quot;, rec-&gt;tls_cafile);</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                         if (rec-&gt;tls_capath)</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                                 g_string_append_printf(str, &quot;tls_capath: %s, &quot;, rec-&gt;tls_capath);</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :                         if (rec-&gt;tls_ciphers)</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                                 g_string_append_printf(str, &quot;tls_ciphers: %s, &quot;, rec-&gt;tls_ciphers);</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :                         if (rec-&gt;tls_pinned_cert)</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                                 g_string_append_printf(str, &quot;tls_pinned_cert: %s, &quot;, rec-&gt;tls_pinned_cert);</span></a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                         if (rec-&gt;tls_pinned_pubkey)</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                                 g_string_append_printf(str, &quot;tls_pinned_pubkey: %s, &quot;, rec-&gt;tls_pinned_pubkey);</span>
+<span class="lineNum">     132 </span>            : 
+<a name="133"><span class="lineNum">     133 </span>            :                 }</a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                 if (rec-&gt;max_cmds_at_once &gt; 0)</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                         g_string_append_printf(str, &quot;cmdmax: %d, &quot;, rec-&gt;max_cmds_at_once);</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                 if (rec-&gt;cmd_queue_speed &gt; 0)</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :                         g_string_append_printf(str, &quot;cmdspeed: %d, &quot;, rec-&gt;cmd_queue_speed);</span></a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 if (rec-&gt;max_query_chans &gt; 0)</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                         g_string_append_printf(str, &quot;querychans: %d, &quot;, rec-&gt;max_query_chans);</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 if (rec-&gt;own_host != NULL)</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :                         g_string_append_printf(str, &quot;host: %s, &quot;, rec-&gt;own_host);</span></a>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                 if (str-&gt;len &gt; 1) g_string_truncate(str, str-&gt;len-2);</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTCRAP, IRCTXT_SETUPSERVER_LINE,</span>
+<a name="145"><span class="lineNum">     145 </span>            :                             rec-&gt;address, rec-&gt;port,</a>
+<span class="lineNum">     146 </span>            :                             rec-&gt;chatnet == NULL ? &quot;&quot; : rec-&gt;chatnet,
+<span class="lineNum">     147 </span>            :                             str-&gt;str);
+<span class="lineNum">     148 </span>            :         }
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :         printformat(NULL, NULL, MSGLEVEL_CLIENTCRAP, IRCTXT_SETUPSERVER_FOOTER);</span></a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :         g_string_free(str, TRUE);</span>
+<a name="151"><span class="lineNum">     151 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     152 </span>            : 
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">          1 : void fe_irc_server_init(void)</span></a>
+<span class="lineNum">     154 </span>            : {
+<span class="lineNum">     155 </span><span class="lineCov">          1 :         signal_add(&quot;server add fill&quot;, (SIGNAL_FUNC) sig_server_add_fill);</span>
+<span class="lineNum">     156 </span><span class="lineCov">          1 :         command_bind(&quot;server list&quot;, NULL, (SIGNAL_FUNC) cmd_server_list);</span>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span><span class="lineCov">          1 :         command_set_options(&quot;server add&quot;, &quot;-ircnet -network -cmdspeed -cmdmax -querychans&quot;);</span>
+<a name="159"><span class="lineNum">     159 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">          1 : void fe_irc_server_deinit(void)</span></a>
+<span class="lineNum">     162 </span>            : {
+<span class="lineNum">     163 </span><span class="lineCov">          1 :         signal_remove(&quot;server add fill&quot;, (SIGNAL_FUNC) sig_server_add_fill);</span>
+<span class="lineNum">     164 </span><span class="lineCov">          1 :         command_unbind(&quot;server list&quot;, (SIGNAL_FUNC) cmd_server_list);</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

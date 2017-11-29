@@ -1,0 +1,392 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/core.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - core.c<span style="font-size: 80%;"> (source / <a href="core.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">108</td>
+            <td class="headerCovTableEntry">141</td>
+            <td class="headerCovTableEntryMed">76.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">12</td>
+            <td class="headerCovTableEntryMed">75.0 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  core.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &lt;signal.h&gt;
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : #include &quot;args.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;pidwait.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;net-disconnect.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;signals.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;session.h&quot;
+<span class="lineNum">      32 </span>            : #ifdef HAVE_CAPSICUM
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;capsicum.h&quot;</a>
+<span class="lineNum">      34 </span>            : #endif
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;chat-protocols.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : #include &quot;servers.h&quot;</a>
+<span class="lineNum">      38 </span>            : #include &quot;chatnets.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;expandos.h&quot;
+<a name="41"><span class="lineNum">      41 </span>            : #include &quot;write-buffer.h&quot;</a>
+<span class="lineNum">      42 </span>            : #include &quot;log.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;rawlog.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;ignore.h&quot;
+<a name="45"><span class="lineNum">      45 </span>            : #include &quot;recode.h&quot;</a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : #include &quot;channels.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;queries.h&quot;
+<a name="49"><span class="lineNum">      49 </span>            : #include &quot;nicklist.h&quot;</a>
+<span class="lineNum">      50 </span>            : #include &quot;nickmatch-cache.h&quot;
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : #ifdef HAVE_SYS_RESOURCE_H
+<a name="53"><span class="lineNum">      53 </span>            : #  include &lt;sys/resource.h&gt;</a>
+<span class="lineNum">      54 </span>            :    static struct rlimit orig_core_rlimit;
+<span class="lineNum">      55 </span>            : #endif
+<span class="lineNum">      56 </span>            : 
+<a name="57"><span class="lineNum">      57 </span>            : void chat_commands_init(void);</a>
+<span class="lineNum">      58 </span>            : void chat_commands_deinit(void);
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span>            : void log_away_init(void);
+<a name="61"><span class="lineNum">      61 </span>            : void log_away_deinit(void);</a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : int irssi_gui;
+<span class="lineNum">      64 </span>            : int irssi_init_finished;
+<a name="65"><span class="lineNum">      65 </span>            : int reload_config;</a>
+<span class="lineNum">      66 </span>            : time_t client_start_time;
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span>            : static char *irssi_dir, *irssi_config_file;
+<a name="69"><span class="lineNum">      69 </span>            : static GSList *dialog_type_queue, *dialog_text_queue;</a>
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span><span class="lineCov">          8 : const char *get_irssi_dir(void)</span>
+<span class="lineNum">      72 </span>            : {
+<a name="73"><span class="lineNum">      73 </span><span class="lineCov">          8 :         return irssi_dir;</span></a>
+<span class="lineNum">      74 </span>            : }
+<a name="75"><span class="lineNum">      75 </span>            : </a>
+<span class="lineNum">      76 </span>            : /* return full path for ~/.irssi/config */
+<a name="77"><span class="lineNum">      77 </span><span class="lineCov">          1 : const char *get_irssi_config(void)</span></a>
+<span class="lineNum">      78 </span>            : {
+<span class="lineNum">      79 </span><span class="lineCov">          1 :         return irssi_config_file;</span>
+<a name="80"><span class="lineNum">      80 </span>            : }</a>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 : static void sig_reload_config(int signo)</span>
+<span class="lineNum">      83 </span>            : {
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         reload_config = TRUE;</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span><span class="lineCov">          1 : static void read_settings(void)</span>
+<span class="lineNum">      88 </span>            : {
+<a name="89"><span class="lineNum">      89 </span>            :         static int signals[] = {</a>
+<span class="lineNum">      90 </span>            :                 SIGINT, SIGQUIT, SIGTERM,
+<span class="lineNum">      91 </span>            :                 SIGALRM, SIGUSR1, SIGUSR2
+<span class="lineNum">      92 </span>            :         };
+<a name="93"><span class="lineNum">      93 </span>            :         static char *signames[] = {</a>
+<span class="lineNum">      94 </span>            :                 &quot;int&quot;, &quot;quit&quot;, &quot;term&quot;,
+<span class="lineNum">      95 </span>            :                 &quot;alrm&quot;, &quot;usr1&quot;, &quot;usr2&quot;
+<span class="lineNum">      96 </span>            :         };
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span>            :         const char *ignores;
+<span class="lineNum">      99 </span>            :         struct sigaction act;
+<span class="lineNum">     100 </span>            :         int n;
+<a name="101"><span class="lineNum">     101 </span>            : </a>
+<span class="lineNum">     102 </span><span class="lineCov">          1 :         ignores = settings_get_str(&quot;ignore_signals&quot;);</span>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineCov">          1 :         sigemptyset (&amp;act.sa_mask);</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineCov">          1 :         act.sa_flags = 0;</span></a>
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span>            :         /* reload config on SIGHUP */
+<span class="lineNum">     108 </span><span class="lineCov">          1 :         act.sa_handler = sig_reload_config;</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineCov">          1 :         sigaction(SIGHUP, &amp;act, NULL);</span></a>
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineCov">          7 :         for (n = 0; n &lt; sizeof(signals)/sizeof(signals[0]); n++) {</span>
+<span class="lineNum">     112 </span><span class="lineCov">         12 :                 act.sa_handler = find_substr(ignores, signames[n]) ?</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineCov">          6 :                         SIG_IGN : SIG_DFL;</span></a>
+<span class="lineNum">     114 </span><span class="lineCov">          6 :                 sigaction(signals[n], &amp;act, NULL);</span>
+<span class="lineNum">     115 </span>            :         }
+<span class="lineNum">     116 </span>            : 
+<a name="117"><span class="lineNum">     117 </span>            : #ifdef HAVE_SYS_RESOURCE_H</a>
+<span class="lineNum">     118 </span><span class="lineCov">          1 :         if (!settings_get_bool(&quot;override_coredump_limit&quot;))</span>
+<span class="lineNum">     119 </span><span class="lineCov">          1 :                 setrlimit(RLIMIT_CORE, &amp;orig_core_rlimit);</span>
+<span class="lineNum">     120 </span>            :         else {
+<a name="121"><span class="lineNum">     121 </span>            :                 struct rlimit rlimit;</a>
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                 rlimit.rlim_cur = RLIM_INFINITY;</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                 rlimit.rlim_max = RLIM_INFINITY;</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 if (setrlimit(RLIMIT_CORE, &amp;rlimit) == -1)</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :                         settings_set_bool(&quot;override_coredump_limit&quot;, FALSE);</span>
+<span class="lineNum">     127 </span>            :         }
+<span class="lineNum">     128 </span>            : #endif
+<a name="129"><span class="lineNum">     129 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 : static void sig_gui_dialog(const char *type, const char *text)</span>
+<span class="lineNum">     132 </span>            : {
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :         dialog_type_queue = g_slist_append(dialog_type_queue, g_strdup(type));</span></a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :         dialog_text_queue = g_slist_append(dialog_text_queue, g_strdup(text));</span>
+<a name="135"><span class="lineNum">     135 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     136 </span>            : 
+<a name="137"><span class="lineNum">     137 </span><span class="lineCov">          1 : static void sig_init_finished(void)</span></a>
+<span class="lineNum">     138 </span>            : {
+<span class="lineNum">     139 </span>            :         GSList *type, *text;
+<span class="lineNum">     140 </span>            : 
+<a name="141"><span class="lineNum">     141 </span><span class="lineCov">          1 :         signal_remove(&quot;gui dialog&quot;, (SIGNAL_FUNC) sig_gui_dialog);</span></a>
+<span class="lineNum">     142 </span><span class="lineCov">          1 :         signal_remove(&quot;irssi init finished&quot;, (SIGNAL_FUNC) sig_init_finished);</span>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span>            :         /* send the dialog texts that were in queue before irssi
+<a name="145"><span class="lineNum">     145 </span>            :            was initialized */</a>
+<span class="lineNum">     146 </span><span class="lineCov">          1 :         type = dialog_type_queue;</span>
+<span class="lineNum">     147 </span><span class="lineCov">          1 :         text = dialog_text_queue;</span>
+<span class="lineNum">     148 </span><span class="lineCov">          1 :         for (; text != NULL; text = text-&gt;next, type = type-&gt;next) {</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;gui dialog&quot;, 2, type-&gt;data, text-&gt;data);</span></a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :                 g_free(type-&gt;data);</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :                 g_free(text-&gt;data);</span>
+<span class="lineNum">     152 </span>            :         }
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">          1 :         g_slist_free(dialog_type_queue);</span></a>
+<span class="lineNum">     154 </span><span class="lineCov">          1 :         g_slist_free(dialog_text_queue);</span>
+<a name="155"><span class="lineNum">     155 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     156 </span>            : 
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 : static char *fix_path(const char *str)</span></a>
+<span class="lineNum">     158 </span>            : {
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         char *new_str = convert_home(str);</span>
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :         if (!g_path_is_absolute(new_str)) {</span></a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :                 char *tmp_str = new_str;</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                 char *current_dir = g_get_current_dir();</span>
+<span class="lineNum">     164 </span>            : 
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 new_str = g_build_path(G_DIR_SEPARATOR_S, current_dir, tmp_str, NULL);</span></a>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :                 g_free(current_dir);</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :                 g_free(tmp_str);</span>
+<a name="169"><span class="lineNum">     169 </span>            :         }</a>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :         return new_str;</span>
+<a name="172"><span class="lineNum">     172 </span>            : }</a>
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<span class="lineNum">     174 </span><span class="lineCov">          1 : void core_register_options(void)</span>
+<span class="lineNum">     175 </span>            : {
+<span class="lineNum">     176 </span>            :         static GOptionEntry options[] = {
+<a name="177"><span class="lineNum">     177 </span>            :                 { &quot;config&quot;, 0, 0, G_OPTION_ARG_STRING, &amp;irssi_config_file, &quot;Configuration file location (~/.irssi/config)&quot;, &quot;PATH&quot; },</a>
+<span class="lineNum">     178 </span>            :                 { &quot;home&quot;, 0, 0, G_OPTION_ARG_STRING, &amp;irssi_dir, &quot;Irssi home dir location (~/.irssi)&quot;, &quot;PATH&quot; },
+<span class="lineNum">     179 </span>            :                 { NULL }
+<span class="lineNum">     180 </span>            :         };
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineCov">          1 :         args_register(options);</span>
+<span class="lineNum">     183 </span><span class="lineCov">          1 :         session_register_options();</span>
+<a name="184"><span class="lineNum">     184 </span><span class="lineCov">          1 : }</span></a>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<span class="lineNum">     186 </span><span class="lineCov">          1 : void core_preinit(const char *path)</span>
+<span class="lineNum">     187 </span>            : {
+<span class="lineNum">     188 </span>            :         const char *home;
+<a name="189"><span class="lineNum">     189 </span>            :         char *str;</a>
+<span class="lineNum">     190 </span>            :         int len;
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineCov">          1 :         if (irssi_dir == NULL) {</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineCov">          1 :                 home = g_get_home_dir();</span></a>
+<span class="lineNum">     194 </span><span class="lineCov">          1 :                 if (home == NULL)</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                         home = &quot;.&quot;;</span>
+<span class="lineNum">     196 </span>            : 
+<a name="197"><span class="lineNum">     197 </span><span class="lineCov">          1 :                 irssi_dir = g_strdup_printf(IRSSI_DIR_FULL, home);</span></a>
+<span class="lineNum">     198 </span>            :         } else {
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                 str = irssi_dir;</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 irssi_dir = fix_path(str);</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :                 g_free(str);</span></a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 len = strlen(irssi_dir);</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                 if (irssi_dir[len-1] == G_DIR_SEPARATOR)</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                         irssi_dir[len-1] = '\0';</span>
+<a name="205"><span class="lineNum">     205 </span>            :         }</a>
+<span class="lineNum">     206 </span><span class="lineCov">          1 :         if (irssi_config_file == NULL)</span>
+<span class="lineNum">     207 </span><span class="lineCov">          1 :                 irssi_config_file = g_strdup_printf(&quot;%s/&quot;IRSSI_HOME_CONFIG, irssi_dir);</span>
+<span class="lineNum">     208 </span>            :         else {
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :                 str = irssi_config_file;</span></a>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 irssi_config_file = fix_path(str);</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 g_free(str);</span>
+<span class="lineNum">     212 </span>            :         }
+<a name="213"><span class="lineNum">     213 </span>            : </a>
+<span class="lineNum">     214 </span><span class="lineCov">          1 :         session_set_binary(path);</span>
+<a name="215"><span class="lineNum">     215 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     216 </span>            : 
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">          1 : static void sig_irssi_init_finished(void)</span></a>
+<span class="lineNum">     218 </span>            : {
+<span class="lineNum">     219 </span><span class="lineCov">          1 :         irssi_init_finished = TRUE;</span>
+<a name="220"><span class="lineNum">     220 </span><span class="lineCov">          1 : }</span></a>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span><span class="lineCov">          1 : void core_init(void)</span>
+<span class="lineNum">     223 </span>            : {
+<span class="lineNum">     224 </span><span class="lineCov">          1 :         dialog_type_queue = NULL;</span>
+<a name="225"><span class="lineNum">     225 </span><span class="lineCov">          1 :         dialog_text_queue = NULL;</span></a>
+<span class="lineNum">     226 </span><span class="lineCov">          1 :         client_start_time = time(NULL);</span>
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineCov">          1 :         modules_init();</span>
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">          1 :         pidwait_init();</span></a>
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineCov">          1 :         net_disconnect_init();</span>
+<span class="lineNum">     232 </span><span class="lineCov">          1 :         signals_init();</span>
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<span class="lineNum">     234 </span><span class="lineCov">          1 :         signal_add_first(&quot;gui dialog&quot;, (SIGNAL_FUNC) sig_gui_dialog);</span>
+<span class="lineNum">     235 </span><span class="lineCov">          1 :         signal_add_first(&quot;irssi init finished&quot;, (SIGNAL_FUNC) sig_init_finished);</span>
+<span class="lineNum">     236 </span>            : 
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">          1 :         settings_init();</span></a>
+<span class="lineNum">     238 </span><span class="lineCov">          1 :         commands_init();</span>
+<span class="lineNum">     239 </span><span class="lineCov">          1 :         nickmatch_cache_init();</span>
+<span class="lineNum">     240 </span><span class="lineCov">          1 :         session_init();</span>
+<a name="241"><span class="lineNum">     241 </span>            : #ifdef HAVE_CAPSICUM</a>
+<span class="lineNum">     242 </span>            :         capsicum_init();
+<span class="lineNum">     243 </span>            : #endif
+<span class="lineNum">     244 </span>            : 
+<a name="245"><span class="lineNum">     245 </span><span class="lineCov">          1 :         chat_protocols_init();</span></a>
+<span class="lineNum">     246 </span><span class="lineCov">          1 :         chatnets_init();</span>
+<span class="lineNum">     247 </span><span class="lineCov">          1 :         expandos_init();</span>
+<span class="lineNum">     248 </span><span class="lineCov">          1 :         ignore_init();</span>
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">          1 :         servers_init();</span></a>
+<span class="lineNum">     250 </span><span class="lineCov">          1 :         write_buffer_init();</span>
+<span class="lineNum">     251 </span><span class="lineCov">          1 :         log_init();</span>
+<span class="lineNum">     252 </span><span class="lineCov">          1 :         log_away_init();</span>
+<a name="253"><span class="lineNum">     253 </span><span class="lineCov">          1 :         rawlog_init();</span></a>
+<span class="lineNum">     254 </span><span class="lineCov">          1 :         recode_init();</span>
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span><span class="lineCov">          1 :         channels_init();</span>
+<a name="257"><span class="lineNum">     257 </span><span class="lineCov">          1 :         queries_init();</span></a>
+<span class="lineNum">     258 </span><span class="lineCov">          1 :         nicklist_init();</span>
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineCov">          1 :         chat_commands_init();</span>
+<a name="261"><span class="lineNum">     261 </span>            : </a>
+<span class="lineNum">     262 </span><span class="lineCov">          1 :         settings_add_str(&quot;misc&quot;, &quot;ignore_signals&quot;, &quot;&quot;);</span>
+<span class="lineNum">     263 </span><span class="lineCov">          1 :         settings_add_bool(&quot;misc&quot;, &quot;override_coredump_limit&quot;, FALSE);</span>
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span>            : #ifdef HAVE_SYS_RESOURCE_H</a>
+<span class="lineNum">     266 </span><span class="lineCov">          1 :         getrlimit(RLIMIT_CORE, &amp;orig_core_rlimit);</span>
+<span class="lineNum">     267 </span>            : #endif
+<span class="lineNum">     268 </span><span class="lineCov">          1 :         read_settings();</span>
+<a name="269"><span class="lineNum">     269 </span><span class="lineCov">          1 :         signal_add(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span></a>
+<span class="lineNum">     270 </span><span class="lineCov">          1 :         signal_add(&quot;irssi init finished&quot;, (SIGNAL_FUNC) sig_irssi_init_finished);</span>
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">          1 :         settings_check();</span>
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<span class="lineNum">     274 </span><span class="lineCov">          1 :         module_register(&quot;core&quot;, &quot;core&quot;);</span>
+<a name="275"><span class="lineNum">     275 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     276 </span>            : 
+<a name="277"><span class="lineNum">     277 </span><span class="lineCov">          1 : void core_deinit(void)</span></a>
+<span class="lineNum">     278 </span>            : {
+<span class="lineNum">     279 </span><span class="lineCov">          1 :         module_uniq_destroy(&quot;WINDOW ITEM TYPE&quot;);</span>
+<span class="lineNum">     280 </span>            : 
+<a name="281"><span class="lineNum">     281 </span><span class="lineCov">          1 :         signal_remove(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span></a>
+<span class="lineNum">     282 </span><span class="lineCov">          1 :         signal_remove(&quot;irssi init finished&quot;, (SIGNAL_FUNC) sig_irssi_init_finished);</span>
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span><span class="lineCov">          1 :         chat_commands_deinit();</span>
+<a name="285"><span class="lineNum">     285 </span>            : </a>
+<span class="lineNum">     286 </span><span class="lineCov">          1 :         nicklist_deinit();</span>
+<span class="lineNum">     287 </span><span class="lineCov">          1 :         queries_deinit();</span>
+<span class="lineNum">     288 </span><span class="lineCov">          1 :         channels_deinit();</span>
+<a name="289"><span class="lineNum">     289 </span>            : </a>
+<span class="lineNum">     290 </span><span class="lineCov">          1 :         recode_deinit();</span>
+<span class="lineNum">     291 </span><span class="lineCov">          1 :         rawlog_deinit();</span>
+<span class="lineNum">     292 </span><span class="lineCov">          1 :         log_away_deinit();</span>
+<a name="293"><span class="lineNum">     293 </span><span class="lineCov">          1 :         log_deinit();</span></a>
+<span class="lineNum">     294 </span><span class="lineCov">          1 :         write_buffer_deinit();</span>
+<span class="lineNum">     295 </span><span class="lineCov">          1 :         servers_deinit();</span>
+<span class="lineNum">     296 </span><span class="lineCov">          1 :         ignore_deinit();</span>
+<a name="297"><span class="lineNum">     297 </span><span class="lineCov">          1 :         expandos_deinit();</span></a>
+<span class="lineNum">     298 </span><span class="lineCov">          1 :         chatnets_deinit();</span>
+<span class="lineNum">     299 </span><span class="lineCov">          1 :         chat_protocols_deinit();</span>
+<span class="lineNum">     300 </span>            : 
+<a name="301"><span class="lineNum">     301 </span>            : #ifdef HAVE_CAPSICUM</a>
+<span class="lineNum">     302 </span>            :         capsicum_deinit();
+<span class="lineNum">     303 </span>            : #endif
+<span class="lineNum">     304 </span><span class="lineCov">          1 :         session_deinit();</span>
+<a name="305"><span class="lineNum">     305 </span><span class="lineCov">          1 :         nickmatch_cache_deinit();</span></a>
+<span class="lineNum">     306 </span><span class="lineCov">          1 :         commands_deinit();</span>
+<span class="lineNum">     307 </span><span class="lineCov">          1 :         settings_deinit();</span>
+<span class="lineNum">     308 </span><span class="lineCov">          1 :         signals_deinit();</span>
+<a name="309"><span class="lineNum">     309 </span><span class="lineCov">          1 :         net_disconnect_deinit();</span></a>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineCov">          1 :         pidwait_deinit();</span>
+<span class="lineNum">     312 </span><span class="lineCov">          1 :         modules_deinit();</span>
+<a name="313"><span class="lineNum">     313 </span>            : </a>
+<span class="lineNum">     314 </span><span class="lineCov">          1 :         g_free(irssi_dir);</span>
+<span class="lineNum">     315 </span><span class="lineCov">          1 :         g_free(irssi_config_file);</span>
+<span class="lineNum">     316 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

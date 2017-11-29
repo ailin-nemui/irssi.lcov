@@ -1,0 +1,286 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-text/term.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-text</a> - term.c<span style="font-size: 80%;"> (source / <a href="term.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">52</td>
+            <td class="headerCovTableEntry">80</td>
+            <td class="headerCovTableEntryLo">65.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntryLo">62.5 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  term.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;settings.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : </a>
+<span class="lineNum">      26 </span>            : #include &quot;term.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;mainwindows.h&quot;
+<span class="lineNum">      28 </span>            : 
+<a name="29"><span class="lineNum">      29 </span>            : #ifdef HAVE_SYS_IOCTL_H</a>
+<span class="lineNum">      30 </span>            : #  include &lt;sys/ioctl.h&gt;
+<span class="lineNum">      31 </span>            : #endif
+<span class="lineNum">      32 </span>            : #include &lt;signal.h&gt;
+<a name="33"><span class="lineNum">      33 </span>            : #include &lt;termios.h&gt;</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #define MIN_SCREEN_WIDTH 20
+<span class="lineNum">      36 </span>            : 
+<a name="37"><span class="lineNum">      37 </span>            : int term_width, term_height;</a>
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : int term_use_colors;
+<span class="lineNum">      40 </span>            : int term_use_colors24;
+<a name="41"><span class="lineNum">      41 </span>            : int term_type;</a>
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : static int force_colors;
+<a name="44"><span class="lineNum">      44 </span>            : static int resize_dirty;</a>
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span><span class="lineCov">          1 : int term_get_size(int *width, int *height)</span>
+<span class="lineNum">      47 </span>            : {
+<span class="lineNum">      48 </span>            : #ifdef TIOCGWINSZ
+<a name="49"><span class="lineNum">      49 </span>            :         struct winsize ws;</a>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            :         /* Get new window size */
+<span class="lineNum">      52 </span><span class="lineCov">          1 :         if (ioctl(0, TIOCGWINSZ, &amp;ws) &lt; 0)</span>
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :                 return FALSE;</span></a>
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span><span class="lineCov">          1 :         if (ws.ws_row == 0 &amp;&amp; ws.ws_col == 0)</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<span class="lineNum">      58 </span><span class="lineCov">          1 :         *width = ws.ws_col;</span>
+<span class="lineNum">      59 </span><span class="lineCov">          1 :         *height = ws.ws_row;</span>
+<span class="lineNum">      60 </span>            : 
+<a name="61"><span class="lineNum">      61 </span><span class="lineCov">          1 :         if (*width &lt; MIN_SCREEN_WIDTH)</span></a>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :                 *width = MIN_SCREEN_WIDTH;</span>
+<span class="lineNum">      63 </span><span class="lineCov">          1 :         if (*height &lt; 1)</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 *height = 1;</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineCov">          1 :         return TRUE;</span></a>
+<span class="lineNum">      66 </span>            : #else
+<span class="lineNum">      67 </span>            :         return FALSE;
+<span class="lineNum">      68 </span>            : #endif
+<a name="69"><span class="lineNum">      69 </span>            : }</a>
+<a name="70"><span class="lineNum">      70 </span>            : </a>
+<span class="lineNum">      71 </span>            : /* Resize the terminal if needed */
+<span class="lineNum">      72 </span><span class="lineCov">          3 : void term_resize_dirty(void)</span>
+<a name="73"><span class="lineNum">      73 </span>            : {</a>
+<span class="lineNum">      74 </span>            :         int width, height;
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineCov">          3 :         if (!resize_dirty)</span>
+<a name="77"><span class="lineNum">      77 </span><span class="lineCov">          3 :                 return;</span></a>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         resize_dirty = FALSE;</span>
+<span class="lineNum">      80 </span>            : 
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :         if (!term_get_size(&amp;width, &amp;height))</span></a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :                 width = height = -1;</span>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         if (height != term_height || width != term_width) {</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :                 term_resize(width, height);</span></a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                 mainwindows_resize(term_width, term_height);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 term_resize_final(width, height);</span>
+<span class="lineNum">      88 </span>            :         }
+<a name="89"><span class="lineNum">      89 </span>            : }</a>
+<a name="90"><span class="lineNum">      90 </span>            : </a>
+<span class="lineNum">      91 </span>            : #ifdef SIGWINCH
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 : static void sig_winch(int p)</span>
+<a name="93"><span class="lineNum">      93 </span>            : {</a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :         irssi_set_dirty();</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         resize_dirty = TRUE;</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 : }</span>
+<a name="97"><span class="lineNum">      97 </span>            : #endif</a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 : static void cmd_resize(void)</span>
+<span class="lineNum">     100 </span>            : {
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :         resize_dirty = TRUE;</span></a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :         term_resize_dirty();</span>
+<a name="103"><span class="lineNum">     103 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     104 </span>            : 
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 : static void cmd_redraw(void)</span></a>
+<span class="lineNum">     106 </span>            : {
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         irssi_redraw();</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 : }</span>
+<a name="109"><span class="lineNum">     109 </span>            : </a>
+<span class="lineNum">     110 </span>            : int term_color256map[] = {
+<span class="lineNum">     111 </span>            :          0, 4, 2, 6, 1, 5, 3, 7, 8,12,10,14, 9,13,11,15,
+<span class="lineNum">     112 </span>            :          0, 0, 1, 1, 1, 1, 0, 0, 3, 1, 1, 9, 2, 2, 3, 3, 3, 3,
+<a name="113"><span class="lineNum">     113 </span>            :          2, 2, 3, 3, 3, 3, 2, 2, 3, 3, 3,11,10,10, 3, 3,11,11,</a>
+<span class="lineNum">     114 </span>            :          0, 0, 5, 1, 1, 9, 0, 8, 8, 8, 9, 9, 2, 8, 8, 8, 9, 9,
+<span class="lineNum">     115 </span>            :          2, 8, 8, 8, 9, 9, 2, 8, 8, 3, 3,11,10,10, 3, 3,11,11,
+<span class="lineNum">     116 </span>            :          4, 4, 5, 5, 5, 5, 4, 8, 8, 8, 9, 9, 6, 8, 8, 8, 9, 9,
+<a name="117"><span class="lineNum">     117 </span>            :          6, 8, 8, 8, 8, 9, 6, 8, 8, 8, 7, 7, 6, 6, 8, 7, 7, 7,</a>
+<span class="lineNum">     118 </span>            :          4, 4, 5, 5, 5, 5, 4, 8, 8, 8, 9, 9, 6, 8, 8, 8, 8, 9,
+<span class="lineNum">     119 </span>            :          6, 8, 8, 8, 7, 7, 6, 6, 8, 7, 7, 7, 6, 6, 7, 7, 7, 7,
+<span class="lineNum">     120 </span>            :          4, 4, 5, 5, 5,13, 4, 8, 8, 5, 5,13, 6, 8, 8, 8, 7, 7,
+<a name="121"><span class="lineNum">     121 </span>            :          6, 6, 8, 7, 7, 7, 6, 6, 7, 7, 7, 7,14,14, 7, 7, 7, 7,</a>
+<span class="lineNum">     122 </span>            :         12,12, 5, 5,13,13,12,12, 5, 5,13,13, 6, 6, 8, 7, 7, 7,
+<span class="lineNum">     123 </span>            :          6, 6, 7, 7, 7, 7,14,14, 7, 7, 7, 7,14,14, 7, 7, 7,15,
+<span class="lineNum">     124 </span>            :          0, 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+<a name="125"><span class="lineNum">     125 </span>            :          7, 7, 7, 7, 7, 7, 0 };</a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineCov">          1 : static void read_settings(void)</span>
+<span class="lineNum">     128 </span>            : {
+<a name="129"><span class="lineNum">     129 </span>            :         const char *str;</a>
+<span class="lineNum">     130 </span><span class="lineCov">          1 :         int old_colors = term_use_colors;</span>
+<span class="lineNum">     131 </span><span class="lineCov">          1 :         int old_colors24 = term_use_colors24;</span>
+<span class="lineNum">     132 </span><span class="lineCov">          1 :         int old_type = term_type;</span>
+<a name="133"><span class="lineNum">     133 </span>            : </a>
+<span class="lineNum">     134 </span>            :         /* set terminal type */
+<span class="lineNum">     135 </span><span class="lineCov">          1 :         str = settings_get_str(&quot;term_charset&quot;);</span>
+<span class="lineNum">     136 </span><span class="lineCov">          1 :         if (g_ascii_strcasecmp(str, &quot;utf-8&quot;) == 0)</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineCov">          1 :                 term_type = TERM_TYPE_UTF8;</span></a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :         else if (g_ascii_strcasecmp(str, &quot;big5&quot;) == 0)</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                 term_type = TERM_TYPE_BIG5;</span>
+<span class="lineNum">     140 </span>            :         else
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 term_type = TERM_TYPE_8BIT;</span></a>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineCov">          1 :         if (old_type != term_type)</span>
+<span class="lineNum">     144 </span><span class="lineCov">          1 :                 term_set_input_type(term_type);</span>
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span>            :         /* change color stuff */
+<span class="lineNum">     147 </span><span class="lineCov">          1 :         if (force_colors != settings_get_bool(&quot;term_force_colors&quot;)) {</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 force_colors = settings_get_bool(&quot;term_force_colors&quot;);</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :                 term_force_colors(force_colors);</span></a>
+<span class="lineNum">     150 </span>            :         }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineCov">          3 :         term_use_colors = settings_get_bool(&quot;colors&quot;) &amp;&amp;</span>
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">          2 :                 (force_colors || term_has_colors());</span></a>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span>            : #ifdef TERM_TRUECOLOR
+<span class="lineNum">     156 </span>            :         term_use_colors24 = settings_get_bool(&quot;colors_ansi_24bit&quot;) &amp;&amp;
+<a name="157"><span class="lineNum">     157 </span>            :                 (force_colors || term_has_colors());</a>
+<span class="lineNum">     158 </span>            : #else
+<span class="lineNum">     159 </span><span class="lineCov">          1 :         term_use_colors24 = FALSE;</span>
+<span class="lineNum">     160 </span>            : #endif
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<span class="lineNum">     162 </span><span class="lineCov">          1 :         if (term_use_colors != old_colors || term_use_colors24 != old_colors24)</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                 irssi_redraw();</span>
+<a name="164"><span class="lineNum">     164 </span><span class="lineCov">          1 : }</span></a>
+<a name="165"><span class="lineNum">     165 </span>            : </a>
+<span class="lineNum">     166 </span><span class="lineCov">          1 : void term_common_init(void)</span>
+<span class="lineNum">     167 </span>            : {
+<span class="lineNum">     168 </span>            :         const char *dummy;
+<a name="169"><span class="lineNum">     169 </span>            : #ifdef SIGWINCH</a>
+<span class="lineNum">     170 </span>            :         struct sigaction act;
+<span class="lineNum">     171 </span>            : #endif
+<span class="lineNum">     172 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;colors&quot;, TRUE);</span>
+<a name="173"><span class="lineNum">     173 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;term_force_colors&quot;, FALSE);</span></a>
+<span class="lineNum">     174 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;mirc_blink_fix&quot;, FALSE);</span>
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineCov">          1 :         force_colors = FALSE;</span>
+<a name="177"><span class="lineNum">     177 </span><span class="lineCov">          1 :         term_use_colors = term_has_colors() &amp;&amp; settings_get_bool(&quot;colors&quot;);</span></a>
+<span class="lineNum">     178 </span>            : #ifdef TERM_TRUECOLOR
+<span class="lineNum">     179 </span>            :         settings_add_bool(&quot;lookandfeel&quot;, &quot;colors_ansi_24bit&quot;, FALSE);
+<span class="lineNum">     180 </span>            :         term_use_colors24 = term_has_colors() &amp;&amp; settings_get_bool(&quot;colors_ansi_24bit&quot;);
+<a name="181"><span class="lineNum">     181 </span>            : #else</a>
+<span class="lineNum">     182 </span><span class="lineCov">          1 :         term_use_colors24 = FALSE;</span>
+<span class="lineNum">     183 </span>            : #endif
+<span class="lineNum">     184 </span><span class="lineCov">          1 :         read_settings();</span>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<span class="lineNum">     186 </span><span class="lineCov">          1 :         if (g_get_charset(&amp;dummy)) {</span>
+<span class="lineNum">     187 </span><span class="lineCov">          1 :                 term_type = TERM_TYPE_UTF8;</span>
+<span class="lineNum">     188 </span><span class="lineCov">          1 :                 term_set_input_type(TERM_TYPE_UTF8);</span>
+<a name="189"><span class="lineNum">     189 </span>            :         }</a>
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineCov">          1 :         signal_add(&quot;beep&quot;, (SIGNAL_FUNC) term_beep);</span>
+<span class="lineNum">     192 </span><span class="lineCov">          1 :         signal_add(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineCov">          1 :         command_bind(&quot;resize&quot;, NULL, (SIGNAL_FUNC) cmd_resize);</span></a>
+<span class="lineNum">     194 </span><span class="lineCov">          1 :         command_bind(&quot;redraw&quot;, NULL, (SIGNAL_FUNC) cmd_redraw);</span>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span>            : #ifdef SIGWINCH
+<a name="197"><span class="lineNum">     197 </span><span class="lineCov">          1 :         sigemptyset (&amp;act.sa_mask);</span></a>
+<span class="lineNum">     198 </span><span class="lineCov">          1 :         act.sa_flags = 0;</span>
+<span class="lineNum">     199 </span><span class="lineCov">          1 :         act.sa_handler = sig_winch;</span>
+<span class="lineNum">     200 </span><span class="lineCov">          1 :         sigaction(SIGWINCH, &amp;act, NULL);</span>
+<a name="201"><span class="lineNum">     201 </span>            : #endif</a>
+<a name="202"><span class="lineNum">     202 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span><span class="lineCov">          1 : void term_common_deinit(void)</span>
+<a name="205"><span class="lineNum">     205 </span>            : {</a>
+<span class="lineNum">     206 </span><span class="lineCov">          1 :         command_unbind(&quot;resize&quot;, (SIGNAL_FUNC) cmd_resize);</span>
+<span class="lineNum">     207 </span><span class="lineCov">          1 :         command_unbind(&quot;redraw&quot;, (SIGNAL_FUNC) cmd_redraw);</span>
+<span class="lineNum">     208 </span><span class="lineCov">          1 :         signal_remove(&quot;beep&quot;, (SIGNAL_FUNC) term_beep);</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineCov">          1 :         signal_remove(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span></a>
+<span class="lineNum">     210 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

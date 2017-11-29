@@ -1,0 +1,233 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/net-disconnect.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - net-disconnect.c<span style="font-size: 80%;"> (source / <a href="net-disconnect.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">59</td>
+            <td class="headerCovTableEntryLo">15.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntryLo">33.3 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  net-disconnect.c :
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;network.h&quot;
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : /* when quitting, wait for max. 5 seconds before forcing to close the socket */
+<a name="25"><span class="lineNum">      25 </span>            : #define MAX_QUIT_CLOSE_WAIT 5</a>
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : /* wait for max. 2 minutes for other side to close the socket */
+<span class="lineNum">      28 </span>            : #define MAX_CLOSE_WAIT (60*2)
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<span class="lineNum">      30 </span>            : typedef struct {
+<span class="lineNum">      31 </span>            :         time_t created;
+<span class="lineNum">      32 </span>            :         GIOChannel *handle;
+<a name="33"><span class="lineNum">      33 </span>            :         int tag;</a>
+<span class="lineNum">      34 </span>            : } NET_DISCONNECT_REC;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : static GSList *disconnects;
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<a name="38"><span class="lineNum">      38 </span>            : static int timeout_tag;</a>
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span><span class="lineNoCov">          0 : static void net_disconnect_remove(NET_DISCONNECT_REC *rec)</span>
+<a name="41"><span class="lineNum">      41 </span>            : {</a>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 :         disconnects = g_slist_remove(disconnects, rec);</span>
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :         g_source_remove(rec-&gt;tag);</span>
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :         net_disconnect(rec-&gt;handle);</span></a>
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :         g_free(rec);</span>
+<a name="47"><span class="lineNum">      47 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 : static void sig_disconnect(NET_DISCONNECT_REC *rec)</span></a>
+<span class="lineNum">      50 </span>            : {
+<span class="lineNum">      51 </span>            :         char buf[512];
+<span class="lineNum">      52 </span>            :         int count, ret;
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<span class="lineNum">      54 </span>            :         /* check if there's any data waiting in socket. read max. 5kB so
+<span class="lineNum">      55 </span>            :            if server just keeps sending us stuff we won't get stuck */
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :         count = 0;</span>
+<a name="57"><span class="lineNum">      57 </span>            :         do {</a>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :                 ret = net_receive(rec-&gt;handle, buf, sizeof(buf));</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :                 if (ret == -1) {</span>
+<span class="lineNum">      60 </span>            :                         /* socket was closed */
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :                         net_disconnect_remove(rec);</span></a>
+<span class="lineNum">      62 </span>            :                 }
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :                 count++;</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :         } while (ret == sizeof(buf) &amp;&amp; count &lt; 10);</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 : static int sig_timeout_disconnect(void)</span>
+<span class="lineNum">      68 </span>            : {
+<a name="69"><span class="lineNum">      69 </span>            :         NET_DISCONNECT_REC *rec;</a>
+<span class="lineNum">      70 </span>            :         GSList *tmp, *next;
+<span class="lineNum">      71 </span>            :         time_t now;
+<span class="lineNum">      72 </span>            : 
+<a name="73"><span class="lineNum">      73 </span>            :         /* check if we've waited enough for sockets to close themselves */</a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         now = time(NULL);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         for (tmp = disconnects; tmp != NULL; tmp = next) {</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :                 rec = tmp-&gt;data;</span>
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span></a>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :                 if (rec-&gt;created+MAX_CLOSE_WAIT &lt;= now)</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :                         net_disconnect_remove(rec);</span>
+<a name="81"><span class="lineNum">      81 </span>            :         }</a>
+<span class="lineNum">      82 </span>            : 
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :         if (disconnects == NULL) {</span>
+<span class="lineNum">      84 </span>            :                 /* no more sockets in disconnect queue, stop calling this
+<a name="85"><span class="lineNum">      85 </span>            :                    function */</a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                 timeout_tag = -1;</span>
+<span class="lineNum">      87 </span>            :         }
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         return disconnects != NULL;</span>
+<a name="89"><span class="lineNum">      89 </span>            : }</a>
+<span class="lineNum">      90 </span>            : 
+<a name="91"><span class="lineNum">      91 </span>            : /* Try to let the other side close the connection, if it still isn't</a>
+<span class="lineNum">      92 </span>            :    disconnected after certain amount of time, close it ourself */
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 : void net_disconnect_later(GIOChannel *handle)</span></a>
+<span class="lineNum">      94 </span>            : {
+<span class="lineNum">      95 </span>            :         NET_DISCONNECT_REC *rec;
+<span class="lineNum">      96 </span>            : 
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :         rec = g_new(NET_DISCONNECT_REC, 1);</span></a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         rec-&gt;created = time(NULL);</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         rec-&gt;handle = handle;</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :         rec-&gt;tag = g_input_add(handle, G_INPUT_READ,</span>
+<a name="101"><span class="lineNum">     101 </span>            :                                (GInputFunction) sig_disconnect, rec);</a>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :         if (timeout_tag == -1) {</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                 timeout_tag = g_timeout_add(10000, (GSourceFunc)</span>
+<a name="105"><span class="lineNum">     105 </span>            :                                             sig_timeout_disconnect, NULL);</a>
+<span class="lineNum">     106 </span>            :         }
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         disconnects = g_slist_append(disconnects, rec);</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineCov">          1 : void net_disconnect_init(void)</span>
+<span class="lineNum">     112 </span>            : {
+<a name="113"><span class="lineNum">     113 </span><span class="lineCov">          1 :         disconnects = NULL;</span></a>
+<span class="lineNum">     114 </span><span class="lineCov">          1 :         timeout_tag = -1;</span>
+<a name="115"><span class="lineNum">     115 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     116 </span>            : 
+<a name="117"><span class="lineNum">     117 </span><span class="lineCov">          1 : void net_disconnect_deinit(void)</span></a>
+<span class="lineNum">     118 </span>            : {
+<span class="lineNum">     119 </span>            :         NET_DISCONNECT_REC *rec;
+<span class="lineNum">     120 </span>            :         time_t now, max;
+<a name="121"><span class="lineNum">     121 </span>            :         int first, fd;</a>
+<span class="lineNum">     122 </span>            :         struct timeval tv;
+<span class="lineNum">     123 </span>            :         fd_set set;
+<span class="lineNum">     124 </span>            : 
+<a name="125"><span class="lineNum">     125 </span>            :         /* give the sockets a chance to disconnect themselves.. */</a>
+<span class="lineNum">     126 </span><span class="lineCov">          1 :         max = time(NULL)+MAX_QUIT_CLOSE_WAIT;</span>
+<span class="lineNum">     127 </span><span class="lineCov">          1 :         first = 1;</span>
+<span class="lineNum">     128 </span><span class="lineCov">          2 :         while (disconnects != NULL) {</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 rec = disconnects-&gt;data;</span></a>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 now = time(NULL);</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                 if (rec-&gt;created+MAX_QUIT_CLOSE_WAIT &lt;= now || max &lt;= now) {</span>
+<a name="133"><span class="lineNum">     133 </span>            :                         /* this one has waited enough */</a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                         net_disconnect_remove(rec);</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     136 </span>            :                 }
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 fd = g_io_channel_unix_get_fd(rec-&gt;handle);</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                 FD_ZERO(&amp;set);</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 FD_SET(fd, &amp;set);</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 tv.tv_sec = first ? 0 : max-now;</span></a>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :                 tv.tv_usec = first ? 100000 : 0;</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                 if (select(fd+1, &amp;set, NULL, NULL, &amp;tv) &gt; 0 &amp;&amp;</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                     FD_ISSET(fd, &amp;set)) {</span>
+<a name="145"><span class="lineNum">     145 </span>            :                         /* data coming .. check if we can close the handle */</a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                         sig_disconnect(rec);</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                 } else if (first) {</span>
+<span class="lineNum">     148 </span>            :                         /* Display the text when we have already waited
+<a name="149"><span class="lineNum">     149 </span>            :                            for a while */</a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :                         printf(&quot;Please wait, waiting for servers to close &quot;</span>
+<span class="lineNum">     151 </span>            :                                &quot;connections..\n&quot;);
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                         fflush(stdout);</span>
+<a name="153"><span class="lineNum">     153 </span>            : </a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :                         first = 0;</span>
+<span class="lineNum">     155 </span>            :                 }
+<span class="lineNum">     156 </span>            :         }
+<a name="157"><span class="lineNum">     157 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

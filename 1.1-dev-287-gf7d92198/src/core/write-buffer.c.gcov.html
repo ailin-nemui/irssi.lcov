@@ -1,0 +1,267 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/write-buffer.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - write-buffer.c<span style="font-size: 80%;"> (source / <a href="write-buffer.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">34</td>
+            <td class="headerCovTableEntry">86</td>
+            <td class="headerCovTableEntryLo">39.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntryLo">44.4 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  write-buffer.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;settings.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;write-buffer.h&quot;</a>
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : #define BUFFER_BLOCK_SIZE 2048
+<span class="lineNum">      28 </span>            : 
+<a name="29"><span class="lineNum">      29 </span>            : typedef struct {</a>
+<span class="lineNum">      30 </span>            :         char *active_block;
+<span class="lineNum">      31 </span>            :         int active_block_pos;
+<span class="lineNum">      32 </span>            : 
+<a name="33"><span class="lineNum">      33 </span>            :         GSList *blocks;</a>
+<span class="lineNum">      34 </span>            : } BUFFER_REC;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : static GSList *empty_blocks;
+<a name="37"><span class="lineNum">      37 </span>            : static GHashTable *buffers;</a>
+<span class="lineNum">      38 </span>            : static int block_count;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : static int write_buffer_max_blocks;
+<a name="41"><span class="lineNum">      41 </span>            : static int timeout_tag;</a>
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 : static void write_buffer_new_block(BUFFER_REC *rec)</span>
+<span class="lineNum">      44 </span>            : {
+<a name="45"><span class="lineNum">      45 </span>            :         char *block;</a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :         if (empty_blocks == NULL)</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :                 block = g_malloc(BUFFER_BLOCK_SIZE);</span>
+<a name="49"><span class="lineNum">      49 </span>            :         else {</a>
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :                 block = empty_blocks-&gt;data;</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :                 empty_blocks = g_slist_remove(empty_blocks, block);</span>
+<span class="lineNum">      52 </span>            :         }
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :         block_count++;</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :         rec-&gt;active_block = block;</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :         rec-&gt;active_block_pos = 0;</span>
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :         rec-&gt;blocks = g_slist_append(rec-&gt;blocks, block);</span></a>
+<a name="58"><span class="lineNum">      58 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 : int write_buffer(int handle, const void *data, int size)</span>
+<a name="61"><span class="lineNum">      61 </span>            : {</a>
+<span class="lineNum">      62 </span>            :         BUFFER_REC *rec;
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :         const char *cdata = data;</span>
+<span class="lineNum">      64 </span>            :         int next_size;
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :         if (write_buffer_max_blocks &lt;= 0) {</span>
+<span class="lineNum">      67 </span>            :                 /* no write buffer */
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :                 return write(handle, data, size);</span>
+<a name="69"><span class="lineNum">      69 </span>            :         }</a>
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :         if (size &lt;= 0)</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :                 return size;</span>
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(buffers, GINT_TO_POINTER(handle));</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         if (rec == NULL) {</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :                 rec = g_new0(BUFFER_REC, 1);</span>
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :                 write_buffer_new_block(rec);</span></a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :                 g_hash_table_insert(buffers, GINT_TO_POINTER(handle), rec);</span>
+<span class="lineNum">      79 </span>            :         }
+<span class="lineNum">      80 </span>            : 
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :         while (size &gt; 0) {</span></a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :                 if (rec-&gt;active_block_pos == BUFFER_BLOCK_SIZE)</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :                         write_buffer_new_block(rec);</span>
+<span class="lineNum">      84 </span>            : 
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :                 next_size = size &lt; BUFFER_BLOCK_SIZE-rec-&gt;active_block_pos ?</span></a>
+<span class="lineNum">      86 </span>            :                         size : BUFFER_BLOCK_SIZE-rec-&gt;active_block_pos;
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 memcpy(rec-&gt;active_block+rec-&gt;active_block_pos,</span>
+<span class="lineNum">      88 </span>            :                        cdata, next_size);
+<a name="89"><span class="lineNum">      89 </span>            : </a>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                 rec-&gt;active_block_pos += next_size;</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                 cdata += next_size;</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :                 size -= next_size;</span>
+<a name="93"><span class="lineNum">      93 </span>            :         }</a>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         if (block_count &gt; write_buffer_max_blocks)</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :                 write_buffer_flush();</span>
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         return size;</span>
+<a name="99"><span class="lineNum">      99 </span>            : }</a>
+<span class="lineNum">     100 </span>            : 
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 : static int write_buffer_flush_rec(void *handlep, BUFFER_REC *rec)</span></a>
+<span class="lineNum">     102 </span>            : {
+<span class="lineNum">     103 </span>            :         GSList *tmp;
+<span class="lineNum">     104 </span>            :         int handle, size;
+<a name="105"><span class="lineNum">     105 </span>            : </a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :         handle = GPOINTER_TO_INT(handlep);</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         for (tmp = rec-&gt;blocks; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 size = tmp-&gt;data != rec-&gt;active_block ? BUFFER_BLOCK_SIZE :</span>
+<a name="109"><span class="lineNum">     109 </span>            :                         rec-&gt;active_block_pos;</a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 if (write(handle, tmp-&gt;data, size) != size) {</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                         g_warning(&quot;Failed to write(): %s&quot;, strerror(errno));</span>
+<span class="lineNum">     112 </span>            :                 }
+<a name="113"><span class="lineNum">     113 </span>            :         }</a>
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :         empty_blocks = g_slist_concat(empty_blocks, rec-&gt;blocks);</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :         g_free(rec);</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :         return TRUE;</span></a>
+<a name="118"><span class="lineNum">     118 </span>            : }</a>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineCov">          2 : void write_buffer_flush(void)</span>
+<a name="121"><span class="lineNum">     121 </span>            : {</a>
+<span class="lineNum">     122 </span><span class="lineCov">          2 :         g_slist_foreach(empty_blocks, (GFunc) g_free, NULL);</span>
+<span class="lineNum">     123 </span><span class="lineCov">          2 :         g_slist_free(empty_blocks);</span>
+<span class="lineNum">     124 </span><span class="lineCov">          2 :         empty_blocks = NULL;</span>
+<a name="125"><span class="lineNum">     125 </span>            : </a>
+<span class="lineNum">     126 </span><span class="lineCov">          2 :         g_hash_table_foreach_remove(buffers,</span>
+<span class="lineNum">     127 </span>            :                                     (GHRFunc) write_buffer_flush_rec, NULL);
+<span class="lineNum">     128 </span><span class="lineCov">          2 :         block_count = 0;</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 : static int flush_timeout(void)</span>
+<span class="lineNum">     132 </span>            : {
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :         write_buffer_flush();</span></a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :         return 1;</span>
+<a name="135"><span class="lineNum">     135 </span>            : }</a>
+<span class="lineNum">     136 </span>            : 
+<a name="137"><span class="lineNum">     137 </span><span class="lineCov">          1 : static void read_settings(void)</span></a>
+<span class="lineNum">     138 </span>            : {
+<span class="lineNum">     139 </span><span class="lineCov">          1 :         write_buffer_flush();</span>
+<span class="lineNum">     140 </span>            : 
+<a name="141"><span class="lineNum">     141 </span><span class="lineCov">          1 :         write_buffer_max_blocks =</span></a>
+<span class="lineNum">     142 </span><span class="lineCov">          1 :                 settings_get_size(&quot;write_buffer_size&quot;) / BUFFER_BLOCK_SIZE;</span>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineCov">          1 :         if (settings_get_time(&quot;write_buffer_timeout&quot;) &gt; 0) {</span>
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 :                 if (timeout_tag == -1) {</span></a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                         timeout_tag = g_timeout_add(settings_get_time(&quot;write_buffer_timeout&quot;),</span>
+<span class="lineNum">     147 </span>            :                                                     (GSourceFunc) flush_timeout,
+<span class="lineNum">     148 </span>            :                                                     NULL);
+<a name="149"><span class="lineNum">     149 </span>            :                 }</a>
+<span class="lineNum">     150 </span><span class="lineCov">          1 :         } else if (timeout_tag != -1) {</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :                 g_source_remove(timeout_tag);</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                 timeout_tag = -1;</span>
+<a name="153"><span class="lineNum">     153 </span>            :         }</a>
+<a name="154"><span class="lineNum">     154 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 : static void cmd_flushbuffer(void)</span>
+<a name="157"><span class="lineNum">     157 </span>            : {</a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         write_buffer_flush();</span>
+<a name="159"><span class="lineNum">     159 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">          1 : void write_buffer_init(void)</span></a>
+<span class="lineNum">     162 </span>            : {
+<span class="lineNum">     163 </span><span class="lineCov">          1 :         settings_add_time(&quot;misc&quot;, &quot;write_buffer_timeout&quot;, &quot;0&quot;);</span>
+<span class="lineNum">     164 </span><span class="lineCov">          1 :         settings_add_size(&quot;misc&quot;, &quot;write_buffer_size&quot;, &quot;0&quot;);</span>
+<a name="165"><span class="lineNum">     165 </span>            : </a>
+<span class="lineNum">     166 </span><span class="lineCov">          1 :         buffers = g_hash_table_new((GHashFunc) g_direct_hash,</span>
+<span class="lineNum">     167 </span>            :                                    (GCompareFunc) g_direct_equal);
+<span class="lineNum">     168 </span>            : 
+<a name="169"><span class="lineNum">     169 </span><span class="lineCov">          1 :         empty_blocks = NULL;</span></a>
+<span class="lineNum">     170 </span><span class="lineCov">          1 :         block_count = 0;</span>
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineCov">          1 :         timeout_tag = -1;</span>
+<a name="173"><span class="lineNum">     173 </span><span class="lineCov">          1 :         read_settings();</span></a>
+<span class="lineNum">     174 </span><span class="lineCov">          1 :         signal_add(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<span class="lineNum">     175 </span><span class="lineCov">          1 :         command_bind(&quot;flushbuffer&quot;, NULL, (SIGNAL_FUNC) cmd_flushbuffer);</span>
+<a name="176"><span class="lineNum">     176 </span><span class="lineCov">          1 : }</span></a>
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineCov">          1 : void write_buffer_deinit(void)</span>
+<span class="lineNum">     179 </span>            : {
+<span class="lineNum">     180 </span><span class="lineCov">          1 :         if (timeout_tag != -1)</span>
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :                 g_source_remove(timeout_tag);</span></a>
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span><span class="lineCov">          1 :         write_buffer_flush();</span>
+<span class="lineNum">     184 </span><span class="lineCov">          1 :         g_hash_table_destroy(buffers);</span>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<span class="lineNum">     186 </span><span class="lineCov">          1 :         g_slist_foreach(empty_blocks, (GFunc) g_free, NULL);</span>
+<span class="lineNum">     187 </span><span class="lineCov">          1 :         g_slist_free(empty_blocks);</span>
+<span class="lineNum">     188 </span>            : 
+<a name="189"><span class="lineNum">     189 </span><span class="lineCov">          1 :         signal_remove(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span></a>
+<span class="lineNum">     190 </span><span class="lineCov">          1 :         command_unbind(&quot;flushbuffer&quot;,  (SIGNAL_FUNC) cmd_flushbuffer);</span>
+<span class="lineNum">     191 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

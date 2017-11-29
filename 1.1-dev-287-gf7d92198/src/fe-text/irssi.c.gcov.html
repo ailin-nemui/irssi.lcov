@@ -1,0 +1,414 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-text/irssi.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-text</a> - irssi.c<span style="font-size: 80%;"> (source / <a href="irssi.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">125</td>
+            <td class="headerCovTableEntry">147</td>
+            <td class="headerCovTableEntryMed">85.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntryHi">90.0 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  irssi.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;modules-load.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;args.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;signals.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;levels.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;core.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;settings.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;session.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : #include &quot;printtext.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;fe-common-core.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;fe-settings.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;themes.h&quot;
+<span class="lineNum">      36 </span>            : 
+<a name="37"><span class="lineNum">      37 </span>            : #include &quot;term.h&quot;</a>
+<span class="lineNum">      38 </span>            : #include &quot;gui-entry.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;mainwindows.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;gui-printtext.h&quot;
+<a name="41"><span class="lineNum">      41 </span>            : #include &quot;gui-readline.h&quot;</a>
+<span class="lineNum">      42 </span>            : #include &quot;statusbar.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;gui-windows.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;irssi-version.h&quot;
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span>            : #include &lt;signal.h&gt;
+<span class="lineNum">      47 </span>            : #include &lt;locale.h&gt;
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span>            : #ifdef HAVE_STATIC_PERL</a>
+<span class="lineNum">      50 </span>            : void perl_core_init(void);
+<span class="lineNum">      51 </span>            : void perl_core_deinit(void);
+<span class="lineNum">      52 </span>            : 
+<a name="53"><span class="lineNum">      53 </span>            : void fe_perl_init(void);</a>
+<span class="lineNum">      54 </span>            : void fe_perl_deinit(void);
+<span class="lineNum">      55 </span>            : #endif
+<span class="lineNum">      56 </span>            : 
+<a name="57"><span class="lineNum">      57 </span>            : void irc_init(void);</a>
+<span class="lineNum">      58 </span>            : void irc_deinit(void);
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span>            : void fe_common_irc_init(void);
+<a name="61"><span class="lineNum">      61 </span>            : void fe_common_irc_deinit(void);</a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : void gui_expandos_init(void);
+<span class="lineNum">      64 </span>            : void gui_expandos_deinit(void);
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<span class="lineNum">      66 </span>            : void textbuffer_commands_init(void);
+<span class="lineNum">      67 </span>            : void textbuffer_commands_deinit(void);
+<span class="lineNum">      68 </span>            : 
+<a name="69"><span class="lineNum">      69 </span>            : void lastlog_init(void);</a>
+<span class="lineNum">      70 </span>            : void lastlog_deinit(void);
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span>            : void mainwindow_activity_init(void);
+<a name="73"><span class="lineNum">      73 </span>            : void mainwindow_activity_deinit(void);</a>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span>            : void mainwindows_layout_init(void);
+<span class="lineNum">      76 </span>            : void mainwindows_layout_deinit(void);
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span>            : static int dirty, full_redraw;
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            : static GMainLoop *main_loop;
+<a name="81"><span class="lineNum">      81 </span>            : int quitting;</a>
+<span class="lineNum">      82 </span>            : 
+<span class="lineNum">      83 </span>            : static int display_firsttimer = FALSE;
+<span class="lineNum">      84 </span>            : static unsigned int user_settings_changed = 0;
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span><span class="lineCov">          1 : static void sig_exit(void)</span>
+<span class="lineNum">      88 </span>            : {
+<a name="89"><span class="lineNum">      89 </span><span class="lineCov">          1 :         quitting = TRUE;</span></a>
+<a name="90"><span class="lineNum">      90 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineCov">          1 : static void sig_settings_userinfo_changed(gpointer changedp)</span>
+<a name="93"><span class="lineNum">      93 </span>            : {</a>
+<span class="lineNum">      94 </span><span class="lineCov">          1 :         user_settings_changed = GPOINTER_TO_UINT(changedp);</span>
+<span class="lineNum">      95 </span><span class="lineCov">          1 : }</span>
+<a name="96"><span class="lineNum">      96 </span>            : </a>
+<a name="97"><span class="lineNum">      97 </span>            : /* redraw irssi's screen.. */</a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 : void irssi_redraw(void)</span>
+<span class="lineNum">      99 </span>            : {
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :         dirty = TRUE;</span>
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :         full_redraw = TRUE;</span></a>
+<a name="102"><span class="lineNum">     102 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineCov">        145 : void irssi_set_dirty(void)</span>
+<a name="105"><span class="lineNum">     105 </span>            : {</a>
+<span class="lineNum">     106 </span><span class="lineCov">        145 :         dirty = TRUE;</span>
+<a name="107"><span class="lineNum">     107 </span><span class="lineCov">        145 : }</span></a>
+<span class="lineNum">     108 </span>            : 
+<a name="109"><span class="lineNum">     109 </span><span class="lineCov">         12 : static void dirty_check(void)</span></a>
+<span class="lineNum">     110 </span>            : {
+<span class="lineNum">     111 </span><span class="lineCov">         12 :         if (!dirty)</span>
+<span class="lineNum">     112 </span><span class="lineCov">          9 :                 return;</span>
+<a name="113"><span class="lineNum">     113 </span>            : </a>
+<span class="lineNum">     114 </span><span class="lineCov">          3 :         term_resize_dirty();</span>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineCov">          3 :         if (full_redraw) {</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :                 full_redraw = FALSE;</span></a>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span>            :                 /* first clear the screen so curses will be
+<span class="lineNum">     120 </span>            :                    forced to redraw the screen */
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :                 term_clear();</span></a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                 term_refresh(NULL);</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                 mainwindows_redraw();</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 statusbar_redraw(NULL, TRUE);</span></a>
+<span class="lineNum">     126 </span>            :         }
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineCov">          3 :         mainwindows_redraw_dirty();</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineCov">          3 :         statusbar_redraw_dirty();</span></a>
+<span class="lineNum">     130 </span><span class="lineCov">          3 :         term_refresh(NULL);</span>
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span><span class="lineCov">          3 :         dirty = FALSE;</span>
+<a name="133"><span class="lineNum">     133 </span>            : }</a>
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span><span class="lineCov">          1 : static void textui_init(void)</span>
+<span class="lineNum">     136 </span>            : {
+<a name="137"><span class="lineNum">     137 </span>            : #ifdef SIGTRAP</a>
+<span class="lineNum">     138 </span>            :         struct sigaction act;
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineCov">          1 :         sigemptyset(&amp;act.sa_mask);</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineCov">          1 :         act.sa_flags = 0;</span></a>
+<span class="lineNum">     142 </span><span class="lineCov">          1 :         act.sa_handler = SIG_IGN;</span>
+<span class="lineNum">     143 </span><span class="lineCov">          1 :         sigaction(SIGTRAP, &amp;act, NULL);</span>
+<span class="lineNum">     144 </span>            : #endif
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span><span class="lineCov">          1 :         irssi_gui = IRSSI_GUI_TEXT;</span>
+<span class="lineNum">     147 </span><span class="lineCov">          1 :         core_init();</span>
+<span class="lineNum">     148 </span><span class="lineCov">          1 :         irc_init();</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineCov">          1 :         fe_common_core_init();</span></a>
+<span class="lineNum">     150 </span><span class="lineCov">          1 :         fe_common_irc_init();</span>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineCov">          1 :         theme_register(gui_text_formats);</span>
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">          1 :         signal_add(&quot;settings userinfo changed&quot;, (SIGNAL_FUNC) sig_settings_userinfo_changed);</span></a>
+<span class="lineNum">     154 </span><span class="lineCov">          1 :         signal_add_last(&quot;gui exit&quot;, (SIGNAL_FUNC) sig_exit);</span>
+<a name="155"><span class="lineNum">     155 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     156 </span>            : 
+<a name="157"><span class="lineNum">     157 </span><span class="lineCov">          1 : static void textui_finish_init(void)</span></a>
+<span class="lineNum">     158 </span>            : {
+<span class="lineNum">     159 </span><span class="lineCov">          1 :         quitting = FALSE;</span>
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">          1 :         term_refresh_freeze();</span></a>
+<span class="lineNum">     162 </span><span class="lineCov">          1 :         textbuffer_init();</span>
+<span class="lineNum">     163 </span><span class="lineCov">          1 :         textbuffer_view_init();</span>
+<span class="lineNum">     164 </span><span class="lineCov">          1 :         textbuffer_commands_init();</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineCov">          1 :         gui_expandos_init();</span></a>
+<span class="lineNum">     166 </span><span class="lineCov">          1 :         gui_printtext_init();</span>
+<span class="lineNum">     167 </span><span class="lineCov">          1 :         gui_readline_init();</span>
+<span class="lineNum">     168 </span><span class="lineCov">          1 :         lastlog_init();</span>
+<a name="169"><span class="lineNum">     169 </span><span class="lineCov">          1 :         mainwindows_init();</span></a>
+<span class="lineNum">     170 </span><span class="lineCov">          1 :         mainwindow_activity_init();</span>
+<span class="lineNum">     171 </span><span class="lineCov">          1 :         mainwindows_layout_init();</span>
+<span class="lineNum">     172 </span><span class="lineCov">          1 :         gui_windows_init();</span>
+<a name="173"><span class="lineNum">     173 </span><span class="lineCov">          1 :         statusbar_init();</span></a>
+<span class="lineNum">     174 </span><span class="lineCov">          1 :         term_refresh_thaw();</span>
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineCov">          1 :         settings_check();</span>
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineCov">          1 :         module_register(&quot;core&quot;, &quot;fe-text&quot;);</span>
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span>            : #ifdef HAVE_STATIC_PERL
+<a name="181"><span class="lineNum">     181 </span><span class="lineCov">          1 :         perl_core_init();</span></a>
+<span class="lineNum">     182 </span><span class="lineCov">          1 :         fe_perl_init();</span>
+<span class="lineNum">     183 </span>            : #endif
+<span class="lineNum">     184 </span>            : 
+<a name="185"><span class="lineNum">     185 </span><span class="lineCov">          1 :         dirty_check();</span></a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineCov">          1 :         fe_common_core_finish_init();</span>
+<span class="lineNum">     188 </span><span class="lineCov">          1 :         signal_emit(&quot;irssi init finished&quot;, 0);</span>
+<a name="189"><span class="lineNum">     189 </span><span class="lineCov">          1 :         statusbar_redraw(NULL, TRUE);</span></a>
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineCov">          1 :         if (servers == NULL &amp;&amp; lookup_servers == NULL) {</span>
+<span class="lineNum">     192 </span><span class="lineCov">          1 :                 printformat(NULL, NULL, MSGLEVEL_CRAP|MSGLEVEL_NO_ACT, TXT_IRSSI_BANNER);</span>
+<a name="193"><span class="lineNum">     193 </span>            :         }</a>
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineCov">          1 :         if (display_firsttimer) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CRAP|MSGLEVEL_NO_ACT, TXT_WELCOME_FIRSTTIME);</span>
+<a name="197"><span class="lineNum">     197 </span>            :         }</a>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span>            :         /* see irc-servers-setup.c:init_userinfo */
+<span class="lineNum">     200 </span><span class="lineCov">          1 :         if (user_settings_changed)</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :                 printformat(NULL, NULL, MSGLEVEL_CLIENTNOTICE, TXT_WELCOME_INIT_SETTINGS);</span></a>
+<span class="lineNum">     202 </span><span class="lineCov">          1 :         if (user_settings_changed &amp; USER_SETTINGS_REAL_NAME)</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                 fe_settings_set_print(&quot;real_name&quot;);</span>
+<span class="lineNum">     204 </span><span class="lineCov">          1 :         if (user_settings_changed &amp; USER_SETTINGS_USER_NAME)</span>
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :                 fe_settings_set_print(&quot;user_name&quot;);</span></a>
+<span class="lineNum">     206 </span><span class="lineCov">          1 :         if (user_settings_changed &amp; USER_SETTINGS_NICK)</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 fe_settings_set_print(&quot;nick&quot;);</span>
+<span class="lineNum">     208 </span><span class="lineCov">          1 :         if (user_settings_changed &amp; USER_SETTINGS_HOSTNAME)</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :                 fe_settings_set_print(&quot;hostname&quot;);</span></a>
+<a name="210"><span class="lineNum">     210 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span><span class="lineCov">          1 : static void textui_deinit(void)</span>
+<a name="213"><span class="lineNum">     213 </span>            : {</a>
+<span class="lineNum">     214 </span><span class="lineCov">          1 :         signal(SIGINT, SIG_DFL);</span>
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineCov">          1 :         term_refresh_freeze();</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">          7 :         while (modules != NULL)</span></a>
+<span class="lineNum">     218 </span><span class="lineCov">          5 :                 module_unload(modules-&gt;data);</span>
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span>            : #ifdef HAVE_STATIC_PERL
+<a name="221"><span class="lineNum">     221 </span><span class="lineCov">          1 :         perl_core_deinit();</span></a>
+<span class="lineNum">     222 </span><span class="lineCov">          1 :         fe_perl_deinit();</span>
+<span class="lineNum">     223 </span>            : #endif
+<span class="lineNum">     224 </span>            : 
+<a name="225"><span class="lineNum">     225 </span><span class="lineCov">          1 :         dirty_check(); /* one last time to print any quit messages */</span></a>
+<span class="lineNum">     226 </span><span class="lineCov">          1 :         signal_remove(&quot;settings userinfo changed&quot;, (SIGNAL_FUNC) sig_settings_userinfo_changed);</span>
+<span class="lineNum">     227 </span><span class="lineCov">          1 :         signal_remove(&quot;gui exit&quot;, (SIGNAL_FUNC) sig_exit);</span>
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">          1 :         lastlog_deinit();</span></a>
+<span class="lineNum">     230 </span><span class="lineCov">          1 :         statusbar_deinit();</span>
+<span class="lineNum">     231 </span><span class="lineCov">          1 :         gui_printtext_deinit();</span>
+<span class="lineNum">     232 </span><span class="lineCov">          1 :         gui_readline_deinit();</span>
+<a name="233"><span class="lineNum">     233 </span><span class="lineCov">          1 :         gui_windows_deinit();</span></a>
+<span class="lineNum">     234 </span><span class="lineCov">          1 :         mainwindows_layout_deinit();</span>
+<span class="lineNum">     235 </span><span class="lineCov">          1 :         mainwindow_activity_deinit();</span>
+<span class="lineNum">     236 </span><span class="lineCov">          1 :         mainwindows_deinit();</span>
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">          1 :         gui_expandos_deinit();</span></a>
+<span class="lineNum">     238 </span><span class="lineCov">          1 :         textbuffer_commands_deinit();</span>
+<span class="lineNum">     239 </span><span class="lineCov">          1 :         textbuffer_view_deinit();</span>
+<span class="lineNum">     240 </span><span class="lineCov">          1 :         textbuffer_deinit();</span>
+<a name="241"><span class="lineNum">     241 </span>            : </a>
+<span class="lineNum">     242 </span><span class="lineCov">          1 :         term_refresh_thaw();</span>
+<span class="lineNum">     243 </span><span class="lineCov">          1 :         term_deinit();</span>
+<span class="lineNum">     244 </span>            : 
+<a name="245"><span class="lineNum">     245 </span><span class="lineCov">          1 :         theme_unregister();</span></a>
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineCov">          1 :         fe_common_irc_deinit();</span>
+<span class="lineNum">     248 </span><span class="lineCov">          1 :         fe_common_core_deinit();</span>
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">          1 :         irc_deinit();</span></a>
+<span class="lineNum">     250 </span><span class="lineCov">          1 :         core_deinit();</span>
+<a name="251"><span class="lineNum">     251 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     252 </span>            : 
+<a name="253"><span class="lineNum">     253 </span><span class="lineCov">          1 : static void check_files(void)</span></a>
+<span class="lineNum">     254 </span>            : {
+<span class="lineNum">     255 </span>            :         struct stat statbuf;
+<span class="lineNum">     256 </span>            : 
+<a name="257"><span class="lineNum">     257 </span><span class="lineCov">          1 :         if (stat(get_irssi_dir(), &amp;statbuf) != 0) {</span></a>
+<span class="lineNum">     258 </span>            :                 /* ~/.irssi doesn't exist, first time running irssi */
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                 display_firsttimer = TRUE;</span>
+<span class="lineNum">     260 </span>            :         }
+<a name="261"><span class="lineNum">     261 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span><span class="lineCov">          1 : int main(int argc, char **argv)</span>
+<span class="lineNum">     264 </span>            : {
+<a name="265"><span class="lineNum">     265 </span>            :         static int version = 0;</a>
+<span class="lineNum">     266 </span>            :         static GOptionEntry options[] = {
+<span class="lineNum">     267 </span>            :                 { &quot;version&quot;, 'v', 0, G_OPTION_ARG_NONE, &amp;version, &quot;Display Irssi version&quot;, NULL },
+<span class="lineNum">     268 </span>            :                 { NULL }
+<a name="269"><span class="lineNum">     269 </span>            :         };</a>
+<span class="lineNum">     270 </span>            :         int loglev;
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineCov">          1 :         core_register_options();</span>
+<a name="273"><span class="lineNum">     273 </span><span class="lineCov">          1 :         fe_common_core_register_options();</span></a>
+<span class="lineNum">     274 </span><span class="lineCov">          1 :         args_register(options);</span>
+<span class="lineNum">     275 </span><span class="lineCov">          1 :         args_execute(argc, argv);</span>
+<span class="lineNum">     276 </span>            : 
+<a name="277"><span class="lineNum">     277 </span><span class="lineCov">          1 :         if (version) {</span></a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                 printf(PACKAGE_TARNAME&quot; &quot; PACKAGE_VERSION&quot; (%d %04d)\n&quot;,</span>
+<span class="lineNum">     279 </span>            :                        IRSSI_VERSION_DATE, IRSSI_VERSION_TIME);
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :                 return 0;</span>
+<a name="281"><span class="lineNum">     281 </span>            :         }</a>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineCov">          1 :         srand(time(NULL));</span>
+<span class="lineNum">     284 </span>            : 
+<a name="285"><span class="lineNum">     285 </span><span class="lineCov">          1 :         quitting = FALSE;</span></a>
+<span class="lineNum">     286 </span><span class="lineCov">          1 :         core_preinit(argv[0]);</span>
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineCov">          1 :         check_files();</span>
+<a name="289"><span class="lineNum">     289 </span>            : </a>
+<span class="lineNum">     290 </span>            : #ifdef HAVE_SOCKS
+<span class="lineNum">     291 </span>            :         SOCKSinit(argv[0]);
+<span class="lineNum">     292 </span>            : #endif
+<a name="293"><span class="lineNum">     293 </span>            : </a>
+<span class="lineNum">     294 </span>            :         /* setlocale() must be called at the beginning before any calls that
+<span class="lineNum">     295 </span>            :            affect it, especially regexps seem to break if they're generated
+<span class="lineNum">     296 </span>            :            before this call.
+<a name="297"><span class="lineNum">     297 </span>            : </a>
+<span class="lineNum">     298 </span>            :            locales aren't actually used for anything else than autodetection
+<span class="lineNum">     299 </span>            :            of UTF-8 currently..
+<span class="lineNum">     300 </span>            : 
+<a name="301"><span class="lineNum">     301 </span>            :            furthermore to get the users's charset with g_get_charset() properly</a>
+<span class="lineNum">     302 </span>            :            you have to call setlocale(LC_ALL, &quot;&quot;) */
+<span class="lineNum">     303 </span><span class="lineCov">          1 :         setlocale(LC_ALL, &quot;&quot;);</span>
+<span class="lineNum">     304 </span>            : 
+<a name="305"><span class="lineNum">     305 </span><span class="lineCov">          1 :         loglev = g_log_set_always_fatal(G_LOG_FATAL_MASK | G_LOG_LEVEL_CRITICAL);</span></a>
+<span class="lineNum">     306 </span><span class="lineCov">          1 :         textui_init();</span>
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineCov">          1 :         if (!term_init()) {</span>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 fprintf(stderr, &quot;Can't initialize screen handling.\n&quot;);</span></a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     311 </span>            :         }
+<span class="lineNum">     312 </span>            : 
+<a name="313"><span class="lineNum">     313 </span><span class="lineCov">          1 :         g_log_set_always_fatal(loglev);</span></a>
+<span class="lineNum">     314 </span><span class="lineCov">          1 :         textui_finish_init();</span>
+<span class="lineNum">     315 </span><span class="lineCov">          1 :         main_loop = g_main_new(TRUE);</span>
+<span class="lineNum">     316 </span>            : 
+<a name="317"><span class="lineNum">     317 </span>            :         /* Does the same as g_main_run(main_loop), except we</a>
+<span class="lineNum">     318 </span>            :            can call our dirty-checker after each iteration */
+<span class="lineNum">     319 </span><span class="lineCov">         12 :         while (!quitting) {</span>
+<span class="lineNum">     320 </span><span class="lineCov">         10 :                 if (reload_config) {</span>
+<a name="321"><span class="lineNum">     321 </span>            :                         /* SIGHUP received, do /RELOAD */</a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                         reload_config = FALSE;</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;command reload&quot;, 1, &quot;&quot;);</span>
+<span class="lineNum">     324 </span>            :                 }
+<a name="325"><span class="lineNum">     325 </span>            : </a>
+<span class="lineNum">     326 </span><span class="lineCov">         10 :                 dirty_check();</span>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineCov">         10 :                 term_refresh_freeze();</span>
+<a name="329"><span class="lineNum">     329 </span><span class="lineCov">         10 :                 g_main_iteration(TRUE);</span></a>
+<span class="lineNum">     330 </span><span class="lineCov">         10 :                 term_refresh_thaw();</span>
+<span class="lineNum">     331 </span>            :         }
+<span class="lineNum">     332 </span>            : 
+<a name="333"><span class="lineNum">     333 </span><span class="lineCov">          1 :         g_main_destroy(main_loop);</span></a>
+<span class="lineNum">     334 </span><span class="lineCov">          1 :         textui_deinit();</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">          1 :         session_upgrade(); /* if we /UPGRADEd, start the new process */</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineCov">          1 :         return 0;</span></a>
+<span class="lineNum">     338 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

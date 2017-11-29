@@ -1,0 +1,1504 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/core/formats.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/core</a> - formats.c<span style="font-size: 80%;"> (source / <a href="formats.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">303</td>
+            <td class="headerCovTableEntry">785</td>
+            <td class="headerCovTableEntryLo">38.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">23</td>
+            <td class="headerCovTableEntry">32</td>
+            <td class="headerCovTableEntryLo">71.9 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  formats.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;special-vars.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;settings.h&quot;</a>
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : #include &quot;levels.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;servers.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<span class="lineNum">      30 </span>            : #include &quot;fe-windows.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;window-items.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;formats.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;themes.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;recode.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;utf8.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;misc.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span>            : static const char *format_backs = &quot;04261537&quot;;
+<span class="lineNum">      39 </span>            : static const char *format_fores = &quot;kbgcrmyw&quot;;
+<span class="lineNum">      40 </span>            : static const char *format_boldfores = &quot;KBGCRMYW&quot;;
+<a name="41"><span class="lineNum">      41 </span>            : </a>
+<span class="lineNum">      42 </span>            : static int signal_gui_print_text;
+<span class="lineNum">      43 </span>            : static int hide_text_style, hide_server_tags, hide_colors;
+<span class="lineNum">      44 </span>            : 
+<a name="45"><span class="lineNum">      45 </span>            : static int timestamp_level;</a>
+<a name="46"><span class="lineNum">      46 </span>            : static int timestamp_timeout;</a>
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span><span class="lineCov">         14 : int format_find_tag(const char *module, const char *tag)</span>
+<a name="49"><span class="lineNum">      49 </span>            : {</a>
+<span class="lineNum">      50 </span>            :         FORMAT_REC *formats;
+<span class="lineNum">      51 </span>            :         int n;
+<span class="lineNum">      52 </span>            : 
+<a name="53"><span class="lineNum">      53 </span><span class="lineCov">         14 :         formats = g_hash_table_lookup(default_formats, module);</span></a>
+<span class="lineNum">      54 </span><span class="lineCov">         14 :         if (formats == NULL)</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<span class="lineNum">      56 </span>            : 
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">       1350 :         for (n = 0; formats[n].def != NULL; n++) {</span></a>
+<span class="lineNum">      58 </span><span class="lineCov">       2637 :                 if (formats[n].tag != NULL &amp;&amp;</span>
+<span class="lineNum">      59 </span><span class="lineCov">       1287 :                     g_ascii_strcasecmp(formats[n].tag, tag) == 0)</span>
+<span class="lineNum">      60 </span><span class="lineCov">         14 :                         return n;</span>
+<a name="61"><span class="lineNum">      61 </span>            :         }</a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :         return -1;</span>
+<a name="64"><span class="lineNum">      64 </span>            : }</a>
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<span class="lineNum">      66 </span><span class="lineCov">          1 : static void format_expand_code(const char **format, GString *out, int *flags)</span>
+<span class="lineNum">      67 </span>            : {
+<span class="lineNum">      68 </span>            :         int set;
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span><span class="lineCov">          1 :         if (flags == NULL) {</span>
+<span class="lineNum">      71 </span>            :                 /* flags are being ignored - skip the code */
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :                 while (**format != ']' &amp;&amp; **format != '\0')</span>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :                         (*format)++;</span></a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">      75 </span>            :         }
+<span class="lineNum">      76 </span>            : 
+<a name="77"><span class="lineNum">      77 </span><span class="lineCov">          1 :         set = TRUE;</span></a>
+<span class="lineNum">      78 </span><span class="lineCov">          1 :         (*format)++;</span>
+<span class="lineNum">      79 </span><span class="lineCov">          4 :         while (**format != ']' &amp;&amp; **format != '\0') {</span>
+<span class="lineNum">      80 </span><span class="lineCov">          2 :                 if (**format == '+')</span>
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :                         set = TRUE;</span></a>
+<span class="lineNum">      82 </span><span class="lineCov">          2 :                 else if (**format == '-')</span>
+<span class="lineNum">      83 </span><span class="lineCov">          1 :                         set = FALSE;</span>
+<span class="lineNum">      84 </span><span class="lineCov">          1 :                 else switch (**format) {</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineCov">          1 :                 case 's':</span></a>
+<span class="lineNum">      86 </span>            :                 case 'S':
+<span class="lineNum">      87 </span><span class="lineCov">          1 :                         *flags |= !set ? PRINT_FLAG_UNSET_LINE_START :</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :                                 **format == 's' ? PRINT_FLAG_SET_LINE_START :</span>
+<a name="89"><span class="lineNum">      89 </span>            :                                 PRINT_FLAG_SET_LINE_START_IRSSI;</a>
+<span class="lineNum">      90 </span><span class="lineCov">          1 :                         break;</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                 case 't':</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :                         *flags |= set ? PRINT_FLAG_SET_TIMESTAMP :</span>
+<a name="93"><span class="lineNum">      93 </span>            :                                 PRINT_FLAG_UNSET_TIMESTAMP;</a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :                 case 'T':</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :                         *flags |= set ? PRINT_FLAG_SET_SERVERTAG :</span>
+<a name="97"><span class="lineNum">      97 </span>            :                                 PRINT_FLAG_UNSET_SERVERTAG;</a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">      99 </span>            :                 }
+<span class="lineNum">     100 </span>            : 
+<a name="101"><span class="lineNum">     101 </span><span class="lineCov">          2 :                 (*format)++;</span></a>
+<span class="lineNum">     102 </span>            :         }
+<a name="103"><span class="lineNum">     103 </span>            : }</a>
+<span class="lineNum">     104 </span>            : 
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 : void format_ext_color(GString *out, int bg, int color)</span></a>
+<span class="lineNum">     106 </span>            : {
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         g_string_append_c(out, 4);</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         if (bg &amp;&amp; color &lt; 0x10)</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, FORMAT_COLOR_NOCHANGE);</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :         if (color &lt; 0x10)</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, color+'0');</span>
+<span class="lineNum">     112 </span>            :         else {
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :                 if (color &lt; 0x60)</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :                         g_string_append_c(out, bg ? FORMAT_COLOR_EXT1_BG</span>
+<span class="lineNum">     115 </span>            :                                           : FORMAT_COLOR_EXT1);
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :                 else if (color &lt; 0xb0)</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :                         g_string_append_c(out, bg ? FORMAT_COLOR_EXT2_BG</span></a>
+<span class="lineNum">     118 </span>            :                                           : FORMAT_COLOR_EXT2);
+<span class="lineNum">     119 </span>            :                 else
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                         g_string_append_c(out, bg ? FORMAT_COLOR_EXT3_BG</span>
+<a name="121"><span class="lineNum">     121 </span>            :                                           : FORMAT_COLOR_EXT3);</a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, FORMAT_COLOR_NOCHANGE + ((color-0x10)%0x50));</span>
+<span class="lineNum">     123 </span>            :         }
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         if (!bg &amp;&amp; color &lt; 0x10)</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, FORMAT_COLOR_NOCHANGE);</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            : #ifdef TERM_TRUECOLOR
+<a name="129"><span class="lineNum">     129 </span>            : void unformat_24bit_color(char **ptr, int off, int *fgcolor, int *bgcolor, int *flags)</a>
+<span class="lineNum">     130 </span>            : {
+<span class="lineNum">     131 </span>            :         unsigned int color;
+<span class="lineNum">     132 </span>            :         unsigned char rgbx[4];
+<a name="133"><span class="lineNum">     133 </span>            :         unsigned int i;</a>
+<span class="lineNum">     134 </span>            :         for (i = 0; i &lt; 4; ++i) {
+<span class="lineNum">     135 </span>            :                 if ((*ptr)[i + off] == '\0')
+<span class="lineNum">     136 </span>            :                         return;
+<a name="137"><span class="lineNum">     137 </span>            :                 rgbx[i] = (*ptr)[i + off];</a>
+<span class="lineNum">     138 </span>            :         }
+<span class="lineNum">     139 </span>            :         rgbx[3] -= 0x20;
+<span class="lineNum">     140 </span>            :         *ptr += 4;
+<a name="141"><span class="lineNum">     141 </span>            :         for (i = 0; i &lt; 3; ++i) {</a>
+<span class="lineNum">     142 </span>            :                 if (rgbx[3] &amp; (0x10 &lt;&lt; i))
+<span class="lineNum">     143 </span>            :                         rgbx[i] -= 0x20;
+<span class="lineNum">     144 </span>            :         }
+<a name="145"><span class="lineNum">     145 </span>            :         color = rgbx[0] &lt;&lt; 16 | rgbx[1] &lt;&lt; 8 | rgbx[2];</a>
+<span class="lineNum">     146 </span>            :         if (rgbx[3] &amp; 0x1) {
+<span class="lineNum">     147 </span>            :                 *bgcolor = color;
+<span class="lineNum">     148 </span>            :                 *flags |= GUI_PRINT_FLAG_COLOR_24_BG;
+<a name="149"><span class="lineNum">     149 </span>            :         }</a>
+<span class="lineNum">     150 </span>            :         else {
+<span class="lineNum">     151 </span>            :                 *fgcolor = color;
+<span class="lineNum">     152 </span>            :                 *flags |= GUI_PRINT_FLAG_COLOR_24_FG;
+<a name="153"><span class="lineNum">     153 </span>            :         }</a>
+<span class="lineNum">     154 </span>            : }
+<a name="155"><span class="lineNum">     155 </span>            : #endif</a>
+<span class="lineNum">     156 </span>            : 
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 : void format_24bit_color(GString *out, int bg, unsigned int color)</span></a>
+<span class="lineNum">     158 </span>            : {
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         unsigned char rgb[] = { color &gt;&gt; 16, color &gt;&gt; 8, color };</span>
+<span class="lineNum">     160 </span>            : #ifdef TERM_TRUECOLOR
+<a name="161"><span class="lineNum">     161 </span>            :         unsigned char x = bg ? 0x1 : 0;</a>
+<span class="lineNum">     162 </span>            :         unsigned int i;
+<span class="lineNum">     163 </span>            :         g_string_append_c(out, 4);
+<span class="lineNum">     164 </span>            :         g_string_append_c(out, FORMAT_COLOR_24);
+<a name="165"><span class="lineNum">     165 </span>            :         for (i = 0; i &lt; 3; ++i) {</a>
+<span class="lineNum">     166 </span>            :                 if (rgb[i] &gt; 0x20)
+<span class="lineNum">     167 </span>            :                         g_string_append_c(out, rgb[i]);
+<span class="lineNum">     168 </span>            :                 else {
+<a name="169"><span class="lineNum">     169 </span>            :                         g_string_append_c(out, 0x20 + rgb[i]);</a>
+<span class="lineNum">     170 </span>            :                         x |= 0x10 &lt;&lt; i;
+<span class="lineNum">     171 </span>            :                 }
+<span class="lineNum">     172 </span>            :         }
+<a name="173"><span class="lineNum">     173 </span>            :         g_string_append_c(out, 0x20 + x);</a>
+<span class="lineNum">     174 </span>            : #else /* !TERM_TRUECOLOR */
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :         format_ext_color(out, bg, color_24bit_256(rgb));</span>
+<span class="lineNum">     176 </span>            : #endif /* TERM_TRUECOLOR */
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineCov">        301 : int format_expand_styles(GString *out, const char **format, int *flags)</span>
+<span class="lineNum">     180 </span>            : {
+<a name="181"><span class="lineNum">     181 </span><span class="lineCov">        301 :         int retval = 1;</span></a>
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span>            :         char *p, fmt;
+<span class="lineNum">     184 </span>            : 
+<a name="185"><span class="lineNum">     185 </span>            :         /* storage for numerical parsing code for %x/X formats. */</a>
+<span class="lineNum">     186 </span>            :         int tmp;
+<span class="lineNum">     187 </span>            :         unsigned int tmp2;
+<span class="lineNum">     188 </span>            : 
+<a name="189"><span class="lineNum">     189 </span><span class="lineCov">        301 :         fmt = **format;</span></a>
+<span class="lineNum">     190 </span><span class="lineCov">        301 :         switch (fmt) {</span>
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :         case '{':</span>
+<span class="lineNum">     192 </span>            :         case '}':
+<a name="193"><span class="lineNum">     193 </span>            :         case '%':</a>
+<span class="lineNum">     194 </span>            :                 /* escaped char */
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, fmt);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :                 break;</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :         case 'U':</span></a>
+<span class="lineNum">     198 </span>            :                 /* Underline on/off */
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, 4);</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, FORMAT_STYLE_UNDERLINE);</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :                 break;</span></a>
+<span class="lineNum">     202 </span><span class="lineCov">         10 :         case '9':</span>
+<span class="lineNum">     203 </span>            :         case '_':
+<span class="lineNum">     204 </span>            :                 /* bold on/off */
+<a name="205"><span class="lineNum">     205 </span><span class="lineCov">         10 :                 g_string_append_c(out, 4);</span></a>
+<span class="lineNum">     206 </span><span class="lineCov">         10 :                 g_string_append_c(out, FORMAT_STYLE_BOLD);</span>
+<span class="lineNum">     207 </span><span class="lineCov">         10 :                 break;</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :         case '8':</span>
+<a name="209"><span class="lineNum">     209 </span>            :                 /* reverse */</a>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, 4);</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, FORMAT_STYLE_REVERSE);</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 break;</span>
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :         case 'I':</span></a>
+<span class="lineNum">     214 </span>            :                 /* italic */
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, 4);</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, FORMAT_STYLE_ITALIC);</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :                 break;</span></a>
+<span class="lineNum">     218 </span><span class="lineCov">          4 :         case ':':</span>
+<span class="lineNum">     219 </span>            :                 /* Newline */
+<span class="lineNum">     220 </span><span class="lineCov">          4 :                 g_string_append_c(out, '\n');</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineCov">          4 :                 break;</span></a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         case '|':</span>
+<span class="lineNum">     223 </span>            :                 /* Indent here */
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, 4);</span>
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, FORMAT_STYLE_INDENT);</span></a>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :         case 'F':</span>
+<span class="lineNum">     228 </span>            :                 /* blink */
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, 4);</span></a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, FORMAT_STYLE_BLINK);</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     232 </span><span class="lineCov">        117 :         case 'n':</span>
+<a name="233"><span class="lineNum">     233 </span>            :         case 'N':</a>
+<span class="lineNum">     234 </span>            :                 /* default color */
+<span class="lineNum">     235 </span><span class="lineCov">        117 :                 g_string_append_c(out, 4);</span>
+<span class="lineNum">     236 </span><span class="lineCov">        117 :                 g_string_append_c(out, FORMAT_STYLE_DEFAULTS);</span>
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">        117 :                 break;</span></a>
+<span class="lineNum">     238 </span><span class="lineCov">          6 :         case '&gt;':</span>
+<span class="lineNum">     239 </span>            :                 /* clear to end of line */
+<span class="lineNum">     240 </span><span class="lineCov">          6 :                 g_string_append_c(out, 4);</span>
+<a name="241"><span class="lineNum">     241 </span><span class="lineCov">          6 :                 g_string_append_c(out, FORMAT_STYLE_CLRTOEOL);</span></a>
+<span class="lineNum">     242 </span><span class="lineCov">          6 :                 break;</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :         case '#':</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, 4);</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :                 g_string_append_c(out, FORMAT_STYLE_MONOSPACE);</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     247 </span><span class="lineCov">          1 :         case '[':</span>
+<span class="lineNum">     248 </span>            :                 /* code */
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">          1 :                 format_expand_code(format, out, flags);</span></a>
+<span class="lineNum">     250 </span><span class="lineCov">          1 :                 if ((*format)[0] == '\0')</span>
+<span class="lineNum">     251 </span>            :                         /* oops, reached end prematurely */
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                         (*format)--;</span>
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<span class="lineNum">     254 </span><span class="lineCov">          1 :                 break;</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :         case 'x':</span>
+<span class="lineNum">     256 </span>            :         case 'X':
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 if ((*format)[1] &lt; '0' || (*format)[1] &gt; '7')</span></a>
+<span class="lineNum">     258 </span>            :                         break;
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :                 tmp = 16 + ((*format)[1]-'0'-1)*36;</span>
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :                 if (tmp &gt; 231) {</span></a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                         if (!isalpha((*format)[2]))</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :                         tmp += (*format)[2] &gt;= 'a' ? (*format)[2] - 'a' : (*format)[2] - 'A';</span></a>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :                         if (tmp &gt; 255)</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                                 break;</span>
+<a name="269"><span class="lineNum">     269 </span>            :                 }</a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                 else if (tmp &gt; 0) {</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :                         if (!isalnum((*format)[2]))</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                                 break;</span>
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                         if ((*format)[2] &gt;= 'a')</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                                 tmp += 10 + (*format)[2] - 'a';</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :                         else if ((*format)[2] &gt;= 'A')</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :                                 tmp += 10 + (*format)[2] - 'A';</span></a>
+<span class="lineNum">     278 </span>            :                         else
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                                 tmp += (*format)[2] - '0';</span>
+<span class="lineNum">     280 </span>            :                 }
+<a name="281"><span class="lineNum">     281 </span>            :                 else {</a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                         if (!isxdigit((*format)[2]))</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     284 </span>            : 
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :                         tmp = g_ascii_xdigit_value((*format)[2]);</span></a>
+<span class="lineNum">     286 </span>            :                 }
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 retval += 2;</span>
+<a name="289"><span class="lineNum">     289 </span>            : </a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                 format_ext_color(out, fmt == 'x', tmp);</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :         case 'z':</span>
+<a name="293"><span class="lineNum">     293 </span>            :         case 'Z':</a>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :                 tmp2 = 0;</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                 for (tmp = 1; tmp &lt; 7; ++tmp) {</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :                         if (!isxdigit((*format)[tmp])) {</span>
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :                                 tmp2 = UINT_MAX;</span></a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     299 </span>            :                         }
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :                         tmp2 &lt;&lt;= 4;</span>
+<a name="301"><span class="lineNum">     301 </span><span class="lineNoCov">          0 :                         tmp2 |= g_ascii_xdigit_value((*format)[tmp]);</span></a>
+<span class="lineNum">     302 </span>            :                 }
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                 if (tmp2 == UINT_MAX)</span>
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 retval += 6;</span>
+<span class="lineNum">     308 </span>            : 
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 format_24bit_color(out, fmt == 'z', tmp2);</span></a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     311 </span><span class="lineCov">        163 :         default:</span>
+<span class="lineNum">     312 </span>            :                 /* check if it's a background color */
+<a name="313"><span class="lineNum">     313 </span><span class="lineCov">        163 :                 p = strchr(format_backs, fmt);</span></a>
+<span class="lineNum">     314 </span><span class="lineCov">        163 :                 if (p != NULL) {</span>
+<span class="lineNum">     315 </span><span class="lineCov">         36 :                         g_string_append_c(out, 4);</span>
+<span class="lineNum">     316 </span><span class="lineCov">         36 :                         g_string_append_c(out, FORMAT_COLOR_NOCHANGE);</span>
+<a name="317"><span class="lineNum">     317 </span><span class="lineCov">         36 :                         g_string_append_c(out, (char) ((int) (p-format_backs)+'0'));</span></a>
+<span class="lineNum">     318 </span><span class="lineCov">         36 :                         break;</span>
+<span class="lineNum">     319 </span>            :                 }
+<span class="lineNum">     320 </span>            : 
+<a name="321"><span class="lineNum">     321 </span>            :                 /* check if it's a foreground color */</a>
+<span class="lineNum">     322 </span><span class="lineCov">        127 :                 if (fmt == 'p') fmt = 'm';</span>
+<span class="lineNum">     323 </span><span class="lineCov">        127 :                 p = strchr(format_fores, fmt);</span>
+<span class="lineNum">     324 </span><span class="lineCov">        127 :                 if (p != NULL) {</span>
+<a name="325"><span class="lineNum">     325 </span><span class="lineCov">        118 :                         g_string_append_c(out, 4);</span></a>
+<span class="lineNum">     326 </span><span class="lineCov">        118 :                         g_string_append_c(out, (char) ((int) (p-format_fores)+'0'));</span>
+<span class="lineNum">     327 </span><span class="lineCov">        118 :                         g_string_append_c(out, FORMAT_COLOR_NOCHANGE);</span>
+<span class="lineNum">     328 </span><span class="lineCov">        118 :                         break;</span>
+<a name="329"><span class="lineNum">     329 </span>            :                 }</a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span>            :                 /* check if it's a bold foreground color */
+<span class="lineNum">     332 </span><span class="lineCov">          9 :                 if (fmt == 'P') fmt = 'M';</span>
+<a name="333"><span class="lineNum">     333 </span><span class="lineCov">          9 :                 p = strchr(format_boldfores, fmt);</span></a>
+<span class="lineNum">     334 </span><span class="lineCov">          9 :                 if (p != NULL) {</span>
+<span class="lineNum">     335 </span><span class="lineCov">          9 :                         g_string_append_c(out, 4);</span>
+<span class="lineNum">     336 </span><span class="lineCov">          9 :                         g_string_append_c(out, (char) (8+(int) (p-format_boldfores)+'0'));</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineCov">          9 :                         g_string_append_c(out, FORMAT_COLOR_NOCHANGE);</span></a>
+<span class="lineNum">     338 </span><span class="lineCov">          9 :                         break;</span>
+<span class="lineNum">     339 </span>            :                 }
+<span class="lineNum">     340 </span>            : 
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :                 return FALSE;</span></a>
+<span class="lineNum">     342 </span>            :         }
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span><span class="lineCov">        301 :         return retval;</span>
+<a name="345"><span class="lineNum">     345 </span>            : }</a>
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span><span class="lineCov">         14 : void format_read_arglist(va_list va, FORMAT_REC *format,</span>
+<span class="lineNum">     348 </span>            :                          char **arglist, int arglist_size,
+<a name="349"><span class="lineNum">     349 </span>            :                          char *buffer, int buffer_size)</a>
+<span class="lineNum">     350 </span>            : {
+<span class="lineNum">     351 </span>            :         int num, len, bufpos;
+<span class="lineNum">     352 </span>            : 
+<a name="353"><span class="lineNum">     353 </span><span class="lineCov">         14 :         g_return_if_fail(format-&gt;params &lt; arglist_size);</span></a>
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span><span class="lineCov">         14 :         bufpos = 0;</span>
+<span class="lineNum">     356 </span><span class="lineCov">         14 :         arglist[format-&gt;params] = NULL;</span>
+<a name="357"><span class="lineNum">     357 </span><span class="lineCov">         17 :         for (num = 0; num &lt; format-&gt;params; num++) {</span></a>
+<span class="lineNum">     358 </span><span class="lineCov">          3 :                 switch (format-&gt;paramtypes[num]) {</span>
+<span class="lineNum">     359 </span><span class="lineCov">          3 :                 case FORMAT_STRING:</span>
+<span class="lineNum">     360 </span><span class="lineCov">          3 :                         arglist[num] = (char *) va_arg(va, char *);</span>
+<a name="361"><span class="lineNum">     361 </span><span class="lineCov">          3 :                         if (arglist[num] == NULL)</span></a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :                                 arglist[num] = &quot;&quot;;</span>
+<span class="lineNum">     363 </span><span class="lineCov">          3 :                         break;</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :                 case FORMAT_INT: {</span>
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :                         int d = (int) va_arg(va, int);</span></a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                         if (bufpos &gt;= buffer_size) {</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :                                 arglist[num] = &quot;&quot;;</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :                                 break;</span></a>
+<span class="lineNum">     370 </span>            :                         }
+<span class="lineNum">     371 </span>            : 
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                         arglist[num] = buffer+bufpos;</span>
+<a name="373"><span class="lineNum">     373 </span><span class="lineNoCov">          0 :                         len = g_snprintf(buffer+bufpos, buffer_size-bufpos,</span></a>
+<span class="lineNum">     374 </span>            :                                          &quot;%d&quot;, d);
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :                         bufpos += len+1;</span>
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :                         break;</span>
+<a name="377"><span class="lineNum">     377 </span>            :                 }</a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :                 case FORMAT_LONG: {</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :                         long l = (long) va_arg(va, long);</span>
+<span class="lineNum">     380 </span>            : 
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :                         if (bufpos &gt;= buffer_size) {</span></a>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :                                 arglist[num] = &quot;&quot;;</span>
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     384 </span>            :                         }
+<a name="385"><span class="lineNum">     385 </span>            : </a>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                         arglist[num] = buffer+bufpos;</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                         len = g_snprintf(buffer+bufpos, buffer_size-bufpos,</span>
+<span class="lineNum">     388 </span>            :                                          &quot;%ld&quot;, l);
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 :                         bufpos += len+1;</span></a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     391 </span>            :                 }
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                 case FORMAT_FLOAT: {</span>
+<a name="393"><span class="lineNum">     393 </span><span class="lineNoCov">          0 :                         double f = (double) va_arg(va, double);</span></a>
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                         if (bufpos &gt;= buffer_size) {</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                                 arglist[num] = &quot;&quot;;</span>
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :                                 break;</span></a>
+<span class="lineNum">     398 </span>            :                         }
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                         arglist[num] = buffer+bufpos;</span>
+<a name="401"><span class="lineNum">     401 </span><span class="lineNoCov">          0 :                         len = g_snprintf(buffer+bufpos, buffer_size-bufpos,</span></a>
+<span class="lineNum">     402 </span>            :                                          &quot;%0.2f&quot;, f);
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :                         bufpos += len+1;</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :                         break;</span>
+<a name="405"><span class="lineNum">     405 </span>            :                 }</a>
+<span class="lineNum">     406 </span>            :                 }
+<a name="407"><span class="lineNum">     407 </span>            :         }</a>
+<span class="lineNum">     408 </span>            : }
+<a name="409"><span class="lineNum">     409 </span><span class="lineCov">          5 : void format_create_dest(TEXT_DEST_REC *dest,</span></a>
+<span class="lineNum">     410 </span>            :                         void *server, const char *target,
+<span class="lineNum">     411 </span>            :                         int level, WINDOW_REC *window)
+<span class="lineNum">     412 </span>            : {
+<a name="413"><span class="lineNum">     413 </span><span class="lineCov">          5 :         format_create_dest_tag(dest, server, NULL, target, level, window);</span></a>
+<a name="414"><span class="lineNum">     414 </span><span class="lineCov">          5 : }</span></a>
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span><span class="lineCov">          5 : void format_create_dest_tag(TEXT_DEST_REC *dest, void *server,</span>
+<a name="417"><span class="lineNum">     417 </span>            :                             const char *server_tag, const char *target,</a>
+<span class="lineNum">     418 </span>            :                             int level, WINDOW_REC *window)
+<span class="lineNum">     419 </span>            : {
+<span class="lineNum">     420 </span><span class="lineCov">          5 :         memset(dest, 0, sizeof(TEXT_DEST_REC));</span>
+<a name="421"><span class="lineNum">     421 </span>            : </a>
+<span class="lineNum">     422 </span><span class="lineCov">          5 :         dest-&gt;server = server;</span>
+<span class="lineNum">     423 </span><span class="lineCov">          5 :         dest-&gt;server_tag = server != NULL ? SERVER(server)-&gt;tag : server_tag;</span>
+<span class="lineNum">     424 </span><span class="lineCov">          5 :         dest-&gt;target = target;</span>
+<a name="425"><span class="lineNum">     425 </span><span class="lineCov">          5 :         dest-&gt;level = level;</span></a>
+<span class="lineNum">     426 </span><span class="lineCov">          5 :         dest-&gt;window = window != NULL ? window :</span>
+<span class="lineNum">     427 </span>            :                 window_find_closest(server, target, level);
+<span class="lineNum">     428 </span><span class="lineCov">          5 : }</span>
+<a name="429"><span class="lineNum">     429 </span>            : </a>
+<span class="lineNum">     430 </span>            : /* Return length of text part in string (ie. without % codes) */
+<span class="lineNum">     431 </span><span class="lineCov">         84 : int format_get_length(const char *str)</span>
+<span class="lineNum">     432 </span>            : {
+<a name="433"><span class="lineNum">     433 </span>            :         GString *tmp;</a>
+<span class="lineNum">     434 </span>            :         int len;
+<span class="lineNum">     435 </span>            :         int utf8;
+<span class="lineNum">     436 </span><span class="lineCov">         84 :         int adv = 0;</span>
+<a name="437"><span class="lineNum">     437 </span>            : </a>
+<span class="lineNum">     438 </span><span class="lineCov">         84 :         g_return_val_if_fail(str != NULL, 0);</span>
+<span class="lineNum">     439 </span>            : 
+<span class="lineNum">     440 </span><span class="lineCov">         84 :         utf8 = string_policy(str);</span>
+<a name="441"><span class="lineNum">     441 </span>            : </a>
+<span class="lineNum">     442 </span><span class="lineCov">         84 :         tmp = g_string_new(NULL);</span>
+<span class="lineNum">     443 </span><span class="lineCov">         84 :         len = 0;</span>
+<span class="lineNum">     444 </span><span class="lineCov">        616 :         while (*str != '\0') {</span>
+<a name="445"><span class="lineNum">     445 </span><span class="lineCov">        448 :                 if (*str == '%' &amp;&amp; str[1] != '\0') {</span></a>
+<span class="lineNum">     446 </span><span class="lineCov">        140 :                         str++;</span>
+<span class="lineNum">     447 </span><span class="lineCov">        140 :                         if (*str != '%') {</span>
+<span class="lineNum">     448 </span><span class="lineCov">        140 :                              adv = format_expand_styles(tmp, &amp;str, NULL);</span>
+<a name="449"><span class="lineNum">     449 </span><span class="lineCov">        140 :                              str += adv;</span></a>
+<span class="lineNum">     450 </span><span class="lineCov">        140 :                              if (adv)</span>
+<span class="lineNum">     451 </span><span class="lineCov">        140 :                                 continue;</span>
+<span class="lineNum">     452 </span>            :                         }
+<a name="453"><span class="lineNum">     453 </span>            : </a>
+<span class="lineNum">     454 </span>            :                         /* %% or unknown %code, written as-is */
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :                         if (*str != '%')</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :                                 len++;</span>
+<a name="457"><span class="lineNum">     457 </span>            :                 }</a>
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineCov">        308 :                 len += string_advance(&amp;str, utf8);</span>
+<span class="lineNum">     460 </span>            :         }
+<a name="461"><span class="lineNum">     461 </span>            : </a>
+<span class="lineNum">     462 </span><span class="lineCov">         84 :         g_string_free(tmp, TRUE);</span>
+<span class="lineNum">     463 </span><span class="lineCov">         84 :         return len;</span>
+<span class="lineNum">     464 </span>            : }
+<a name="465"><span class="lineNum">     465 </span>            : </a>
+<span class="lineNum">     466 </span>            : /* Return how many characters in `str' must be skipped before `len'
+<a name="467"><span class="lineNum">     467 </span>            :    characters of text is skipped. Like strip_real_length(), except this</a>
+<span class="lineNum">     468 </span>            :    handles %codes. */
+<a name="469"><span class="lineNum">     469 </span><span class="lineCov">          3 : int format_real_length(const char *str, int len)</span></a>
+<span class="lineNum">     470 </span>            : {
+<span class="lineNum">     471 </span>            :         GString *tmp;
+<span class="lineNum">     472 </span>            :         const char *start;
+<a name="473"><span class="lineNum">     473 </span>            :         const char *oldstr;</a>
+<span class="lineNum">     474 </span>            :         int utf8;
+<span class="lineNum">     475 </span><span class="lineCov">          3 :         int adv = 0;</span>
+<span class="lineNum">     476 </span><span class="lineCov">          3 :         g_return_val_if_fail(str != NULL, 0);</span>
+<a name="477"><span class="lineNum">     477 </span><span class="lineCov">          3 :         g_return_val_if_fail(len &gt;= 0, 0);</span></a>
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span><span class="lineCov">          3 :         utf8 = string_policy(str);</span>
+<span class="lineNum">     480 </span>            : 
+<a name="481"><span class="lineNum">     481 </span><span class="lineCov">          3 :         start = str;</span></a>
+<span class="lineNum">     482 </span><span class="lineCov">          3 :         tmp = g_string_new(NULL);</span>
+<span class="lineNum">     483 </span><span class="lineCov">         12 :         while (*str != '\0' &amp;&amp; len &gt; 0) {</span>
+<span class="lineNum">     484 </span><span class="lineCov">          6 :                 if (*str == '%' &amp;&amp; str[1] != '\0') {</span>
+<a name="485"><span class="lineNum">     485 </span><span class="lineCov">          4 :                         str++;</span></a>
+<span class="lineNum">     486 </span><span class="lineCov">          4 :                         if (*str != '%') {</span>
+<span class="lineNum">     487 </span><span class="lineCov">          4 :                              adv = format_expand_styles(tmp, &amp;str, NULL);</span>
+<span class="lineNum">     488 </span><span class="lineCov">          4 :                              str += adv;</span>
+<a name="489"><span class="lineNum">     489 </span><span class="lineCov">          4 :                              if (adv)</span></a>
+<span class="lineNum">     490 </span><span class="lineCov">          4 :                                 continue;</span>
+<span class="lineNum">     491 </span>            :                         }
+<span class="lineNum">     492 </span>            : 
+<a name="493"><span class="lineNum">     493 </span>            :                         /* %% or unknown %code, written as-is */</a>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :                         if (*str != '%') {</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :                                 if (--len == 0)</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :                                         break;</span>
+<a name="497"><span class="lineNum">     497 </span>            :                         }</a>
+<span class="lineNum">     498 </span>            :                 }
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineCov">          2 :                 oldstr = str;</span>
+<a name="501"><span class="lineNum">     501 </span><span class="lineCov">          2 :                 len -= string_advance(&amp;str, utf8);</span></a>
+<span class="lineNum">     502 </span><span class="lineCov">          2 :                 if (len &lt; 0)</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :                         str = oldstr;</span>
+<span class="lineNum">     504 </span>            :         }
+<a name="505"><span class="lineNum">     505 </span>            : </a>
+<span class="lineNum">     506 </span><span class="lineCov">          3 :         g_string_free(tmp, TRUE);</span>
+<span class="lineNum">     507 </span><span class="lineCov">          3 :         return (int) (str-start);</span>
+<a name="508"><span class="lineNum">     508 </span>            : }</a>
+<a name="509"><span class="lineNum">     509 </span>            : </a>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 : char *format_string_expand(const char *text, int *flags)</span>
+<span class="lineNum">     511 </span>            : {
+<span class="lineNum">     512 </span>            :         GString *out;
+<a name="513"><span class="lineNum">     513 </span>            :         char code, *ret;</a>
+<span class="lineNum">     514 </span>            :         int adv;
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(text != NULL, NULL);</span>
+<a name="517"><span class="lineNum">     517 </span>            : </a>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :         out = g_string_new(NULL);</span>
+<span class="lineNum">     519 </span>            : 
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :         if (flags != NULL) *flags = 0;</span>
+<a name="521"><span class="lineNum">     521 </span><span class="lineNoCov">          0 :         code = 0;</span></a>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :         while (*text != '\0') {</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :                 if (code == '%') {</span>
+<span class="lineNum">     524 </span>            :                         /* color code */
+<a name="525"><span class="lineNum">     525 </span><span class="lineNoCov">          0 :                         adv = format_expand_styles(out, &amp;text, flags);</span></a>
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :                         if (!adv) {</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :                                 g_string_append_c(out, '%');</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :                                 g_string_append_c(out, '%');</span>
+<a name="529"><span class="lineNum">     529 </span><span class="lineNoCov">          0 :                                 g_string_append_c(out, *text);</span></a>
+<span class="lineNum">     530 </span>            :                         } else {
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                           text += adv - 1;</span>
+<span class="lineNum">     532 </span>            :                         }
+<a name="533"><span class="lineNum">     533 </span><span class="lineNoCov">          0 :                         code = 0;</span></a>
+<span class="lineNum">     534 </span>            :                 } else {
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :                         if (*text == '%')</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :                                 code = *text;</span>
+<a name="537"><span class="lineNum">     537 </span>            :                         else</a>
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :                                 g_string_append_c(out, *text);</span>
+<span class="lineNum">     539 </span>            :                 }
+<span class="lineNum">     540 </span>            : 
+<a name="541"><span class="lineNum">     541 </span><span class="lineNoCov">          0 :                 text++;</span></a>
+<span class="lineNum">     542 </span>            :         }
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :         ret = out-&gt;str;</span>
+<a name="545"><span class="lineNum">     545 </span><span class="lineNoCov">          0 :         g_string_free(out, FALSE);</span></a>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :         return ret;</span>
+<a name="547"><span class="lineNum">     547 </span>            : }</a>
+<span class="lineNum">     548 </span>            : 
+<a name="549"><span class="lineNum">     549 </span><span class="lineCov">         14 : static char *format_get_text_args(TEXT_DEST_REC *dest,</span></a>
+<span class="lineNum">     550 </span>            :                                   const char *text, char **arglist)
+<span class="lineNum">     551 </span>            : {
+<span class="lineNum">     552 </span>            :         GString *out;
+<a name="553"><span class="lineNum">     553 </span>            :         char code, *ret;</a>
+<span class="lineNum">     554 </span>            :         int need_free;
+<span class="lineNum">     555 </span>            :         int adv;
+<span class="lineNum">     556 </span>            : 
+<a name="557"><span class="lineNum">     557 </span><span class="lineCov">         14 :         out = g_string_new(NULL);</span></a>
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span><span class="lineCov">         14 :         code = 0;</span>
+<span class="lineNum">     560 </span><span class="lineCov">        295 :         while (*text != '\0') {</span>
+<a name="561"><span class="lineNum">     561 </span><span class="lineCov">        267 :                 if (code == '%') {</span></a>
+<span class="lineNum">     562 </span>            :                         /* color code */
+<span class="lineNum">     563 </span><span class="lineCov">         32 :                         adv = format_expand_styles(out, &amp;text, &amp;dest-&gt;flags);</span>
+<span class="lineNum">     564 </span><span class="lineCov">         32 :                         if (!adv) {</span>
+<a name="565"><span class="lineNum">     565 </span><span class="lineNoCov">          0 :                                 g_string_append_c(out, '%');</span></a>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :                                 g_string_append_c(out, '%');</span>
+<span class="lineNum">     567 </span><span class="lineNoCov">          0 :                                 g_string_append_c(out, *text);</span>
+<span class="lineNum">     568 </span>            :                         } else {
+<a name="569"><span class="lineNum">     569 </span><span class="lineCov">         32 :                                 text += adv - 1;</span></a>
+<span class="lineNum">     570 </span>            :                         }
+<span class="lineNum">     571 </span><span class="lineCov">         32 :                         code = 0;</span>
+<span class="lineNum">     572 </span><span class="lineCov">        235 :                 } else if (code == '$') {</span>
+<a name="573"><span class="lineNum">     573 </span>            :                         /* argument */</a>
+<span class="lineNum">     574 </span>            :                         char *ret;
+<span class="lineNum">     575 </span>            : 
+<span class="lineNum">     576 </span><span class="lineCov">         11 :                         ret = parse_special((char **) &amp;text, dest-&gt;server,</span>
+<a name="577"><span class="lineNum">     577 </span><span class="lineCov">         11 :                                             dest-&gt;target == NULL ? NULL :</span></a>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :                                             window_item_find(dest-&gt;server, dest-&gt;target),</span>
+<span class="lineNum">     579 </span>            :                                             arglist, &amp;need_free, NULL, 0);
+<span class="lineNum">     580 </span>            : 
+<a name="581"><span class="lineNum">     581 </span><span class="lineCov">         11 :                         if (ret != NULL) {</span></a>
+<span class="lineNum">     582 </span>            :                                 /* string shouldn't end with \003 or it could
+<span class="lineNum">     583 </span>            :                                    mess up the next one or two characters */
+<span class="lineNum">     584 </span>            :                                 int diff;
+<a name="585"><span class="lineNum">     585 </span><span class="lineCov">         11 :                                 int len = strlen(ret);</span></a>
+<span class="lineNum">     586 </span><span class="lineCov">         11 :                                 while (len &gt; 0 &amp;&amp; ret[len-1] == 3) len--;</span>
+<span class="lineNum">     587 </span><span class="lineCov">         11 :                                 diff = strlen(ret)-len;</span>
+<span class="lineNum">     588 </span>            : 
+<a name="589"><span class="lineNum">     589 </span><span class="lineCov">         11 :                                 g_string_append(out, ret);</span></a>
+<span class="lineNum">     590 </span><span class="lineCov">         11 :                                 if (diff &gt; 0)</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :                                         g_string_truncate(out, out-&gt;len-diff);</span>
+<span class="lineNum">     592 </span><span class="lineCov">         11 :                                 if (need_free) g_free(ret);</span>
+<a name="593"><span class="lineNum">     593 </span>            :                         }</a>
+<span class="lineNum">     594 </span><span class="lineCov">         11 :                         code = 0;</span>
+<span class="lineNum">     595 </span>            :                 } else {
+<span class="lineNum">     596 </span><span class="lineCov">        224 :                         if (*text == '%' || *text == '$')</span>
+<a name="597"><span class="lineNum">     597 </span><span class="lineCov">         43 :                                 code = *text;</span></a>
+<span class="lineNum">     598 </span>            :                         else
+<span class="lineNum">     599 </span><span class="lineCov">        181 :                                 g_string_append_c(out, *text);</span>
+<span class="lineNum">     600 </span>            :                 }
+<a name="601"><span class="lineNum">     601 </span>            : </a>
+<span class="lineNum">     602 </span><span class="lineCov">        267 :                 text++;</span>
+<span class="lineNum">     603 </span>            :         }
+<span class="lineNum">     604 </span>            : 
+<a name="605"><span class="lineNum">     605 </span><span class="lineCov">         14 :         ret = out-&gt;str;</span></a>
+<span class="lineNum">     606 </span><span class="lineCov">         14 :         g_string_free(out, FALSE);</span>
+<span class="lineNum">     607 </span><span class="lineCov">         14 :         return ret;</span>
+<a name="608"><span class="lineNum">     608 </span>            : }</a>
+<a name="609"><span class="lineNum">     609 </span>            : </a>
+<span class="lineNum">     610 </span><span class="lineCov">         11 : char *format_get_text_theme(THEME_REC *theme, const char *module,</span>
+<span class="lineNum">     611 </span>            :                             TEXT_DEST_REC *dest, int formatnum, ...)
+<span class="lineNum">     612 </span>            : {
+<a name="613"><span class="lineNum">     613 </span>            :         va_list va;</a>
+<span class="lineNum">     614 </span>            :         char *str;
+<span class="lineNum">     615 </span>            : 
+<span class="lineNum">     616 </span><span class="lineCov">         11 :         if (theme == NULL)</span>
+<a name="617"><span class="lineNum">     617 </span><span class="lineNoCov">          0 :                 theme = window_get_theme(dest-&gt;window);</span></a>
+<span class="lineNum">     618 </span>            : 
+<span class="lineNum">     619 </span><span class="lineCov">         11 :         va_start(va, formatnum);</span>
+<span class="lineNum">     620 </span><span class="lineCov">         11 :         str = format_get_text_theme_args(theme, module, dest, formatnum, va);</span>
+<a name="621"><span class="lineNum">     621 </span><span class="lineCov">         11 :         va_end(va);</span></a>
+<span class="lineNum">     622 </span>            : 
+<span class="lineNum">     623 </span><span class="lineCov">         11 :         return str;</span>
+<a name="624"><span class="lineNum">     624 </span>            : }</a>
+<a name="625"><span class="lineNum">     625 </span>            : </a>
+<span class="lineNum">     626 </span><span class="lineCov">         11 : char *format_get_text_theme_args(THEME_REC *theme, const char *module,</span>
+<span class="lineNum">     627 </span>            :                                  TEXT_DEST_REC *dest, int formatnum,
+<span class="lineNum">     628 </span>            :                                  va_list va)
+<a name="629"><span class="lineNum">     629 </span>            : {</a>
+<span class="lineNum">     630 </span>            :         char *arglist[MAX_FORMAT_PARAMS];
+<span class="lineNum">     631 </span>            :         char buffer[DEFAULT_FORMAT_ARGLIST_SIZE];
+<span class="lineNum">     632 </span>            :         FORMAT_REC *formats;
+<a name="633"><span class="lineNum">     633 </span>            : </a>
+<span class="lineNum">     634 </span><span class="lineCov">         11 :         formats = g_hash_table_lookup(default_formats, module);</span>
+<span class="lineNum">     635 </span><span class="lineCov">         11 :         format_read_arglist(va, &amp;formats[formatnum],</span>
+<span class="lineNum">     636 </span>            :                             arglist, sizeof(arglist)/sizeof(char *),
+<a name="637"><span class="lineNum">     637 </span>            :                             buffer, sizeof(buffer));</a>
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span><span class="lineCov">         11 :         return format_get_text_theme_charargs(theme, module, dest,</span>
+<span class="lineNum">     640 </span>            :                                               formatnum, arglist);
+<a name="641"><span class="lineNum">     641 </span>            : }</a>
+<span class="lineNum">     642 </span>            : 
+<span class="lineNum">     643 </span><span class="lineCov">         14 : char *format_get_text_theme_charargs(THEME_REC *theme, const char *module,</span>
+<span class="lineNum">     644 </span>            :                                      TEXT_DEST_REC *dest, int formatnum,
+<a name="645"><span class="lineNum">     645 </span>            :                                      char **args)</a>
+<span class="lineNum">     646 </span>            : {
+<span class="lineNum">     647 </span>            :         MODULE_THEME_REC *module_theme;
+<span class="lineNum">     648 </span>            :         char *text;
+<a name="649"><span class="lineNum">     649 </span>            : </a>
+<span class="lineNum">     650 </span><span class="lineCov">         14 :         module_theme = g_hash_table_lookup(theme-&gt;modules, module);</span>
+<span class="lineNum">     651 </span><span class="lineCov">         14 :         if (module_theme == NULL)</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<a name="653"><span class="lineNum">     653 </span>            : </a>
+<span class="lineNum">     654 </span><span class="lineCov">         14 :         text = module_theme-&gt;expanded_formats[formatnum];</span>
+<span class="lineNum">     655 </span><span class="lineCov">         14 :         return format_get_text_args(dest, text, args);</span>
+<a name="656"><span class="lineNum">     656 </span>            : }</a>
+<a name="657"><span class="lineNum">     657 </span>            : </a>
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 : char *format_get_text(const char *module, WINDOW_REC *window,</span>
+<span class="lineNum">     659 </span>            :                       void *server, const char *target,
+<span class="lineNum">     660 </span>            :                       int formatnum, ...)
+<a name="661"><span class="lineNum">     661 </span>            : {</a>
+<span class="lineNum">     662 </span>            :         TEXT_DEST_REC dest;
+<span class="lineNum">     663 </span>            :         THEME_REC *theme;
+<span class="lineNum">     664 </span>            :         va_list va;
+<a name="665"><span class="lineNum">     665 </span>            :         char *str;</a>
+<span class="lineNum">     666 </span>            : 
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :         format_create_dest(&amp;dest, server, target, 0, window);</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :         theme = window_get_theme(dest.window);</span>
+<a name="669"><span class="lineNum">     669 </span>            : </a>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :         va_start(va, formatnum);</span>
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :         str = format_get_text_theme_args(theme, module, &amp;dest, formatnum, va);</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :         va_end(va);</span>
+<a name="673"><span class="lineNum">     673 </span>            : </a>
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :         return str;</span>
+<span class="lineNum">     675 </span>            : }
+<span class="lineNum">     676 </span>            : 
+<a name="677"><span class="lineNum">     677 </span>            : /* add `linestart' to start of each line in `text'. `text' may contain</a>
+<span class="lineNum">     678 </span>            :    multiple lines separated with \n. */
+<span class="lineNum">     679 </span><span class="lineCov">         14 : char *format_add_linestart(const char *text, const char *linestart)</span>
+<span class="lineNum">     680 </span>            : {
+<a name="681"><span class="lineNum">     681 </span>            :         GString *str;</a>
+<span class="lineNum">     682 </span>            :         char *ret;
+<span class="lineNum">     683 </span>            : 
+<span class="lineNum">     684 </span><span class="lineCov">         14 :         if (linestart == NULL)</span>
+<a name="685"><span class="lineNum">     685 </span><span class="lineCov">          3 :                 return g_strdup(text);</span></a>
+<span class="lineNum">     686 </span>            : 
+<span class="lineNum">     687 </span><span class="lineCov">         11 :         if (strchr(text, '\n') == NULL)</span>
+<span class="lineNum">     688 </span><span class="lineCov">          9 :                 return g_strconcat(linestart, text, NULL);</span>
+<a name="689"><span class="lineNum">     689 </span>            : </a>
+<span class="lineNum">     690 </span><span class="lineCov">          2 :         str = g_string_new(linestart);</span>
+<span class="lineNum">     691 </span><span class="lineCov">        314 :         while (*text != '\0') {</span>
+<span class="lineNum">     692 </span><span class="lineCov">        310 :                 g_string_append_c(str, *text);</span>
+<a name="693"><span class="lineNum">     693 </span><span class="lineCov">        310 :                 if (*text == '\n')</span></a>
+<span class="lineNum">     694 </span><span class="lineCov">          8 :                         g_string_append(str, linestart);</span>
+<span class="lineNum">     695 </span><span class="lineCov">        310 :                 text++;</span>
+<span class="lineNum">     696 </span>            :         }
+<a name="697"><span class="lineNum">     697 </span>            : </a>
+<span class="lineNum">     698 </span><span class="lineCov">          2 :         ret = str-&gt;str;</span>
+<span class="lineNum">     699 </span><span class="lineCov">          2 :         g_string_free(str, FALSE);</span>
+<span class="lineNum">     700 </span><span class="lineCov">          2 :         return ret;</span>
+<a name="701"><span class="lineNum">     701 </span>            : }</a>
+<span class="lineNum">     702 </span>            : 
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 : char *format_add_lineend(const char *text, const char *linestart)</span>
+<span class="lineNum">     704 </span>            : {
+<a name="705"><span class="lineNum">     705 </span>            :         GString *str;</a>
+<span class="lineNum">     706 </span>            :         char *ret;
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :         if (linestart == NULL)</span>
+<a name="709"><span class="lineNum">     709 </span><span class="lineNoCov">          0 :                 return g_strdup(text);</span></a>
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :         if (strchr(text, '\n') == NULL)</span>
+<span class="lineNum">     712 </span><span class="lineNoCov">          0 :                 return g_strconcat(text, linestart, NULL);</span>
+<a name="713"><span class="lineNum">     713 </span>            : </a>
+<span class="lineNum">     714 </span><span class="lineNoCov">          0 :         str = g_string_new(NULL);</span>
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :         while (*text != '\0') {</span>
+<span class="lineNum">     716 </span><span class="lineNoCov">          0 :                 if (*text == '\n')</span>
+<a name="717"><span class="lineNum">     717 </span><span class="lineNoCov">          0 :                         g_string_append(str, linestart);</span></a>
+<span class="lineNum">     718 </span><span class="lineNoCov">          0 :                 g_string_append_c(str, *text);</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">          0 :                 text++;</span>
+<span class="lineNum">     720 </span>            :         }
+<a name="721"><span class="lineNum">     721 </span><span class="lineNoCov">          0 :         g_string_append(str, linestart);</span></a>
+<span class="lineNum">     722 </span>            : 
+<span class="lineNum">     723 </span><span class="lineNoCov">          0 :         ret = str-&gt;str;</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :         g_string_free(str, FALSE);</span>
+<a name="725"><span class="lineNum">     725 </span><span class="lineNoCov">          0 :         return ret;</span></a>
+<span class="lineNum">     726 </span>            : }
+<span class="lineNum">     727 </span>            : 
+<span class="lineNum">     728 </span>            : #define LINE_START_IRSSI_LEVEL \
+<a name="729"><span class="lineNum">     729 </span>            :         (MSGLEVEL_CLIENTERROR | MSGLEVEL_CLIENTNOTICE)</a>
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span>            : #define NOT_LINE_START_LEVEL \
+<span class="lineNum">     732 </span>            :         (MSGLEVEL_NEVER | MSGLEVEL_LASTLOG | MSGLEVEL_CLIENTCRAP | \
+<a name="733"><span class="lineNum">     733 </span>            :         MSGLEVEL_MSGS | MSGLEVEL_PUBLIC | MSGLEVEL_DCC | MSGLEVEL_DCCMSGS | \</a>
+<span class="lineNum">     734 </span>            :         MSGLEVEL_ACTIONS | MSGLEVEL_NOTICES | MSGLEVEL_SNOTES | MSGLEVEL_CTCPS)
+<a name="735"><span class="lineNum">     735 </span>            : </a>
+<span class="lineNum">     736 </span>            : /* return the &quot;-!- &quot; text at the start of the line */
+<a name="737"><span class="lineNum">     737 </span><span class="lineCov">          7 : char *format_get_level_tag(THEME_REC *theme, TEXT_DEST_REC *dest)</span></a>
+<span class="lineNum">     738 </span>            : {
+<span class="lineNum">     739 </span>            :         int format;
+<span class="lineNum">     740 </span>            : 
+<a name="741"><span class="lineNum">     741 </span>            :         /* check for flags if we want to override defaults */</a>
+<span class="lineNum">     742 </span><span class="lineCov">          7 :         if (dest-&gt;flags &amp; PRINT_FLAG_UNSET_LINE_START)</span>
+<span class="lineNum">     743 </span><span class="lineCov">          3 :                 return NULL;</span>
+<span class="lineNum">     744 </span>            : 
+<a name="745"><span class="lineNum">     745 </span><span class="lineCov">          4 :         if (dest-&gt;flags &amp; PRINT_FLAG_SET_LINE_START)</span></a>
+<span class="lineNum">     746 </span><span class="lineNoCov">          0 :                 format = TXT_LINE_START;</span>
+<span class="lineNum">     747 </span><span class="lineCov">          4 :         else if (dest-&gt;flags &amp; PRINT_FLAG_SET_LINE_START_IRSSI)</span>
+<span class="lineNum">     748 </span><span class="lineNoCov">          0 :                 format = TXT_LINE_START_IRSSI;</span>
+<a name="749"><span class="lineNum">     749 </span>            :         else {</a>
+<span class="lineNum">     750 </span>            :                 /* use defaults */
+<span class="lineNum">     751 </span><span class="lineCov">          4 :                 if (dest-&gt;level &amp; LINE_START_IRSSI_LEVEL)</span>
+<span class="lineNum">     752 </span><span class="lineCov">          3 :                         format = TXT_LINE_START_IRSSI;</span>
+<a name="753"><span class="lineNum">     753 </span><span class="lineCov">          1 :                 else if ((dest-&gt;level &amp; NOT_LINE_START_LEVEL) == 0)</span></a>
+<span class="lineNum">     754 </span><span class="lineCov">          1 :                         format = TXT_LINE_START;</span>
+<span class="lineNum">     755 </span>            :                 else
+<span class="lineNum">     756 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<a name="757"><span class="lineNum">     757 </span>            :         }</a>
+<span class="lineNum">     758 </span>            : 
+<span class="lineNum">     759 </span><span class="lineCov">          4 :         return format_get_text_theme(theme, MODULE_NAME, dest, format);</span>
+<a name="760"><span class="lineNum">     760 </span>            : }</a>
+<a name="761"><span class="lineNum">     761 </span>            : </a>
+<span class="lineNum">     762 </span><span class="lineCov">          7 : static char *get_timestamp(THEME_REC *theme, TEXT_DEST_REC *dest, time_t t)</span>
+<span class="lineNum">     763 </span>            : {
+<span class="lineNum">     764 </span>            :         char *format, str[256];
+<a name="765"><span class="lineNum">     765 </span>            :         struct tm *tm;</a>
+<span class="lineNum">     766 </span>            :         int diff;
+<span class="lineNum">     767 </span>            : 
+<span class="lineNum">     768 </span><span class="lineCov">          7 :         if ((timestamp_level &amp; dest-&gt;level) == 0)</span>
+<a name="769"><span class="lineNum">     769 </span><span class="lineNoCov">          0 :                 return NULL;</span></a>
+<span class="lineNum">     770 </span>            : 
+<span class="lineNum">     771 </span>            :         /* check for flags if we want to override defaults */
+<span class="lineNum">     772 </span><span class="lineCov">          7 :         if (dest-&gt;flags &amp; PRINT_FLAG_UNSET_TIMESTAMP)</span>
+<a name="773"><span class="lineNum">     773 </span><span class="lineNoCov">          0 :                 return NULL;</span></a>
+<span class="lineNum">     774 </span>            : 
+<span class="lineNum">     775 </span><span class="lineCov">         14 :         if ((dest-&gt;flags &amp; PRINT_FLAG_SET_TIMESTAMP) == 0 &amp;&amp;</span>
+<span class="lineNum">     776 </span><span class="lineCov">          7 :             (dest-&gt;level &amp; (MSGLEVEL_NEVER|MSGLEVEL_LASTLOG)) != 0)</span>
+<a name="777"><span class="lineNum">     777 </span><span class="lineNoCov">          0 :                 return NULL;</span></a>
+<span class="lineNum">     778 </span>            : 
+<span class="lineNum">     779 </span>            : 
+<span class="lineNum">     780 </span><span class="lineCov">          7 :         if (timestamp_timeout &gt; 0) {</span>
+<a name="781"><span class="lineNum">     781 </span><span class="lineNoCov">          0 :                 diff = t - dest-&gt;window-&gt;last_timestamp;</span></a>
+<span class="lineNum">     782 </span><span class="lineNoCov">          0 :                 dest-&gt;window-&gt;last_timestamp = t;</span>
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 :                 if (diff &lt; timestamp_timeout)</span>
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<a name="785"><span class="lineNum">     785 </span>            :         }</a>
+<span class="lineNum">     786 </span>            : 
+<span class="lineNum">     787 </span><span class="lineCov">          7 :         tm = localtime(&amp;t);</span>
+<span class="lineNum">     788 </span><span class="lineCov">          7 :         format = format_get_text_theme(theme, MODULE_NAME, dest,</span>
+<a name="789"><span class="lineNum">     789 </span>            :                                        TXT_TIMESTAMP);</a>
+<span class="lineNum">     790 </span><span class="lineCov">          7 :         if (strftime(str, sizeof(str), format, tm) &lt;= 0)</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 :                 str[0] = '\0';</span>
+<span class="lineNum">     792 </span><span class="lineCov">          7 :         g_free(format);</span>
+<a name="793"><span class="lineNum">     793 </span><span class="lineCov">          7 :         return g_strdup(str);</span></a>
+<a name="794"><span class="lineNum">     794 </span>            : }</a>
+<span class="lineNum">     795 </span>            : 
+<span class="lineNum">     796 </span><span class="lineCov">          7 : static char *get_server_tag(THEME_REC *theme, TEXT_DEST_REC *dest)</span>
+<a name="797"><span class="lineNum">     797 </span>            : {</a>
+<span class="lineNum">     798 </span><span class="lineCov">          7 :         int count = 0;</span>
+<span class="lineNum">     799 </span>            : 
+<span class="lineNum">     800 </span><span class="lineCov">          7 :         if (dest-&gt;server_tag == NULL || hide_server_tags)</span>
+<a name="801"><span class="lineNum">     801 </span><span class="lineCov">          7 :                 return NULL;</span></a>
+<span class="lineNum">     802 </span>            : 
+<span class="lineNum">     803 </span>            :         /* check for flags if we want to override defaults */
+<span class="lineNum">     804 </span><span class="lineNoCov">          0 :         if (dest-&gt;flags &amp; PRINT_FLAG_UNSET_SERVERTAG)</span>
+<a name="805"><span class="lineNum">     805 </span><span class="lineNoCov">          0 :                 return NULL;</span></a>
+<span class="lineNum">     806 </span>            : 
+<span class="lineNum">     807 </span><span class="lineNoCov">          0 :         if ((dest-&gt;flags &amp; PRINT_FLAG_SET_SERVERTAG) == 0) {</span>
+<span class="lineNum">     808 </span><span class="lineNoCov">          0 :                 if (dest-&gt;window-&gt;active != NULL &amp;&amp;</span>
+<a name="809"><span class="lineNum">     809 </span><span class="lineNoCov">          0 :                     dest-&gt;window-&gt;active-&gt;server == dest-&gt;server)</span></a>
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<span class="lineNum">     811 </span>            : 
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :                 if (servers != NULL) {</span>
+<a name="813"><span class="lineNum">     813 </span><span class="lineNoCov">          0 :                         count++;</span></a>
+<span class="lineNum">     814 </span><span class="lineNoCov">          0 :                         if (servers-&gt;next != NULL)</span>
+<span class="lineNum">     815 </span><span class="lineNoCov">          0 :                                 count++;</span>
+<span class="lineNum">     816 </span>            :                 }
+<a name="817"><span class="lineNum">     817 </span><span class="lineNoCov">          0 :                 if (count &lt; 2 &amp;&amp; lookup_servers != NULL) {</span></a>
+<span class="lineNum">     818 </span><span class="lineNoCov">          0 :                         count++;</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">          0 :                         if (lookup_servers-&gt;next != NULL)</span>
+<span class="lineNum">     820 </span><span class="lineNoCov">          0 :                                 count++;</span>
+<a name="821"><span class="lineNum">     821 </span>            :                 }</a>
+<span class="lineNum">     822 </span>            : 
+<span class="lineNum">     823 </span><span class="lineNoCov">          0 :                 if (count &lt; 2)</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">          0 :                         return NULL;</span>
+<a name="825"><span class="lineNum">     825 </span>            :         }</a>
+<span class="lineNum">     826 </span>            : 
+<span class="lineNum">     827 </span><span class="lineNoCov">          0 :         return format_get_text_theme(theme, MODULE_NAME, dest,</span>
+<span class="lineNum">     828 </span>            :                                      TXT_SERVERTAG, dest-&gt;server_tag);
+<a name="829"><span class="lineNum">     829 </span>            : }</a>
+<span class="lineNum">     830 </span>            : 
+<span class="lineNum">     831 </span><span class="lineCov">          7 : char *format_get_line_start(THEME_REC *theme, TEXT_DEST_REC *dest, time_t t)</span>
+<span class="lineNum">     832 </span>            : {
+<a name="833"><span class="lineNum">     833 </span>            :         char *timestamp, *servertag;</a>
+<span class="lineNum">     834 </span>            :         char *linestart;
+<span class="lineNum">     835 </span>            : 
+<span class="lineNum">     836 </span><span class="lineCov">          7 :         timestamp = get_timestamp(theme, dest, t);</span>
+<a name="837"><span class="lineNum">     837 </span><span class="lineCov">          7 :         servertag = get_server_tag(theme, dest);</span></a>
+<span class="lineNum">     838 </span>            : 
+<span class="lineNum">     839 </span><span class="lineCov">          7 :         if (timestamp == NULL &amp;&amp; servertag == NULL)</span>
+<span class="lineNum">     840 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<a name="841"><span class="lineNum">     841 </span>            : </a>
+<span class="lineNum">     842 </span><span class="lineCov">          7 :         linestart = g_strconcat(timestamp != NULL ? timestamp : &quot;&quot;,</span>
+<span class="lineNum">     843 </span>            :                                 servertag, NULL);
+<span class="lineNum">     844 </span>            : 
+<a name="845"><span class="lineNum">     845 </span><span class="lineCov">          7 :         g_free_not_null(timestamp);</span></a>
+<span class="lineNum">     846 </span><span class="lineCov">          7 :         g_free_not_null(servertag);</span>
+<span class="lineNum">     847 </span><span class="lineCov">          7 :         return linestart;</span>
+<a name="848"><span class="lineNum">     848 </span>            : }</a>
+<a name="849"><span class="lineNum">     849 </span>            : </a>
+<span class="lineNum">     850 </span><span class="lineCov">          4 : void format_newline(WINDOW_REC *window)</span>
+<span class="lineNum">     851 </span>            : {
+<span class="lineNum">     852 </span><span class="lineCov">          4 :         g_return_if_fail(window != NULL);</span>
+<a name="853"><span class="lineNum">     853 </span>            : </a>
+<span class="lineNum">     854 </span><span class="lineCov">          4 :         signal_emit_id(signal_gui_print_text, 6, window,</span>
+<span class="lineNum">     855 </span>            :                        GINT_TO_POINTER(-1), GINT_TO_POINTER(-1),
+<span class="lineNum">     856 </span>            :                        GINT_TO_POINTER(GUI_PRINT_FLAG_NEWLINE),
+<a name="857"><span class="lineNum">     857 </span>            :                        &quot;&quot;, NULL);</a>
+<span class="lineNum">     858 </span>            : }
+<a name="859"><span class="lineNum">     859 </span>            : </a>
+<span class="lineNum">     860 </span>            : #ifndef TERM_TRUECOLOR
+<a name="861"><span class="lineNum">     861 </span><span class="lineNoCov">          0 : inline static int color_24bit_256_int(unsigned int color)</span></a>
+<span class="lineNum">     862 </span>            : {
+<span class="lineNum">     863 </span><span class="lineNoCov">          0 :         unsigned char rgb[] = { color &gt;&gt; 16, color &gt;&gt; 8, color };</span>
+<span class="lineNum">     864 </span><span class="lineNoCov">          0 :         return color_24bit_256(rgb);</span>
+<a name="865"><span class="lineNum">     865 </span>            : }</a>
+<span class="lineNum">     866 </span>            : #endif /* !TERM_TRUECOLOR */
+<a name="867"><span class="lineNum">     867 </span>            : </a>
+<span class="lineNum">     868 </span>            : /* parse ANSI color string */
+<a name="869"><span class="lineNum">     869 </span><span class="lineNoCov">          0 : static const char *get_ansi_color(THEME_REC *theme, const char *str,</span></a>
+<span class="lineNum">     870 </span>            :                                   int *fg_ret, int *bg_ret, int *flags_ret)
+<span class="lineNum">     871 </span>            : {
+<span class="lineNum">     872 </span>            :         static char ansitab[8] = { 0, 4, 2, 6, 1, 5, 3, 7 };
+<a name="873"><span class="lineNum">     873 </span>            :         const char *start;</a>
+<span class="lineNum">     874 </span>            :         char *endptr;
+<span class="lineNum">     875 </span>            :         int fg, bg, flags, i;
+<span class="lineNum">     876 </span>            :         guint num, num2;
+<a name="877"><span class="lineNum">     877 </span>            : </a>
+<span class="lineNum">     878 </span><span class="lineNoCov">          0 :         if (*str != '[')</span>
+<span class="lineNum">     879 </span><span class="lineNoCov">          0 :                 return str;</span>
+<span class="lineNum">     880 </span><span class="lineNoCov">          0 :         start = str++;</span>
+<a name="881"><span class="lineNum">     881 </span>            : </a>
+<span class="lineNum">     882 </span><span class="lineNoCov">          0 :         fg = fg_ret == NULL || *fg_ret &lt; 0 ? theme-&gt;default_color : *fg_ret;</span>
+<span class="lineNum">     883 </span><span class="lineNoCov">          0 :         bg = bg_ret == NULL || *bg_ret &lt; 0 ? -1 : *bg_ret;</span>
+<span class="lineNum">     884 </span><span class="lineNoCov">          0 :         flags = flags_ret == NULL ? 0 : *flags_ret;</span>
+<a name="885"><span class="lineNum">     885 </span>            : </a>
+<span class="lineNum">     886 </span><span class="lineNoCov">          0 :         num = 0;</span>
+<span class="lineNum">     887 </span><span class="lineNoCov">          0 :         for (;; str++) {</span>
+<span class="lineNum">     888 </span><span class="lineNoCov">          0 :                 if (*str == '\0') return start;</span>
+<a name="889"><span class="lineNum">     889 </span>            : </a>
+<span class="lineNum">     890 </span><span class="lineNoCov">          0 :                 if (i_isdigit(*str)) {</span>
+<span class="lineNum">     891 </span><span class="lineNoCov">          0 :                         if (!parse_uint(str, &amp;endptr, 10, &amp;num)) {</span>
+<span class="lineNum">     892 </span><span class="lineNoCov">          0 :                                 return start;</span>
+<a name="893"><span class="lineNum">     893 </span>            :                         }</a>
+<span class="lineNum">     894 </span><span class="lineNoCov">          0 :                         str = endptr;</span>
+<span class="lineNum">     895 </span>            :                 }
+<span class="lineNum">     896 </span>            : 
+<a name="897"><span class="lineNum">     897 </span><span class="lineNoCov">          0 :                 if (*str != ';' &amp;&amp; *str != 'm')</span></a>
+<span class="lineNum">     898 </span><span class="lineNoCov">          0 :                         return start;</span>
+<span class="lineNum">     899 </span>            : 
+<span class="lineNum">     900 </span><span class="lineNoCov">          0 :                 switch (num) {</span>
+<a name="901"><span class="lineNum">     901 </span><span class="lineNoCov">          0 :                 case 0:</span></a>
+<span class="lineNum">     902 </span>            :                         /* reset colors and attributes back to default */
+<span class="lineNum">     903 </span><span class="lineNoCov">          0 :                         fg = theme-&gt;default_color;</span>
+<span class="lineNum">     904 </span><span class="lineNoCov">          0 :                         bg = -1;</span>
+<a name="905"><span class="lineNum">     905 </span><span class="lineNoCov">          0 :                         flags &amp;= ~(GUI_PRINT_FLAG_INDENT |</span></a>
+<span class="lineNum">     906 </span>            :                                    GUI_PRINT_FLAG_BOLD | GUI_PRINT_FLAG_ITALIC | GUI_PRINT_FLAG_UNDERLINE |
+<span class="lineNum">     907 </span>            :                                    GUI_PRINT_FLAG_BLINK | GUI_PRINT_FLAG_REVERSE |
+<span class="lineNum">     908 </span>            :                                    GUI_PRINT_FLAG_COLOR_24_FG | GUI_PRINT_FLAG_COLOR_24_BG);
+<a name="909"><span class="lineNum">     909 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     910 </span><span class="lineNoCov">          0 :                 case 1:</span>
+<span class="lineNum">     911 </span>            :                         /* hilight */
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :                         flags |= GUI_PRINT_FLAG_BOLD;</span>
+<a name="913"><span class="lineNum">     913 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     914 </span><span class="lineNoCov">          0 :                 case 22:</span>
+<span class="lineNum">     915 </span>            :                         /* normal */
+<span class="lineNum">     916 </span><span class="lineNoCov">          0 :                         flags &amp;= ~GUI_PRINT_FLAG_BOLD;</span>
+<a name="917"><span class="lineNum">     917 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     918 </span><span class="lineNoCov">          0 :                 case 3:</span>
+<span class="lineNum">     919 </span>            :                         /* italic */
+<span class="lineNum">     920 </span><span class="lineNoCov">          0 :                         flags |= GUI_PRINT_FLAG_ITALIC;</span>
+<a name="921"><span class="lineNum">     921 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     922 </span><span class="lineNoCov">          0 :                 case 23:</span>
+<span class="lineNum">     923 </span>            :                         /* not italic */
+<span class="lineNum">     924 </span><span class="lineNoCov">          0 :                         flags &amp;= ~GUI_PRINT_FLAG_ITALIC;</span>
+<a name="925"><span class="lineNum">     925 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     926 </span><span class="lineNoCov">          0 :                 case 4:</span>
+<span class="lineNum">     927 </span>            :                         /* underline */
+<span class="lineNum">     928 </span><span class="lineNoCov">          0 :                         flags |= GUI_PRINT_FLAG_UNDERLINE;</span>
+<a name="929"><span class="lineNum">     929 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     930 </span><span class="lineNoCov">          0 :                 case 24:</span>
+<span class="lineNum">     931 </span>            :                         /* not underline */
+<span class="lineNum">     932 </span><span class="lineNoCov">          0 :                         flags &amp;= ~GUI_PRINT_FLAG_UNDERLINE;</span>
+<a name="933"><span class="lineNum">     933 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     934 </span><span class="lineNoCov">          0 :                 case 5:</span>
+<span class="lineNum">     935 </span>            :                         /* blink */
+<span class="lineNum">     936 </span><span class="lineNoCov">          0 :                         flags |= GUI_PRINT_FLAG_BLINK;</span>
+<a name="937"><span class="lineNum">     937 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     938 </span><span class="lineNoCov">          0 :                 case 25:</span>
+<span class="lineNum">     939 </span>            :                         /* steady */
+<span class="lineNum">     940 </span><span class="lineNoCov">          0 :                         flags &amp;= ~GUI_PRINT_FLAG_BLINK;</span>
+<a name="941"><span class="lineNum">     941 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     942 </span><span class="lineNoCov">          0 :                 case 7:</span>
+<span class="lineNum">     943 </span>            :                         /* reverse */
+<span class="lineNum">     944 </span><span class="lineNoCov">          0 :                         flags |= GUI_PRINT_FLAG_REVERSE;</span>
+<a name="945"><span class="lineNum">     945 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     946 </span><span class="lineNoCov">          0 :                 case 27:</span>
+<span class="lineNum">     947 </span>            :                         /* positive */
+<span class="lineNum">     948 </span><span class="lineNoCov">          0 :                         flags &amp;= ~GUI_PRINT_FLAG_REVERSE;</span>
+<a name="949"><span class="lineNum">     949 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     950 </span><span class="lineNoCov">          0 :                 case 39:</span>
+<span class="lineNum">     951 </span>            :                         /* reset fg */
+<span class="lineNum">     952 </span><span class="lineNoCov">          0 :                         flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_FG;</span>
+<a name="953"><span class="lineNum">     953 </span><span class="lineNoCov">          0 :                         fg = theme-&gt;default_color;</span></a>
+<span class="lineNum">     954 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     955 </span><span class="lineNoCov">          0 :                 case 49:</span>
+<span class="lineNum">     956 </span>            :                         /* reset bg */
+<a name="957"><span class="lineNum">     957 </span><span class="lineNoCov">          0 :                         bg = -1;</span></a>
+<span class="lineNum">     958 </span><span class="lineNoCov">          0 :                         flags &amp;= ~(GUI_PRINT_FLAG_COLOR_24_BG | GUI_PRINT_FLAG_INDENT);</span>
+<span class="lineNum">     959 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     960 </span><span class="lineNoCov">          0 :                 case 38:</span>
+<a name="961"><span class="lineNum">     961 </span>            :                 case 48:</a>
+<span class="lineNum">     962 </span>            :                         /* ANSI indexed color or RGB color */
+<span class="lineNum">     963 </span><span class="lineNoCov">          0 :                         if (*str != ';') break;</span>
+<span class="lineNum">     964 </span><span class="lineNoCov">          0 :                         str++;</span>
+<a name="965"><span class="lineNum">     965 </span>            : </a>
+<span class="lineNum">     966 </span><span class="lineNoCov">          0 :                         if (!parse_uint(str, &amp;endptr, 10, &amp;num2)) {</span>
+<span class="lineNum">     967 </span><span class="lineNoCov">          0 :                                 return start;</span>
+<span class="lineNum">     968 </span>            :                         }
+<a name="969"><span class="lineNum">     969 </span><span class="lineNoCov">          0 :                         str = endptr;</span></a>
+<span class="lineNum">     970 </span>            : 
+<span class="lineNum">     971 </span><span class="lineNoCov">          0 :                         if (*str == '\0') return start;</span>
+<span class="lineNum">     972 </span>            : 
+<a name="973"><span class="lineNum">     973 </span><span class="lineNoCov">          0 :                         switch (num2) {</span></a>
+<span class="lineNum">     974 </span><span class="lineNoCov">          0 :                         case 2:</span>
+<span class="lineNum">     975 </span>            :                                 /* RGB */
+<span class="lineNum">     976 </span><span class="lineNoCov">          0 :                                 num2 = 0;</span>
+<a name="977"><span class="lineNum">     977 </span>            : </a>
+<span class="lineNum">     978 </span><span class="lineNoCov">          0 :                                 for (i = 0; i &lt; 3; ++i) {</span>
+<span class="lineNum">     979 </span><span class="lineNoCov">          0 :                                         num2 &lt;&lt;= 8;</span>
+<span class="lineNum">     980 </span>            : 
+<a name="981"><span class="lineNum">     981 </span><span class="lineNoCov">          0 :                                         if (*str != ';' &amp;&amp; *str != ':') {</span></a>
+<span class="lineNum">     982 </span><span class="lineNoCov">          0 :                                                 i = -1;</span>
+<span class="lineNum">     983 </span><span class="lineNoCov">          0 :                                                 break;</span>
+<span class="lineNum">     984 </span>            :                                         }
+<a name="985"><span class="lineNum">     985 </span><span class="lineNoCov">          0 :                                         str++;</span></a>
+<span class="lineNum">     986 </span><span class="lineNoCov">          0 :                                         for (; i_isdigit(*str); str++)</span>
+<span class="lineNum">     987 </span><span class="lineNoCov">          0 :                                                 num2 = (num2&amp;~0xff) |</span>
+<span class="lineNum">     988 </span><span class="lineNoCov">          0 :                                                         (((num2&amp;0xff) * 10 + (*str-'0'))&amp;0xff);</span>
+<a name="989"><span class="lineNum">     989 </span>            : </a>
+<span class="lineNum">     990 </span><span class="lineNoCov">          0 :                                         if (*str == '\0') return start;</span>
+<span class="lineNum">     991 </span>            :                                 }
+<span class="lineNum">     992 </span>            : 
+<a name="993"><span class="lineNum">     993 </span><span class="lineNoCov">          0 :                                 if (i == -1) break;</span></a>
+<span class="lineNum">     994 </span>            : #ifdef TERM_TRUECOLOR
+<span class="lineNum">     995 </span>            :                                 if (num == 38) {
+<span class="lineNum">     996 </span>            :                                         flags |= GUI_PRINT_FLAG_COLOR_24_FG;
+<a name="997"><span class="lineNum">     997 </span>            :                                         fg = num2;</a>
+<span class="lineNum">     998 </span>            :                                 } else if (num == 48) {
+<span class="lineNum">     999 </span>            :                                         flags |= GUI_PRINT_FLAG_COLOR_24_BG;
+<span class="lineNum">    1000 </span>            :                                         bg = num2;
+<a name="1001"><span class="lineNum">    1001 </span>            :                                 }</a>
+<span class="lineNum">    1002 </span>            : #else /* !TERM_TRUECOLOR */
+<span class="lineNum">    1003 </span><span class="lineNoCov">          0 :                                 if (num == 38) {</span>
+<span class="lineNum">    1004 </span><span class="lineNoCov">          0 :                                         flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_FG;</span>
+<a name="1005"><span class="lineNum">    1005 </span><span class="lineNoCov">          0 :                                         fg = color_24bit_256_int(num2);</span></a>
+<span class="lineNum">    1006 </span><span class="lineNoCov">          0 :                                 } else if (num == 48) {</span>
+<span class="lineNum">    1007 </span><span class="lineNoCov">          0 :                                         flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_BG;</span>
+<span class="lineNum">    1008 </span><span class="lineNoCov">          0 :                                         bg = color_24bit_256_int(num2);</span>
+<a name="1009"><span class="lineNum">    1009 </span>            :                                 }</a>
+<span class="lineNum">    1010 </span>            : #endif
+<span class="lineNum">    1011 </span>            : 
+<span class="lineNum">    1012 </span><span class="lineNoCov">          0 :                                 break;</span>
+<a name="1013"><span class="lineNum">    1013 </span><span class="lineNoCov">          0 :                         case 5:</span></a>
+<span class="lineNum">    1014 </span>            :                                 /* indexed */
+<span class="lineNum">    1015 </span><span class="lineNoCov">          0 :                                 if (*str != ';') break;</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">          0 :                                 str++;</span>
+<a name="1017"><span class="lineNum">    1017 </span>            : </a>
+<span class="lineNum">    1018 </span><span class="lineNoCov">          0 :                                 if (!parse_uint(str, &amp;endptr, 10, &amp;num2)) {</span>
+<span class="lineNum">    1019 </span><span class="lineNoCov">          0 :                                         return start;</span>
+<span class="lineNum">    1020 </span>            :                                 }
+<a name="1021"><span class="lineNum">    1021 </span><span class="lineNoCov">          0 :                                 str = endptr;</span></a>
+<span class="lineNum">    1022 </span>            : 
+<span class="lineNum">    1023 </span><span class="lineNoCov">          0 :                                 if (*str == '\0') return start;</span>
+<span class="lineNum">    1024 </span>            : 
+<a name="1025"><span class="lineNum">    1025 </span><span class="lineNoCov">          0 :                                 if (num == 38) {</span></a>
+<span class="lineNum">    1026 </span><span class="lineNoCov">          0 :                                         flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_FG;</span>
+<span class="lineNum">    1027 </span><span class="lineNoCov">          0 :                                         fg = num2;</span>
+<span class="lineNum">    1028 </span><span class="lineNoCov">          0 :                                 } else if (num == 48) {</span>
+<a name="1029"><span class="lineNum">    1029 </span><span class="lineNoCov">          0 :                                         flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_BG;</span></a>
+<span class="lineNum">    1030 </span><span class="lineNoCov">          0 :                                         bg = num2;</span>
+<span class="lineNum">    1031 </span>            :                                 }
+<span class="lineNum">    1032 </span>            : 
+<a name="1033"><span class="lineNum">    1033 </span><span class="lineNoCov">          0 :                                 break;</span></a>
+<span class="lineNum">    1034 </span>            :                         }
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1036 </span><span class="lineNoCov">          0 :                 default:</span>
+<a name="1037"><span class="lineNum">    1037 </span><span class="lineNoCov">          0 :                         if (num &gt;= 30 &amp;&amp; num &lt;= 37) {</span></a>
+<span class="lineNum">    1038 </span><span class="lineNoCov">          0 :                                 flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_FG;</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">          0 :                                 fg = ansitab[num-30];</span>
+<span class="lineNum">    1040 </span><span class="lineNoCov">          0 :                         } else if (num &gt;= 40 &amp;&amp; num &lt;= 47) {</span>
+<a name="1041"><span class="lineNum">    1041 </span><span class="lineNoCov">          0 :                                 flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_BG;</span></a>
+<span class="lineNum">    1042 </span><span class="lineNoCov">          0 :                                 bg = ansitab[num-40];</span>
+<span class="lineNum">    1043 </span><span class="lineNoCov">          0 :                         } else if (num &gt;= 90 &amp;&amp; num &lt;= 97) {</span>
+<span class="lineNum">    1044 </span><span class="lineNoCov">          0 :                                 flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_FG;</span>
+<a name="1045"><span class="lineNum">    1045 </span><span class="lineNoCov">          0 :                                 fg = 8 + ansitab[num-90];</span></a>
+<span class="lineNum">    1046 </span><span class="lineNoCov">          0 :                         } else if (num &gt;= 100 &amp;&amp; num &lt;= 107) {</span>
+<span class="lineNum">    1047 </span><span class="lineNoCov">          0 :                                 flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_BG;</span>
+<span class="lineNum">    1048 </span><span class="lineNoCov">          0 :                                 bg = 8 + ansitab[num-100];</span>
+<a name="1049"><span class="lineNum">    1049 </span>            :                         }</a>
+<span class="lineNum">    1050 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1051 </span>            :                 }
+<span class="lineNum">    1052 </span><span class="lineNoCov">          0 :                 num = 0;</span>
+<a name="1053"><span class="lineNum">    1053 </span>            : </a>
+<span class="lineNum">    1054 </span><span class="lineNoCov">          0 :                 if (*str == 'm') {</span>
+<span class="lineNum">    1055 </span><span class="lineNoCov">          0 :                         if (fg_ret != NULL) *fg_ret = fg;</span>
+<span class="lineNum">    1056 </span><span class="lineNoCov">          0 :                         if (bg_ret != NULL) *bg_ret = bg;</span>
+<a name="1057"><span class="lineNum">    1057 </span><span class="lineNoCov">          0 :                         if (flags_ret != NULL) *flags_ret = flags;</span></a>
+<span class="lineNum">    1058 </span>            : 
+<span class="lineNum">    1059 </span><span class="lineNoCov">          0 :                         str++;</span>
+<span class="lineNum">    1060 </span><span class="lineNoCov">          0 :                         break;</span>
+<a name="1061"><span class="lineNum">    1061 </span>            :                 }</a>
+<span class="lineNum">    1062 </span>            :         }
+<span class="lineNum">    1063 </span>            : 
+<span class="lineNum">    1064 </span><span class="lineNoCov">          0 :         return str;</span>
+<a name="1065"><span class="lineNum">    1065 </span>            : }</a>
+<a name="1066"><span class="lineNum">    1066 </span>            : </a>
+<span class="lineNum">    1067 </span>            : /* parse MIRC color string */
+<span class="lineNum">    1068 </span><span class="lineNoCov">          0 : static void get_mirc_color(const char **str, int *fg_ret, int *bg_ret)</span>
+<a name="1069"><span class="lineNum">    1069 </span>            : {</a>
+<span class="lineNum">    1070 </span>            :         int fg, bg;
+<span class="lineNum">    1071 </span>            : 
+<span class="lineNum">    1072 </span><span class="lineNoCov">          0 :         fg = fg_ret == NULL ? -1 : *fg_ret;</span>
+<a name="1073"><span class="lineNum">    1073 </span><span class="lineNoCov">          0 :         bg = bg_ret == NULL ? -1 : *bg_ret;</span></a>
+<span class="lineNum">    1074 </span>            : 
+<span class="lineNum">    1075 </span><span class="lineNoCov">          0 :         if (!i_isdigit(**str)) {</span>
+<span class="lineNum">    1076 </span>            :                 /* turn off color */
+<a name="1077"><span class="lineNum">    1077 </span><span class="lineNoCov">          0 :                 fg = -1;</span></a>
+<span class="lineNum">    1078 </span><span class="lineNoCov">          0 :                 bg = -1;</span>
+<span class="lineNum">    1079 </span>            :         } else {
+<span class="lineNum">    1080 </span>            :                 /* foreground color */
+<a name="1081"><span class="lineNum">    1081 </span><span class="lineNoCov">          0 :                 fg = **str-'0';</span></a>
+<span class="lineNum">    1082 </span><span class="lineNoCov">          0 :                 (*str)++;</span>
+<span class="lineNum">    1083 </span><span class="lineNoCov">          0 :                 if (i_isdigit(**str)) {</span>
+<span class="lineNum">    1084 </span><span class="lineNoCov">          0 :                         fg = fg*10 + (**str-'0');</span>
+<a name="1085"><span class="lineNum">    1085 </span><span class="lineNoCov">          0 :                         (*str)++;</span></a>
+<span class="lineNum">    1086 </span>            :                 }
+<span class="lineNum">    1087 </span>            : 
+<span class="lineNum">    1088 </span><span class="lineNoCov">          0 :                 if ((*str)[0] == ',' &amp;&amp; i_isdigit((*str)[1])) {</span>
+<a name="1089"><span class="lineNum">    1089 </span>            :                         /* background color */</a>
+<span class="lineNum">    1090 </span><span class="lineNoCov">          0 :                         (*str)++;</span>
+<span class="lineNum">    1091 </span><span class="lineNoCov">          0 :                         bg = **str-'0';</span>
+<span class="lineNum">    1092 </span><span class="lineNoCov">          0 :                         (*str)++;</span>
+<a name="1093"><span class="lineNum">    1093 </span><span class="lineNoCov">          0 :                         if (i_isdigit(**str)) {</span></a>
+<span class="lineNum">    1094 </span><span class="lineNoCov">          0 :                                 bg = bg*10 + (**str-'0');</span>
+<span class="lineNum">    1095 </span><span class="lineNoCov">          0 :                                 (*str)++;</span>
+<span class="lineNum">    1096 </span>            :                         }
+<a name="1097"><span class="lineNum">    1097 </span>            :                 }</a>
+<span class="lineNum">    1098 </span>            :         }
+<span class="lineNum">    1099 </span>            : 
+<span class="lineNum">    1100 </span><span class="lineNoCov">          0 :         if (fg_ret) *fg_ret = fg;</span>
+<a name="1101"><span class="lineNum">    1101 </span><span class="lineNoCov">          0 :         if (bg_ret) *bg_ret = bg;</span></a>
+<span class="lineNum">    1102 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">    1103 </span>            : 
+<span class="lineNum">    1104 </span>            : #define IS_COLOR_CODE(c) \
+<a name="1105"><span class="lineNum">    1105 </span>            :         ((c) == 2 || (c) == 3 || (c) == 4 || (c) == 6 || (c) == 7 || \</a>
+<span class="lineNum">    1106 </span>            :         (c) == 15 || (c) == 22 || (c) == 27 || (c) == 29 || (c) == 31)
+<span class="lineNum">    1107 </span>            : 
+<a name="1108"><span class="lineNum">    1108 </span>            : /* Return how many characters in `str' must be skipped before `len'</a>
+<a name="1109"><span class="lineNum">    1109 </span>            :    characters of text is skipped. */</a>
+<span class="lineNum">    1110 </span><span class="lineNoCov">          0 : int strip_real_length(const char *str, int len,</span>
+<span class="lineNum">    1111 </span>            :                       int *last_color_pos, int *last_color_len)
+<span class="lineNum">    1112 </span>            : {
+<a name="1113"><span class="lineNum">    1113 </span><span class="lineNoCov">          0 :         const char *start = str;</span></a>
+<span class="lineNum">    1114 </span>            : 
+<span class="lineNum">    1115 </span><span class="lineNoCov">          0 :         if (last_color_pos != NULL)</span>
+<span class="lineNum">    1116 </span><span class="lineNoCov">          0 :                 *last_color_pos = -1;</span>
+<a name="1117"><span class="lineNum">    1117 </span><span class="lineNoCov">          0 :         if (last_color_len != NULL)</span></a>
+<span class="lineNum">    1118 </span><span class="lineNoCov">          0 :                 *last_color_len = -1;</span>
+<span class="lineNum">    1119 </span>            : 
+<span class="lineNum">    1120 </span><span class="lineNoCov">          0 :         while (*str != '\0') {</span>
+<a name="1121"><span class="lineNum">    1121 </span><span class="lineNoCov">          0 :                 if (*str == 3) {</span></a>
+<span class="lineNum">    1122 </span><span class="lineNoCov">          0 :                         const char *mircstart = str;</span>
+<span class="lineNum">    1123 </span>            : 
+<span class="lineNum">    1124 </span><span class="lineNoCov">          0 :                         if (last_color_pos != NULL)</span>
+<a name="1125"><span class="lineNum">    1125 </span><span class="lineNoCov">          0 :                                 *last_color_pos = (int) (str-start);</span></a>
+<span class="lineNum">    1126 </span><span class="lineNoCov">          0 :                         str++;</span>
+<span class="lineNum">    1127 </span><span class="lineNoCov">          0 :                         get_mirc_color(&amp;str, NULL, NULL);</span>
+<span class="lineNum">    1128 </span><span class="lineNoCov">          0 :                         if (last_color_len != NULL)</span>
+<a name="1129"><span class="lineNum">    1129 </span><span class="lineNoCov">          0 :                                 *last_color_len = (int) (str-mircstart);</span></a>
+<span class="lineNum">    1130 </span>            : 
+<span class="lineNum">    1131 </span><span class="lineNoCov">          0 :                 } else if (*str == 4 &amp;&amp; str[1] != '\0') {</span>
+<span class="lineNum">    1132 </span>            : #ifdef TERM_TRUECOLOR
+<a name="1133"><span class="lineNum">    1133 </span>            :                         if (str[1] == FORMAT_COLOR_24 &amp;&amp; str[2] != '\0') {</a>
+<span class="lineNum">    1134 </span>            :                                 if (str[3] == '\0') str++;
+<span class="lineNum">    1135 </span>            :                                 else if (str[4] == '\0') str += 2;
+<span class="lineNum">    1136 </span>            :                                 else if (str[5] == '\0') str += 3;
+<a name="1137"><span class="lineNum">    1137 </span>            :                                 else {</a>
+<span class="lineNum">    1138 </span>            :                                         if (last_color_pos != NULL)
+<span class="lineNum">    1139 </span>            :                                                 *last_color_pos = (int) (str-start);
+<span class="lineNum">    1140 </span>            :                                         if (last_color_len != NULL)
+<a name="1141"><span class="lineNum">    1141 </span>            :                                                 *last_color_len = 6;</a>
+<span class="lineNum">    1142 </span>            :                                         str+=4;
+<span class="lineNum">    1143 </span>            :                                 }
+<span class="lineNum">    1144 </span>            :                         } else
+<a name="1145"><span class="lineNum">    1145 </span>            : #endif</a>
+<span class="lineNum">    1146 </span><span class="lineNoCov">          0 :                         if (str[1] &lt; FORMAT_STYLE_SPECIAL &amp;&amp; str[2] != '\0') {</span>
+<span class="lineNum">    1147 </span><span class="lineNoCov">          0 :                                 if (last_color_pos != NULL)</span>
+<span class="lineNum">    1148 </span><span class="lineNoCov">          0 :                                         *last_color_pos = (int) (str-start);</span>
+<a name="1149"><span class="lineNum">    1149 </span><span class="lineNoCov">          0 :                                 if (last_color_len != NULL)</span></a>
+<span class="lineNum">    1150 </span><span class="lineNoCov">          0 :                                         *last_color_len = 3;</span>
+<span class="lineNum">    1151 </span><span class="lineNoCov">          0 :                                 str++;</span>
+<span class="lineNum">    1152 </span><span class="lineNoCov">          0 :                         } else if (str[1] == FORMAT_STYLE_DEFAULTS) {</span>
+<a name="1153"><span class="lineNum">    1153 </span><span class="lineNoCov">          0 :                                 if (last_color_pos != NULL)</span></a>
+<span class="lineNum">    1154 </span><span class="lineNoCov">          0 :                                         *last_color_pos = (int) (str-start);</span>
+<span class="lineNum">    1155 </span><span class="lineNoCov">          0 :                                 if (last_color_len != NULL)</span>
+<span class="lineNum">    1156 </span><span class="lineNoCov">          0 :                                         *last_color_len = 2;</span>
+<a name="1157"><span class="lineNum">    1157 </span>            :                         }</a>
+<span class="lineNum">    1158 </span><span class="lineNoCov">          0 :                         str += 2;</span>
+<span class="lineNum">    1159 </span>            :                 } else {
+<span class="lineNum">    1160 </span><span class="lineNoCov">          0 :                         if (!IS_COLOR_CODE(*str)) {</span>
+<a name="1161"><span class="lineNum">    1161 </span><span class="lineNoCov">          0 :                                 if (len-- == 0)</span></a>
+<span class="lineNum">    1162 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">    1163 </span>            :                         }
+<span class="lineNum">    1164 </span><span class="lineNoCov">          0 :                         str++;</span>
+<a name="1165"><span class="lineNum">    1165 </span>            :                 }</a>
+<span class="lineNum">    1166 </span>            :         }
+<span class="lineNum">    1167 </span>            : 
+<span class="lineNum">    1168 </span><span class="lineNoCov">          0 :         return (int) (str-start);</span>
+<a name="1169"><span class="lineNum">    1169 </span>            : }</a>
+<span class="lineNum">    1170 </span>            : 
+<span class="lineNum">    1171 </span><span class="lineCov">         93 : char *strip_codes(const char *input)</span>
+<span class="lineNum">    1172 </span>            : {
+<a name="1173"><span class="lineNum">    1173 </span>            :         const char *p;</a>
+<span class="lineNum">    1174 </span>            :         char *str, *out;
+<span class="lineNum">    1175 </span>            : 
+<span class="lineNum">    1176 </span><span class="lineCov">         93 :         out = str = g_strdup(input);</span>
+<a name="1177"><span class="lineNum">    1177 </span><span class="lineCov">       1787 :         for (p = input; *p != '\0'; p++) {</span></a>
+<span class="lineNum">    1178 </span><span class="lineCov">       1694 :                 if (*p == 3) {</span>
+<span class="lineNum">    1179 </span><span class="lineNoCov">          0 :                         p++;</span>
+<span class="lineNum">    1180 </span>            : 
+<a name="1181"><span class="lineNum">    1181 </span>            :                         /* mirc color */</a>
+<span class="lineNum">    1182 </span><span class="lineNoCov">          0 :                         get_mirc_color(&amp;p, NULL, NULL);</span>
+<span class="lineNum">    1183 </span><span class="lineNoCov">          0 :                         p--;</span>
+<span class="lineNum">    1184 </span><span class="lineNoCov">          0 :                         continue;</span>
+<a name="1185"><span class="lineNum">    1185 </span>            :                 }</a>
+<span class="lineNum">    1186 </span>            : 
+<span class="lineNum">    1187 </span><span class="lineCov">       1694 :                 if (*p == 4 &amp;&amp; p[1] != '\0') {</span>
+<span class="lineNum">    1188 </span><span class="lineCov">         44 :                         if (p[1] &gt;= FORMAT_STYLE_SPECIAL) {</span>
+<a name="1189"><span class="lineNum">    1189 </span><span class="lineCov">         27 :                                 p++;</span></a>
+<span class="lineNum">    1190 </span><span class="lineCov">         27 :                                 continue;</span>
+<span class="lineNum">    1191 </span>            :                         }
+<span class="lineNum">    1192 </span>            : 
+<a name="1193"><span class="lineNum">    1193 </span>            :                         /* irssi color */</a>
+<span class="lineNum">    1194 </span><span class="lineCov">         17 :                         if (p[2] != '\0') {</span>
+<span class="lineNum">    1195 </span>            : #ifdef TERM_TRUECOLOR
+<span class="lineNum">    1196 </span>            :                                 if (p[1] == FORMAT_COLOR_24) {
+<a name="1197"><span class="lineNum">    1197 </span>            :                                         if (p[3] == '\0') p += 2;</a>
+<span class="lineNum">    1198 </span>            :                                         else if (p[4] == '\0') p += 3;
+<span class="lineNum">    1199 </span>            :                                         else if (p[5] == '\0') p += 4;
+<span class="lineNum">    1200 </span>            :                                         else p += 5;
+<a name="1201"><span class="lineNum">    1201 </span>            :                                 } else</a>
+<span class="lineNum">    1202 </span>            : #endif /* TERM_TRUECOLOR */
+<span class="lineNum">    1203 </span><span class="lineCov">         17 :                                 p += 2;</span>
+<span class="lineNum">    1204 </span><span class="lineCov">         17 :                                 continue;</span>
+<a name="1205"><span class="lineNum">    1205 </span>            :                         }</a>
+<span class="lineNum">    1206 </span>            :                 }
+<span class="lineNum">    1207 </span>            : 
+<span class="lineNum">    1208 </span><span class="lineCov">       1650 :                 if (*p == 27 &amp;&amp; p[1] != '\0') {</span>
+<a name="1209"><span class="lineNum">    1209 </span><span class="lineNoCov">          0 :                         p++;</span></a>
+<span class="lineNum">    1210 </span><span class="lineNoCov">          0 :                         p = get_ansi_color(current_theme, p, NULL, NULL, NULL);</span>
+<span class="lineNum">    1211 </span><span class="lineNoCov">          0 :                         p--;</span>
+<span class="lineNum">    1212 </span><span class="lineCov">       1650 :                 } else if (!IS_COLOR_CODE(*p))</span>
+<a name="1213"><span class="lineNum">    1213 </span><span class="lineCov">       1650 :                         *out++ = *p;</span></a>
+<span class="lineNum">    1214 </span>            :         }
+<span class="lineNum">    1215 </span>            : 
+<span class="lineNum">    1216 </span><span class="lineCov">         93 :         *out = '\0';</span>
+<a name="1217"><span class="lineNum">    1217 </span><span class="lineCov">         93 :         return str;</span></a>
+<span class="lineNum">    1218 </span>            : }
+<a name="1219"><span class="lineNum">    1219 </span>            : </a>
+<span class="lineNum">    1220 </span>            : /* send a fully parsed text string for GUI to print */
+<a name="1221"><span class="lineNum">    1221 </span><span class="lineCov">         35 : void format_send_to_gui(TEXT_DEST_REC *dest, const char *text)</span></a>
+<span class="lineNum">    1222 </span>            : {
+<span class="lineNum">    1223 </span>            :         THEME_REC *theme;
+<span class="lineNum">    1224 </span>            :         char *dup, *str, *ptr, type;
+<a name="1225"><span class="lineNum">    1225 </span>            :         int fgcolor, bgcolor;</a>
+<span class="lineNum">    1226 </span>            :         int flags;
+<span class="lineNum">    1227 </span>            : 
+<span class="lineNum">    1228 </span><span class="lineCov">         35 :         theme = window_get_theme(dest-&gt;window);</span>
+<a name="1229"><span class="lineNum">    1229 </span>            : </a>
+<span class="lineNum">    1230 </span><span class="lineCov">         35 :         dup = str = g_strdup(text);</span>
+<span class="lineNum">    1231 </span>            : 
+<span class="lineNum">    1232 </span><span class="lineCov">         35 :         flags = 0; fgcolor = theme-&gt;default_color; bgcolor = -1;</span>
+<a name="1233"><span class="lineNum">    1233 </span><span class="lineCov">        242 :         while (*str != '\0') {</span></a>
+<span class="lineNum">    1234 </span><span class="lineCov">        186 :                 type = '\0';</span>
+<span class="lineNum">    1235 </span><span class="lineCov">       1495 :                 for (ptr = str; *ptr != '\0'; ptr++) {</span>
+<span class="lineNum">    1236 </span><span class="lineCov">       1481 :                         if (IS_COLOR_CODE(*ptr) || *ptr == '\n') {</span>
+<a name="1237"><span class="lineNum">    1237 </span><span class="lineCov">        172 :                                 type = *ptr;</span></a>
+<span class="lineNum">    1238 </span><span class="lineCov">        172 :                                 *ptr++ = '\0';</span>
+<span class="lineNum">    1239 </span><span class="lineCov">        172 :                                 break;</span>
+<span class="lineNum">    1240 </span>            :                         }
+<a name="1241"><span class="lineNum">    1241 </span>            :                 }</a>
+<span class="lineNum">    1242 </span>            : 
+<span class="lineNum">    1243 </span><span class="lineCov">        186 :                 if (type == 4 &amp;&amp; *ptr == FORMAT_STYLE_CLRTOEOL) {</span>
+<span class="lineNum">    1244 </span>            :                         /* clear to end of line */
+<a name="1245"><span class="lineNum">    1245 </span><span class="lineCov">          6 :                         flags |= GUI_PRINT_FLAG_CLRTOEOL;</span></a>
+<span class="lineNum">    1246 </span>            :                 }
+<span class="lineNum">    1247 </span>            : 
+<span class="lineNum">    1248 </span><span class="lineCov">        186 :                 if (*str != '\0' || (flags &amp; GUI_PRINT_FLAG_CLRTOEOL)) {</span>
+<a name="1249"><span class="lineNum">    1249 </span>            :                         /* send the text to gui handler */</a>
+<span class="lineNum">    1250 </span><span class="lineCov">        273 :                         signal_emit_id(signal_gui_print_text, 6, dest-&gt;window,</span>
+<span class="lineNum">    1251 </span><span class="lineCov">         91 :                                        GINT_TO_POINTER(fgcolor),</span>
+<span class="lineNum">    1252 </span><span class="lineCov">         91 :                                        GINT_TO_POINTER(bgcolor),</span>
+<a name="1253"><span class="lineNum">    1253 </span><span class="lineCov">         91 :                                        GINT_TO_POINTER(flags), str,</span></a>
+<span class="lineNum">    1254 </span>            :                                        dest);
+<span class="lineNum">    1255 </span><span class="lineCov">         91 :                         flags &amp;= ~(GUI_PRINT_FLAG_INDENT|GUI_PRINT_FLAG_CLRTOEOL);</span>
+<span class="lineNum">    1256 </span>            :                 }
+<a name="1257"><span class="lineNum">    1257 </span>            : </a>
+<span class="lineNum">    1258 </span><span class="lineCov">        186 :                 if (type == '\n') {</span>
+<span class="lineNum">    1259 </span><span class="lineCov">          4 :                         format_newline(dest-&gt;window);</span>
+<span class="lineNum">    1260 </span><span class="lineCov">          4 :                         fgcolor = theme-&gt;default_color;</span>
+<a name="1261"><span class="lineNum">    1261 </span><span class="lineCov">          4 :                         bgcolor = -1;</span></a>
+<span class="lineNum">    1262 </span><span class="lineCov">          4 :                         flags &amp;= GUI_PRINT_FLAG_INDENT|GUI_PRINT_FLAG_MONOSPACE;</span>
+<span class="lineNum">    1263 </span>            :                 }
+<span class="lineNum">    1264 </span>            : 
+<a name="1265"><span class="lineNum">    1265 </span><span class="lineCov">        186 :                 if (*ptr == '\0')</span></a>
+<span class="lineNum">    1266 </span><span class="lineCov">         14 :                         break;</span>
+<span class="lineNum">    1267 </span>            : 
+<span class="lineNum">    1268 </span><span class="lineCov">        172 :                 switch (type)</span>
+<a name="1269"><span class="lineNum">    1269 </span>            :                 {</a>
+<span class="lineNum">    1270 </span><span class="lineNoCov">          0 :                 case 2:</span>
+<span class="lineNum">    1271 </span>            :                         /* bold */
+<span class="lineNum">    1272 </span><span class="lineNoCov">          0 :                         if (!hide_text_style)</span>
+<a name="1273"><span class="lineNum">    1273 </span><span class="lineNoCov">          0 :                                 flags ^= GUI_PRINT_FLAG_BOLD;</span></a>
+<span class="lineNum">    1274 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1275 </span><span class="lineNoCov">          0 :                 case 3:</span>
+<span class="lineNum">    1276 </span>            :                         /* MIRC color */
+<a name="1277"><span class="lineNum">    1277 </span><span class="lineNoCov">          0 :                         get_mirc_color((const char **) &amp;ptr,</span></a>
+<span class="lineNum">    1278 </span><span class="lineNoCov">          0 :                                         hide_colors ? NULL : &amp;fgcolor,</span>
+<span class="lineNum">    1279 </span><span class="lineNoCov">          0 :                                         hide_colors ? NULL : &amp;bgcolor);</span>
+<span class="lineNum">    1280 </span><span class="lineNoCov">          0 :                         if (!hide_colors)</span>
+<a name="1281"><span class="lineNum">    1281 </span><span class="lineNoCov">          0 :                                 flags |= GUI_PRINT_FLAG_MIRC_COLOR;</span></a>
+<span class="lineNum">    1282 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1283 </span><span class="lineCov">        168 :                 case 4:</span>
+<span class="lineNum">    1284 </span>            :                         /* user specific colors */
+<a name="1285"><span class="lineNum">    1285 </span><span class="lineCov">        168 :                         flags &amp;= ~GUI_PRINT_FLAG_MIRC_COLOR;</span></a>
+<span class="lineNum">    1286 </span><span class="lineCov">        168 :                         switch (*ptr) {</span>
+<span class="lineNum">    1287 </span><span class="lineNoCov">          0 :                         case FORMAT_STYLE_BLINK:</span>
+<span class="lineNum">    1288 </span><span class="lineNoCov">          0 :                                 flags ^= GUI_PRINT_FLAG_BLINK;</span>
+<a name="1289"><span class="lineNum">    1289 </span><span class="lineNoCov">          0 :                                 break;</span></a>
+<span class="lineNum">    1290 </span><span class="lineNoCov">          0 :                         case FORMAT_STYLE_UNDERLINE:</span>
+<span class="lineNum">    1291 </span><span class="lineNoCov">          0 :                                 flags ^= GUI_PRINT_FLAG_UNDERLINE;</span>
+<span class="lineNum">    1292 </span><span class="lineNoCov">          0 :                                 break;</span>
+<a name="1293"><span class="lineNum">    1293 </span><span class="lineCov">         10 :                         case FORMAT_STYLE_BOLD:</span></a>
+<span class="lineNum">    1294 </span><span class="lineCov">         10 :                                 flags ^= GUI_PRINT_FLAG_BOLD;</span>
+<span class="lineNum">    1295 </span><span class="lineCov">         10 :                                 break;</span>
+<span class="lineNum">    1296 </span><span class="lineNoCov">          0 :                         case FORMAT_STYLE_REVERSE:</span>
+<a name="1297"><span class="lineNum">    1297 </span><span class="lineNoCov">          0 :                                 flags ^= GUI_PRINT_FLAG_REVERSE;</span></a>
+<span class="lineNum">    1298 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1299 </span><span class="lineNoCov">          0 :                         case FORMAT_STYLE_ITALIC:</span>
+<span class="lineNum">    1300 </span><span class="lineNoCov">          0 :                                 flags ^= GUI_PRINT_FLAG_ITALIC;</span>
+<a name="1301"><span class="lineNum">    1301 </span><span class="lineNoCov">          0 :                                 break;</span></a>
+<span class="lineNum">    1302 </span><span class="lineNoCov">          0 :                         case FORMAT_STYLE_MONOSPACE:</span>
+<span class="lineNum">    1303 </span><span class="lineNoCov">          0 :                                 flags ^= GUI_PRINT_FLAG_MONOSPACE;</span>
+<span class="lineNum">    1304 </span><span class="lineNoCov">          0 :                                 break;</span>
+<a name="1305"><span class="lineNum">    1305 </span><span class="lineNoCov">          0 :                         case FORMAT_STYLE_INDENT:</span></a>
+<span class="lineNum">    1306 </span><span class="lineNoCov">          0 :                                 flags |= GUI_PRINT_FLAG_INDENT;</span>
+<span class="lineNum">    1307 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1308 </span><span class="lineCov">         55 :                         case FORMAT_STYLE_DEFAULTS:</span>
+<a name="1309"><span class="lineNum">    1309 </span><span class="lineCov">         55 :                                 fgcolor = theme-&gt;default_color;</span></a>
+<span class="lineNum">    1310 </span><span class="lineCov">         55 :                                 bgcolor = -1;</span>
+<span class="lineNum">    1311 </span><span class="lineCov">         55 :                                 flags &amp;= GUI_PRINT_FLAG_INDENT|GUI_PRINT_FLAG_MONOSPACE;</span>
+<span class="lineNum">    1312 </span><span class="lineCov">         55 :                                 break;</span>
+<a name="1313"><span class="lineNum">    1313 </span><span class="lineCov">          6 :                         case FORMAT_STYLE_CLRTOEOL:</span></a>
+<span class="lineNum">    1314 </span><span class="lineCov">          6 :                                 break;</span>
+<span class="lineNum">    1315 </span><span class="lineNoCov">          0 :                         case FORMAT_COLOR_EXT1:</span>
+<span class="lineNum">    1316 </span><span class="lineNoCov">          0 :                                 fgcolor = 0x10 + *++ptr - FORMAT_COLOR_NOCHANGE;</span>
+<a name="1317"><span class="lineNum">    1317 </span><span class="lineNoCov">          0 :                                 flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_FG;</span></a>
+<span class="lineNum">    1318 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1319 </span><span class="lineNoCov">          0 :                         case FORMAT_COLOR_EXT1_BG:</span>
+<span class="lineNum">    1320 </span><span class="lineNoCov">          0 :                                 bgcolor = 0x10 + *++ptr - FORMAT_COLOR_NOCHANGE;</span>
+<a name="1321"><span class="lineNum">    1321 </span><span class="lineNoCov">          0 :                                 flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_BG;</span></a>
+<span class="lineNum">    1322 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1323 </span><span class="lineNoCov">          0 :                         case FORMAT_COLOR_EXT2:</span>
+<span class="lineNum">    1324 </span><span class="lineNoCov">          0 :                                 fgcolor = 0x60 + *++ptr - FORMAT_COLOR_NOCHANGE;</span>
+<a name="1325"><span class="lineNum">    1325 </span><span class="lineNoCov">          0 :                                 flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_FG;</span></a>
+<span class="lineNum">    1326 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1327 </span><span class="lineNoCov">          0 :                         case FORMAT_COLOR_EXT2_BG:</span>
+<span class="lineNum">    1328 </span><span class="lineNoCov">          0 :                                 bgcolor = 0x60 + *++ptr - FORMAT_COLOR_NOCHANGE;</span>
+<a name="1329"><span class="lineNum">    1329 </span><span class="lineNoCov">          0 :                                 flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_BG;</span></a>
+<span class="lineNum">    1330 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1331 </span><span class="lineNoCov">          0 :                         case FORMAT_COLOR_EXT3:</span>
+<span class="lineNum">    1332 </span><span class="lineNoCov">          0 :                                 fgcolor = 0xb0 + *++ptr - FORMAT_COLOR_NOCHANGE;</span>
+<a name="1333"><span class="lineNum">    1333 </span><span class="lineNoCov">          0 :                                 flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_FG;</span></a>
+<span class="lineNum">    1334 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1335 </span><span class="lineNoCov">          0 :                         case FORMAT_COLOR_EXT3_BG:</span>
+<span class="lineNum">    1336 </span><span class="lineNoCov">          0 :                                 bgcolor = 0xb0 + *++ptr - FORMAT_COLOR_NOCHANGE;</span>
+<a name="1337"><span class="lineNum">    1337 </span><span class="lineNoCov">          0 :                                 flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_BG;</span></a>
+<span class="lineNum">    1338 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1339 </span>            : #ifdef TERM_TRUECOLOR
+<span class="lineNum">    1340 </span>            :                         case FORMAT_COLOR_24:
+<a name="1341"><span class="lineNum">    1341 </span>            :                                 unformat_24bit_color(&amp;ptr, 1, &amp;fgcolor, &amp;bgcolor, &amp;flags);</a>
+<span class="lineNum">    1342 </span>            :                                 break;
+<span class="lineNum">    1343 </span>            : #endif
+<span class="lineNum">    1344 </span><span class="lineCov">         97 :                         default:</span>
+<a name="1345"><span class="lineNum">    1345 </span><span class="lineCov">         97 :                                 if (*ptr != FORMAT_COLOR_NOCHANGE) {</span></a>
+<span class="lineNum">    1346 </span><span class="lineCov">         63 :                                         flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_FG;</span>
+<span class="lineNum">    1347 </span><span class="lineCov">         63 :                                         fgcolor = *ptr==(char)0xff ? -1 : (unsigned char) *ptr-'0';</span>
+<span class="lineNum">    1348 </span>            :                                 }
+<a name="1349"><span class="lineNum">    1349 </span><span class="lineCov">         97 :                                 if (ptr[1] == '\0')</span></a>
+<span class="lineNum">    1350 </span><span class="lineNoCov">          0 :                                         break;</span>
+<span class="lineNum">    1351 </span>            : 
+<span class="lineNum">    1352 </span><span class="lineCov">         97 :                                 ptr++;</span>
+<a name="1353"><span class="lineNum">    1353 </span><span class="lineCov">         97 :                                 if (*ptr != FORMAT_COLOR_NOCHANGE) {</span></a>
+<span class="lineNum">    1354 </span><span class="lineCov">         34 :                                         flags &amp;= ~GUI_PRINT_FLAG_COLOR_24_BG;</span>
+<span class="lineNum">    1355 </span><span class="lineCov">         34 :                                         bgcolor = *ptr==(char)0xff ? -1 : *ptr-'0';</span>
+<span class="lineNum">    1356 </span>            :                                 }
+<a name="1357"><span class="lineNum">    1357 </span>            :                         }</a>
+<span class="lineNum">    1358 </span><span class="lineCov">        168 :                         if (*ptr == '\0')</span>
+<span class="lineNum">    1359 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">    1360 </span>            : 
+<a name="1361"><span class="lineNum">    1361 </span><span class="lineCov">        168 :                         ptr++;</span></a>
+<span class="lineNum">    1362 </span><span class="lineCov">        168 :                         break;</span>
+<span class="lineNum">    1363 </span><span class="lineNoCov">          0 :                 case 6:</span>
+<span class="lineNum">    1364 </span>            :                         /* blink */
+<a name="1365"><span class="lineNum">    1365 </span><span class="lineNoCov">          0 :                         if (!hide_text_style)</span></a>
+<span class="lineNum">    1366 </span><span class="lineNoCov">          0 :                                 flags ^= GUI_PRINT_FLAG_BLINK;</span>
+<span class="lineNum">    1367 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1368 </span><span class="lineNoCov">          0 :                 case 15:</span>
+<a name="1369"><span class="lineNum">    1369 </span>            :                         /* remove all styling */</a>
+<span class="lineNum">    1370 </span><span class="lineNoCov">          0 :                         fgcolor = theme-&gt;default_color;</span>
+<span class="lineNum">    1371 </span><span class="lineNoCov">          0 :                         bgcolor = -1;</span>
+<span class="lineNum">    1372 </span><span class="lineNoCov">          0 :                         flags &amp;= GUI_PRINT_FLAG_INDENT|GUI_PRINT_FLAG_MONOSPACE;</span>
+<a name="1373"><span class="lineNum">    1373 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">    1374 </span><span class="lineNoCov">          0 :                 case 22:</span>
+<span class="lineNum">    1375 </span>            :                         /* reverse */
+<span class="lineNum">    1376 </span><span class="lineNoCov">          0 :                         if (!hide_text_style)</span>
+<a name="1377"><span class="lineNum">    1377 </span><span class="lineNoCov">          0 :                                 flags ^= GUI_PRINT_FLAG_REVERSE;</span></a>
+<span class="lineNum">    1378 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1379 </span><span class="lineNoCov">          0 :                 case 29:</span>
+<span class="lineNum">    1380 </span>            :                         /* italic */
+<a name="1381"><span class="lineNum">    1381 </span><span class="lineNoCov">          0 :                         if (!hide_text_style)</span></a>
+<span class="lineNum">    1382 </span><span class="lineNoCov">          0 :                                 flags ^= GUI_PRINT_FLAG_ITALIC;</span>
+<span class="lineNum">    1383 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">    1384 </span><span class="lineNoCov">          0 :                 case 31:</span>
+<a name="1385"><span class="lineNum">    1385 </span>            :                         /* underline */</a>
+<span class="lineNum">    1386 </span><span class="lineNoCov">          0 :                         if (!hide_text_style)</span>
+<span class="lineNum">    1387 </span><span class="lineNoCov">          0 :                                 flags ^= GUI_PRINT_FLAG_UNDERLINE;</span>
+<span class="lineNum">    1388 </span><span class="lineNoCov">          0 :                         break;</span>
+<a name="1389"><span class="lineNum">    1389 </span><span class="lineNoCov">          0 :                 case 27:</span></a>
+<span class="lineNum">    1390 </span>            :                         /* ansi color code */
+<span class="lineNum">    1391 </span><span class="lineNoCov">          0 :                         ptr = (char *)</span>
+<span class="lineNum">    1392 </span><span class="lineNoCov">          0 :                                 get_ansi_color(theme, ptr,</span>
+<a name="1393"><span class="lineNum">    1393 </span><span class="lineNoCov">          0 :                                                hide_colors ? NULL : &amp;fgcolor,</span></a>
+<span class="lineNum">    1394 </span><span class="lineNoCov">          0 :                                                hide_colors ? NULL : &amp;bgcolor,</span>
+<span class="lineNum">    1395 </span><span class="lineNoCov">          0 :                                                hide_colors ? NULL : &amp;flags);</span>
+<span class="lineNum">    1396 </span><span class="lineNoCov">          0 :                         break;</span>
+<a name="1397"><span class="lineNum">    1397 </span>            :                 }</a>
+<span class="lineNum">    1398 </span>            : 
+<span class="lineNum">    1399 </span><span class="lineCov">        172 :                 str = ptr;</span>
+<span class="lineNum">    1400 </span>            :         }
+<a name="1401"><span class="lineNum">    1401 </span>            : </a>
+<span class="lineNum">    1402 </span><span class="lineCov">         35 :         g_free(dup);</span>
+<a name="1403"><span class="lineNum">    1403 </span><span class="lineCov">         35 : }</span></a>
+<span class="lineNum">    1404 </span>            : 
+<a name="1405"><span class="lineNum">    1405 </span><span class="lineCov">          1 : static void read_settings(void)</span></a>
+<span class="lineNum">    1406 </span>            : {
+<span class="lineNum">    1407 </span><span class="lineCov">          1 :         timestamp_level = settings_get_bool(&quot;timestamps&quot;) ? MSGLEVEL_ALL : 0;</span>
+<span class="lineNum">    1408 </span><span class="lineCov">          1 :         if (timestamp_level &gt; 0)</span>
+<a name="1409"><span class="lineNum">    1409 </span><span class="lineCov">          1 :                 timestamp_level = settings_get_level(&quot;timestamp_level&quot;);</span></a>
+<span class="lineNum">    1410 </span><span class="lineCov">          1 :         timestamp_timeout = settings_get_time(&quot;timestamp_timeout&quot;)/1000;</span>
+<span class="lineNum">    1411 </span>            : 
+<span class="lineNum">    1412 </span><span class="lineCov">          1 :         hide_server_tags = settings_get_bool(&quot;hide_server_tags&quot;);</span>
+<a name="1413"><span class="lineNum">    1413 </span><span class="lineCov">          1 :         hide_text_style = settings_get_bool(&quot;hide_text_style&quot;);</span></a>
+<span class="lineNum">    1414 </span><span class="lineCov">          1 :         hide_colors = hide_text_style || settings_get_bool(&quot;hide_colors&quot;);</span>
+<a name="1415"><span class="lineNum">    1415 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">    1416 </span>            : 
+<a name="1417"><span class="lineNum">    1417 </span><span class="lineCov">          1 : void formats_init(void)</span></a>
+<span class="lineNum">    1418 </span>            : {
+<span class="lineNum">    1419 </span><span class="lineCov">          1 :         signal_gui_print_text = signal_get_uniq_id(&quot;gui print text&quot;);</span>
+<span class="lineNum">    1420 </span>            : 
+<a name="1421"><span class="lineNum">    1421 </span><span class="lineCov">          1 :         read_settings();</span></a>
+<span class="lineNum">    1422 </span><span class="lineCov">          1 :         signal_add(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<a name="1423"><span class="lineNum">    1423 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">    1424 </span>            : 
+<a name="1425"><span class="lineNum">    1425 </span><span class="lineCov">          1 : void formats_deinit(void)</span></a>
+<span class="lineNum">    1426 </span>            : {
+<span class="lineNum">    1427 </span><span class="lineCov">          1 :         signal_remove(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<span class="lineNum">    1428 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

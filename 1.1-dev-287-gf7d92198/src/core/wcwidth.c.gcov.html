@@ -1,0 +1,296 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/wcwidth.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - wcwidth.c<span style="font-size: 80%;"> (source / <a href="wcwidth.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">33</td>
+            <td class="headerCovTableEntryLo">30.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * This is an implementation of wcwidth() and wcswidth() (defined in
+<span class="lineNum">       3 </span>            :  * IEEE Std 1002.1-2001) for Unicode.
+<span class="lineNum">       4 </span>            :  *
+<a name="5"><span class="lineNum">       5 </span>            :  * http://www.opengroup.org/onlinepubs/007904975/functions/wcwidth.html</a>
+<span class="lineNum">       6 </span>            :  * http://www.opengroup.org/onlinepubs/007904975/functions/wcswidth.html
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  * In fixed-width output devices, Latin characters all occupy a single
+<a name="9"><span class="lineNum">       9 </span>            :  * &quot;cell&quot; position of equal width, whereas ideographic CJK characters</a>
+<span class="lineNum">      10 </span>            :  * occupy two such cells. Interoperability between terminal-line
+<span class="lineNum">      11 </span>            :  * applications and (teletype-style) character terminals using the
+<span class="lineNum">      12 </span>            :  * UTF-8 encoding requires agreement on which character should advance
+<a name="13"><span class="lineNum">      13 </span>            :  * the cursor by how many cell positions. No established formal</a>
+<span class="lineNum">      14 </span>            :  * standards exist at present on which Unicode character shall occupy
+<span class="lineNum">      15 </span>            :  * how many cell positions on character terminals. These routines are
+<span class="lineNum">      16 </span>            :  * a first attempt of defining such behavior based on simple rules
+<a name="17"><span class="lineNum">      17 </span>            :  * applied to data provided by the Unicode Consortium.</a>
+<span class="lineNum">      18 </span>            :  *
+<span class="lineNum">      19 </span>            :  * For some graphical characters, the Unicode standard explicitly
+<span class="lineNum">      20 </span>            :  * defines a character-cell width via the definition of the East Asian
+<a name="21"><span class="lineNum">      21 </span>            :  * FullWidth (F), Wide (W), Half-width (H), and Narrow (Na) classes.</a>
+<span class="lineNum">      22 </span>            :  * In all these cases, there is no ambiguity about which width a
+<span class="lineNum">      23 </span>            :  * terminal shall use. For characters in the East Asian Ambiguous (A)
+<span class="lineNum">      24 </span>            :  * class, the width choice depends purely on a preference of backward
+<a name="25"><span class="lineNum">      25 </span>            :  * compatibility with either historic CJK or Western practice.</a>
+<span class="lineNum">      26 </span>            :  * Choosing single-width for these characters is easy to justify as
+<span class="lineNum">      27 </span>            :  * the appropriate long-term solution, as the CJK practice of
+<span class="lineNum">      28 </span>            :  * displaying these characters as double-width comes from historic
+<a name="29"><span class="lineNum">      29 </span>            :  * implementation simplicity (8-bit encoded characters were displayed</a>
+<span class="lineNum">      30 </span>            :  * single-width and 16-bit ones double-width, even for Greek,
+<span class="lineNum">      31 </span>            :  * Cyrillic, etc.) and not any typographic considerations.
+<span class="lineNum">      32 </span>            :  *
+<a name="33"><span class="lineNum">      33 </span>            :  * Much less clear is the choice of width for the Not East Asian</a>
+<span class="lineNum">      34 </span>            :  * (Neutral) class. Existing practice does not dictate a width for any
+<span class="lineNum">      35 </span>            :  * of these characters. It would nevertheless make sense
+<span class="lineNum">      36 </span>            :  * typographically to allocate two character cells to characters such
+<a name="37"><span class="lineNum">      37 </span>            :  * as for instance EM SPACE or VOLUME INTEGRAL, which cannot be</a>
+<span class="lineNum">      38 </span>            :  * represented adequately with a single-width glyph. The following
+<span class="lineNum">      39 </span>            :  * routines at present merely assign a single-cell width to all
+<span class="lineNum">      40 </span>            :  * neutral characters, in the interest of simplicity. This is not
+<a name="41"><span class="lineNum">      41 </span>            :  * entirely satisfactory and should be reconsidered before</a>
+<span class="lineNum">      42 </span>            :  * establishing a formal standard in this area. At the moment, the
+<span class="lineNum">      43 </span>            :  * decision which Not East Asian (Neutral) characters should be
+<span class="lineNum">      44 </span>            :  * represented by double-width glyphs cannot yet be answered by
+<a name="45"><span class="lineNum">      45 </span>            :  * applying a simple rule from the Unicode database content. Setting</a>
+<span class="lineNum">      46 </span>            :  * up a proper standard for the behavior of UTF-8 character terminals
+<span class="lineNum">      47 </span>            :  * will require a careful analysis not only of each Unicode character,
+<span class="lineNum">      48 </span>            :  * but also of each presentation form, something the author of these
+<a name="49"><span class="lineNum">      49 </span>            :  * routines has avoided to do so far.</a>
+<span class="lineNum">      50 </span>            :  *
+<span class="lineNum">      51 </span>            :  * http://www.unicode.org/unicode/reports/tr11/
+<span class="lineNum">      52 </span>            :  *
+<a name="53"><span class="lineNum">      53 </span>            :  * Markus Kuhn -- 2007-05-25 (Unicode 5.0)</a>
+<span class="lineNum">      54 </span>            :  *
+<span class="lineNum">      55 </span>            :  * Permission to use, copy, modify, and distribute this software
+<span class="lineNum">      56 </span>            :  * for any purpose and without fee is hereby granted. The author
+<a name="57"><span class="lineNum">      57 </span>            :  * disclaims all warranties with regard to this software.</a>
+<span class="lineNum">      58 </span>            :  *
+<span class="lineNum">      59 </span>            :  * Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
+<span class="lineNum">      60 </span>            :  */
+<a name="61"><span class="lineNum">      61 </span>            : </a>
+<span class="lineNum">      62 </span>            : #include &quot;utf8.h&quot;
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span>            : struct interval {
+<a name="65"><span class="lineNum">      65 </span>            :   int first;</a>
+<span class="lineNum">      66 </span>            :   int last;
+<span class="lineNum">      67 </span>            : };
+<a name="68"><span class="lineNum">      68 </span>            : </a>
+<a name="69"><span class="lineNum">      69 </span>            : /* auxiliary function for binary search in interval table */</a>
+<span class="lineNum">      70 </span><span class="lineCov">       8474 : static int bisearch(unichar ucs, const struct interval *table, int max) {</span>
+<span class="lineNum">      71 </span><span class="lineCov">       8474 :   int min = 0;</span>
+<span class="lineNum">      72 </span>            :   int mid;
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span><span class="lineCov">       8474 :   if (ucs &lt; table[0].first || ucs &gt; table[max].last)</span>
+<span class="lineNum">      75 </span><span class="lineCov">       8474 :     return 0;</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :   while (max &gt;= min) {</span>
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :     mid = (min + max) / 2;</span></a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :     if (ucs &gt; table[mid].last)</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :       min = mid + 1;</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :     else if (ucs &lt; table[mid].first)</span>
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :       max = mid - 1;</span></a>
+<span class="lineNum">      82 </span>            :     else
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :       return 1;</span>
+<span class="lineNum">      84 </span>            :   }
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :   return 0;</span>
+<span class="lineNum">      87 </span>            : }
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span>            : </a>
+<span class="lineNum">      90 </span>            : /* The following two functions define the column width of an ISO 10646
+<span class="lineNum">      91 </span>            :  * character as follows:
+<span class="lineNum">      92 </span>            :  *
+<a name="93"><span class="lineNum">      93 </span>            :  *    - The null character (U+0000) has a column width of 0.</a>
+<span class="lineNum">      94 </span>            :  *
+<span class="lineNum">      95 </span>            :  *    - Other C0/C1 control characters and DEL will lead to a return
+<span class="lineNum">      96 </span>            :  *      value of -1.
+<a name="97"><span class="lineNum">      97 </span>            :  *</a>
+<span class="lineNum">      98 </span>            :  *    - Non-spacing and enclosing combining characters (general
+<span class="lineNum">      99 </span>            :  *      category code Mn or Me in the Unicode database) have a
+<span class="lineNum">     100 </span>            :  *      column width of 0.
+<a name="101"><span class="lineNum">     101 </span>            :  *</a>
+<span class="lineNum">     102 </span>            :  *    - SOFT HYPHEN (U+00AD) has a column width of 1.
+<span class="lineNum">     103 </span>            :  *
+<span class="lineNum">     104 </span>            :  *    - Other format characters (general category code Cf in the Unicode
+<a name="105"><span class="lineNum">     105 </span>            :  *      database) and ZERO WIDTH SPACE (U+200B) have a column width of 0.</a>
+<span class="lineNum">     106 </span>            :  *
+<span class="lineNum">     107 </span>            :  *    - Hangul Jamo medial vowels and final consonants (U+1160-U+11FF)
+<span class="lineNum">     108 </span>            :  *      have a column width of 0.
+<a name="109"><span class="lineNum">     109 </span>            :  *</a>
+<span class="lineNum">     110 </span>            :  *    - Spacing characters in the East Asian Wide (W) or East Asian
+<span class="lineNum">     111 </span>            :  *      Full-width (F) category as defined in Unicode Technical
+<span class="lineNum">     112 </span>            :  *      Report #11 have a column width of 2.
+<a name="113"><span class="lineNum">     113 </span>            :  *</a>
+<span class="lineNum">     114 </span>            :  *    - All remaining characters (including all printable
+<span class="lineNum">     115 </span>            :  *      ISO 8859-1 and WGL4 characters, Unicode control characters,
+<span class="lineNum">     116 </span>            :  *      etc.) have a column width of 1.
+<a name="117"><span class="lineNum">     117 </span>            :  *</a>
+<span class="lineNum">     118 </span>            :  * This implementation assumes that wchar_t characters are encoded
+<span class="lineNum">     119 </span>            :  * in ISO 10646.
+<a name="120"><span class="lineNum">     120 </span>            :  */</a>
+<a name="121"><span class="lineNum">     121 </span>            : </a>
+<span class="lineNum">     122 </span><span class="lineCov">       8474 : int mk_wcwidth(unichar ucs)</span>
+<span class="lineNum">     123 </span>            : {
+<span class="lineNum">     124 </span>            :   /* sorted list of non-overlapping intervals of non-spacing characters */
+<a name="125"><span class="lineNum">     125 </span>            :   /* generated by &quot;uniset +cat=Me +cat=Mn +cat=Cf -00AD +1160-11FF +200B c&quot; */</a>
+<span class="lineNum">     126 </span>            :   static const struct interval combining[] = {
+<span class="lineNum">     127 </span>            :     { 0x0300, 0x036F }, { 0x0483, 0x0486 }, { 0x0488, 0x0489 },
+<span class="lineNum">     128 </span>            :     { 0x0591, 0x05BD }, { 0x05BF, 0x05BF }, { 0x05C1, 0x05C2 },
+<a name="129"><span class="lineNum">     129 </span>            :     { 0x05C4, 0x05C5 }, { 0x05C7, 0x05C7 }, { 0x0600, 0x0603 },</a>
+<span class="lineNum">     130 </span>            :     { 0x0610, 0x0615 }, { 0x064B, 0x065E }, { 0x0670, 0x0670 },
+<span class="lineNum">     131 </span>            :     { 0x06D6, 0x06E4 }, { 0x06E7, 0x06E8 }, { 0x06EA, 0x06ED },
+<span class="lineNum">     132 </span>            :     { 0x070F, 0x070F }, { 0x0711, 0x0711 }, { 0x0730, 0x074A },
+<a name="133"><span class="lineNum">     133 </span>            :     { 0x07A6, 0x07B0 }, { 0x07EB, 0x07F3 }, { 0x0901, 0x0902 },</a>
+<span class="lineNum">     134 </span>            :     { 0x093C, 0x093C }, { 0x0941, 0x0948 }, { 0x094D, 0x094D },
+<span class="lineNum">     135 </span>            :     { 0x0951, 0x0954 }, { 0x0962, 0x0963 }, { 0x0981, 0x0981 },
+<span class="lineNum">     136 </span>            :     { 0x09BC, 0x09BC }, { 0x09C1, 0x09C4 }, { 0x09CD, 0x09CD },
+<a name="137"><span class="lineNum">     137 </span>            :     { 0x09E2, 0x09E3 }, { 0x0A01, 0x0A02 }, { 0x0A3C, 0x0A3C },</a>
+<span class="lineNum">     138 </span>            :     { 0x0A41, 0x0A42 }, { 0x0A47, 0x0A48 }, { 0x0A4B, 0x0A4D },
+<span class="lineNum">     139 </span>            :     { 0x0A70, 0x0A71 }, { 0x0A81, 0x0A82 }, { 0x0ABC, 0x0ABC },
+<span class="lineNum">     140 </span>            :     { 0x0AC1, 0x0AC5 }, { 0x0AC7, 0x0AC8 }, { 0x0ACD, 0x0ACD },
+<a name="141"><span class="lineNum">     141 </span>            :     { 0x0AE2, 0x0AE3 }, { 0x0B01, 0x0B01 }, { 0x0B3C, 0x0B3C },</a>
+<span class="lineNum">     142 </span>            :     { 0x0B3F, 0x0B3F }, { 0x0B41, 0x0B43 }, { 0x0B4D, 0x0B4D },
+<span class="lineNum">     143 </span>            :     { 0x0B56, 0x0B56 }, { 0x0B82, 0x0B82 }, { 0x0BC0, 0x0BC0 },
+<span class="lineNum">     144 </span>            :     { 0x0BCD, 0x0BCD }, { 0x0C3E, 0x0C40 }, { 0x0C46, 0x0C48 },
+<a name="145"><span class="lineNum">     145 </span>            :     { 0x0C4A, 0x0C4D }, { 0x0C55, 0x0C56 }, { 0x0CBC, 0x0CBC },</a>
+<span class="lineNum">     146 </span>            :     { 0x0CBF, 0x0CBF }, { 0x0CC6, 0x0CC6 }, { 0x0CCC, 0x0CCD },
+<span class="lineNum">     147 </span>            :     { 0x0CE2, 0x0CE3 }, { 0x0D41, 0x0D43 }, { 0x0D4D, 0x0D4D },
+<span class="lineNum">     148 </span>            :     { 0x0DCA, 0x0DCA }, { 0x0DD2, 0x0DD4 }, { 0x0DD6, 0x0DD6 },
+<a name="149"><span class="lineNum">     149 </span>            :     { 0x0E31, 0x0E31 }, { 0x0E34, 0x0E3A }, { 0x0E47, 0x0E4E },</a>
+<span class="lineNum">     150 </span>            :     { 0x0EB1, 0x0EB1 }, { 0x0EB4, 0x0EB9 }, { 0x0EBB, 0x0EBC },
+<span class="lineNum">     151 </span>            :     { 0x0EC8, 0x0ECD }, { 0x0F18, 0x0F19 }, { 0x0F35, 0x0F35 },
+<span class="lineNum">     152 </span>            :     { 0x0F37, 0x0F37 }, { 0x0F39, 0x0F39 }, { 0x0F71, 0x0F7E },
+<a name="153"><span class="lineNum">     153 </span>            :     { 0x0F80, 0x0F84 }, { 0x0F86, 0x0F87 }, { 0x0F90, 0x0F97 },</a>
+<span class="lineNum">     154 </span>            :     { 0x0F99, 0x0FBC }, { 0x0FC6, 0x0FC6 }, { 0x102D, 0x1030 },
+<span class="lineNum">     155 </span>            :     { 0x1032, 0x1032 }, { 0x1036, 0x1037 }, { 0x1039, 0x1039 },
+<span class="lineNum">     156 </span>            :     { 0x1058, 0x1059 }, { 0x1160, 0x11FF }, { 0x135F, 0x135F },
+<a name="157"><span class="lineNum">     157 </span>            :     { 0x1712, 0x1714 }, { 0x1732, 0x1734 }, { 0x1752, 0x1753 },</a>
+<span class="lineNum">     158 </span>            :     { 0x1772, 0x1773 }, { 0x17B4, 0x17B5 }, { 0x17B7, 0x17BD },
+<span class="lineNum">     159 </span>            :     { 0x17C6, 0x17C6 }, { 0x17C9, 0x17D3 }, { 0x17DD, 0x17DD },
+<span class="lineNum">     160 </span>            :     { 0x180B, 0x180D }, { 0x18A9, 0x18A9 }, { 0x1920, 0x1922 },
+<a name="161"><span class="lineNum">     161 </span>            :     { 0x1927, 0x1928 }, { 0x1932, 0x1932 }, { 0x1939, 0x193B },</a>
+<span class="lineNum">     162 </span>            :     { 0x1A17, 0x1A18 }, { 0x1B00, 0x1B03 }, { 0x1B34, 0x1B34 },
+<span class="lineNum">     163 </span>            :     { 0x1B36, 0x1B3A }, { 0x1B3C, 0x1B3C }, { 0x1B42, 0x1B42 },
+<span class="lineNum">     164 </span>            :     { 0x1B6B, 0x1B73 }, { 0x1DC0, 0x1DCA }, { 0x1DFE, 0x1DFF },
+<a name="165"><span class="lineNum">     165 </span>            :     { 0x200B, 0x200F }, { 0x202A, 0x202E }, { 0x2060, 0x2063 },</a>
+<span class="lineNum">     166 </span>            :     { 0x206A, 0x206F }, { 0x20D0, 0x20EF }, { 0x302A, 0x302F },
+<span class="lineNum">     167 </span>            :     { 0x3099, 0x309A }, { 0xA806, 0xA806 }, { 0xA80B, 0xA80B },
+<span class="lineNum">     168 </span>            :     { 0xA825, 0xA826 }, { 0xFB1E, 0xFB1E }, { 0xFE00, 0xFE0F },
+<a name="169"><span class="lineNum">     169 </span>            :     { 0xFE20, 0xFE23 }, { 0xFEFF, 0xFEFF }, { 0xFFF9, 0xFFFB },</a>
+<span class="lineNum">     170 </span>            :     { 0x10A01, 0x10A03 }, { 0x10A05, 0x10A06 }, { 0x10A0C, 0x10A0F },
+<span class="lineNum">     171 </span>            :     { 0x10A38, 0x10A3A }, { 0x10A3F, 0x10A3F }, { 0x1D167, 0x1D169 },
+<span class="lineNum">     172 </span>            :     { 0x1D173, 0x1D182 }, { 0x1D185, 0x1D18B }, { 0x1D1AA, 0x1D1AD },
+<a name="173"><span class="lineNum">     173 </span>            :     { 0x1D242, 0x1D244 }, { 0xE0001, 0xE0001 }, { 0xE0020, 0xE007F },</a>
+<span class="lineNum">     174 </span>            :     { 0xE0100, 0xE01EF }
+<span class="lineNum">     175 </span>            :   };
+<span class="lineNum">     176 </span>            : 
+<a name="177"><span class="lineNum">     177 </span>            :   /* test for 8-bit control characters */</a>
+<span class="lineNum">     178 </span><span class="lineCov">       8474 :   if (ucs == 0)</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :     return 0;</span>
+<span class="lineNum">     180 </span><span class="lineCov">       8474 :   if (ucs &lt; 32 || (ucs &gt;= 0x7f &amp;&amp; ucs &lt; 0xa0))</span>
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :     return -1;</span></a>
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span>            :   /* binary search in table of non-spacing characters */
+<span class="lineNum">     184 </span><span class="lineCov">       8474 :   if (bisearch(ucs, combining,</span>
+<a name="185"><span class="lineNum">     185 </span>            :                sizeof(combining) / sizeof(struct interval) - 1))</a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :     return 0;</span>
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span>            :   /* if we arrive here, ucs is not a combining or C0/C1 control character */
+<a name="189"><span class="lineNum">     189 </span>            : </a>
+<span class="lineNum">     190 </span><span class="lineCov">       8474 :   return 1 +</span>
+<span class="lineNum">     191 </span><span class="lineCov">       8474 :     (ucs &gt;= 0x1100 &amp;&amp;</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :      (ucs &lt;= 0x115f ||                    /* Hangul Jamo init. consonants */</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :       ucs == 0x2329 || ucs == 0x232a ||</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :       (ucs &gt;= 0x2e80 &amp;&amp; ucs &lt;= 0xa4cf &amp;&amp;</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :        ucs != 0x303f) ||                  /* CJK ... Yi */</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :       (ucs &gt;= 0xac00 &amp;&amp; ucs &lt;= 0xd7a3) || /* Hangul Syllables */</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :       (ucs &gt;= 0xf900 &amp;&amp; ucs &lt;= 0xfaff) || /* CJK Compatibility Ideographs */</span></a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :       (ucs &gt;= 0xfe10 &amp;&amp; ucs &lt;= 0xfe19) || /* Vertical forms */</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :       (ucs &gt;= 0xfe30 &amp;&amp; ucs &lt;= 0xfe6f) || /* CJK Compatibility Forms */</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :       (ucs &gt;= 0xff00 &amp;&amp; ucs &lt;= 0xff60) || /* Fullwidth Forms */</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :       (ucs &gt;= 0xffe0 &amp;&amp; ucs &lt;= 0xffe6) ||</span></a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :       (ucs &gt;= 0x20000 &amp;&amp; ucs &lt;= 0x2fffd) ||</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :       (ucs &gt;= 0x30000 &amp;&amp; ucs &lt;= 0x3fffd)));</span>
+<span class="lineNum">     204 </span>            : }
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span>            : #if 0
+<span class="lineNum">     208 </span>            : int mk_wcswidth(const unichar *pwcs, size_t n)
+<a name="209"><span class="lineNum">     209 </span>            : {</a>
+<span class="lineNum">     210 </span>            :   int w, width = 0;
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span>            :   for (;*pwcs &amp;&amp; n-- &gt; 0; pwcs++)
+<a name="213"><span class="lineNum">     213 </span>            :     if ((w = mk_wcwidth(*pwcs)) &lt; 0)</a>
+<span class="lineNum">     214 </span>            :       return -1;
+<span class="lineNum">     215 </span>            :     else
+<span class="lineNum">     216 </span>            :       width += w;
+<a name="217"><span class="lineNum">     217 </span>            : </a>
+<span class="lineNum">     218 </span>            :   return width;
+<span class="lineNum">     219 </span>            : }
+<span class="lineNum">     220 </span>            : #endif
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

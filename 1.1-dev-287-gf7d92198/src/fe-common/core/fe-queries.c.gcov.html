@@ -1,0 +1,475 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/core/fe-queries.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/core</a> - fe-queries.c<span style="font-size: 80%;"> (source / <a href="fe-queries.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">49</td>
+            <td class="headerCovTableEntry">186</td>
+            <td class="headerCovTableEntryLo">26.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntryLo">27.8 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  fe-queries.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;modules.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;signals.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;commands.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;levels.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      28 </span>            : 
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;chat-protocols.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;queries.h&quot;
+<span class="lineNum">      32 </span>            : 
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;fe-core-commands.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;fe-windows.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;window-items.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;printtext.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span>            : static int queryclose_tag, query_auto_close, querycreate_level;
+<a name="39"><span class="lineNum">      39 </span>            : </a>
+<span class="lineNum">      40 </span>            : /* Return query where to put the private message. */
+<a name="41"><span class="lineNum">      41 </span><span class="lineNoCov">          0 : QUERY_REC *privmsg_get_query(SERVER_REC *server, const char *nick,</span></a>
+<span class="lineNum">      42 </span>            :                              int own, int level)
+<span class="lineNum">      43 </span>            : {
+<span class="lineNum">      44 </span>            :         QUERY_REC *query;
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_SERVER(server), NULL);</span>
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, NULL);</span>
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :         query = query_find(server, nick);</span></a>
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :         if (query == NULL &amp;&amp; !command_hide_output &amp;&amp;</span>
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :             (querycreate_level &amp; level) != 0 &amp;&amp;</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :             (!own || settings_get_bool(&quot;autocreate_own_query&quot;))) {</span>
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :                 query = CHAT_PROTOCOL(server)-&gt;</span></a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :                         query_create(server-&gt;tag, nick, TRUE);</span>
+<span class="lineNum">      55 </span>            :         }
+<span class="lineNum">      56 </span>            : 
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :         return query;</span></a>
+<a name="58"><span class="lineNum">      58 </span>            : }</a>
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 : static void signal_query_created(QUERY_REC *query, gpointer automatic)</span>
+<a name="61"><span class="lineNum">      61 </span>            : {</a>
+<span class="lineNum">      62 </span>            :         TEXT_DEST_REC dest;
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_QUERY(query));</span>
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :         if (window_item_window(query) == NULL) {</span>
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :                 window_item_create((WI_ITEM_REC *) query,</span>
+<span class="lineNum">      68 </span>            :                                    GPOINTER_TO_INT(automatic));
+<a name="69"><span class="lineNum">      69 </span>            :         }</a>
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :         format_create_dest_tag(&amp;dest, query-&gt;server, query-&gt;server_tag,</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :                                query-&gt;name, MSGLEVEL_CLIENTNOTICE, NULL);</span>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :         printformat_dest(&amp;dest, TXT_QUERY_START,</span></a>
+<span class="lineNum">      74 </span>            :                          query-&gt;name, query-&gt;server_tag);
+<a name="75"><span class="lineNum">      75 </span>            : }</a>
+<span class="lineNum">      76 </span>            : 
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 : static void signal_query_created_curwin(QUERY_REC *query)</span></a>
+<span class="lineNum">      78 </span>            : {
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_QUERY(query));</span>
+<span class="lineNum">      80 </span>            : 
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :         window_item_add(active_win, (WI_ITEM_REC *) query, FALSE);</span></a>
+<a name="82"><span class="lineNum">      82 </span>            : }</a>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 : static void signal_query_destroyed(QUERY_REC *query)</span>
+<a name="85"><span class="lineNum">      85 </span>            : {</a>
+<span class="lineNum">      86 </span>            :         WINDOW_REC *window;
+<span class="lineNum">      87 </span>            :         TEXT_DEST_REC dest;
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_QUERY(query));</span></a>
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :         window = window_item_window((WI_ITEM_REC *) query);</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         if (window == NULL)</span>
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         format_create_dest_tag(&amp;dest, query-&gt;server, query-&gt;server_tag,</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :                                query-&gt;name, MSGLEVEL_CLIENTNOTICE, NULL);</span>
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :         printformat_dest(&amp;dest, TXT_QUERY_STOP, query-&gt;name);</span></a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         window_item_destroy((WI_ITEM_REC *) query);</span>
+<span class="lineNum">     100 </span>            : 
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :         if (!query-&gt;unwanted)</span></a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                 window_auto_destroy(window);</span>
+<span class="lineNum">     103 </span>            :         else {
+<span class="lineNum">     104 </span>            :                 /* eg. connection lost to dcc chat */
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :                 window_bind_add(window, query-&gt;server_tag, query-&gt;name);</span></a>
+<span class="lineNum">     106 </span>            :         }
+<a name="107"><span class="lineNum">     107 </span>            : }</a>
+<span class="lineNum">     108 </span>            : 
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 : static void signal_query_server_changed(QUERY_REC *query)</span></a>
+<span class="lineNum">     110 </span>            : {
+<span class="lineNum">     111 </span>            :         WINDOW_REC *window;
+<span class="lineNum">     112 </span>            : 
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :         g_return_if_fail(query != NULL);</span></a>
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :         window = window_item_window((WI_ITEM_REC *) query);</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :         if (window-&gt;active == (WI_ITEM_REC *) query)</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :                 window_change_server(window, query-&gt;server);</span></a>
+<a name="118"><span class="lineNum">     118 </span>            : }</a>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 : static void signal_query_nick_changed(QUERY_REC *query, const char *oldnick)</span>
+<a name="121"><span class="lineNum">     121 </span>            : {</a>
+<span class="lineNum">     122 </span>            :         TEXT_DEST_REC dest;
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         g_return_if_fail(query != NULL);</span>
+<a name="125"><span class="lineNum">     125 </span>            : </a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :         format_create_dest_tag(&amp;dest, query-&gt;server, query-&gt;server_tag,</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                                query-&gt;name, MSGLEVEL_NICKS, NULL);</span>
+<span class="lineNum">     128 </span>            : 
+<a name="129"><span class="lineNum">     129 </span>            :         /* don't print the nick change message if only the case was changed */</a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(query-&gt;name, oldnick) != 0) {</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :                 printformat_dest(&amp;dest,  TXT_NICK_CHANGED, oldnick,</span>
+<span class="lineNum">     132 </span>            :                                  query-&gt;name, query-&gt;name,
+<a name="133"><span class="lineNum">     133 </span>            :                                  query-&gt;address == NULL ? &quot;&quot; : query-&gt;address);</a>
+<span class="lineNum">     134 </span>            :         }
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         signal_emit(&quot;window item changed&quot;, 2,</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :                     window_item_window((WI_ITEM_REC *) query), query);</span></a>
+<a name="138"><span class="lineNum">     138 </span>            : }</a>
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 : static void signal_window_item_server_changed(WINDOW_REC *window,</span>
+<a name="141"><span class="lineNum">     141 </span>            :                                               QUERY_REC *query)</a>
+<span class="lineNum">     142 </span>            : {
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :         if (IS_QUERY(query)) {</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                 g_free_and_null(query-&gt;server_tag);</span>
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 :                 if (query-&gt;server != NULL)</span></a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                         query-&gt;server_tag = g_strdup(query-&gt;server-&gt;tag);</span>
+<span class="lineNum">     147 </span>            :         }
+<a name="148"><span class="lineNum">     148 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 : static void sig_server_connected(SERVER_REC *server)</span>
+<span class="lineNum">     151 </span>            : {
+<span class="lineNum">     152 </span>            :         GSList *tmp;
+<a name="153"><span class="lineNum">     153 </span>            : </a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         if (!IS_SERVER(server))</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     156 </span>            : 
+<a name="157"><span class="lineNum">     157 </span>            :         /* check if there's any queries without server */</a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         for (tmp = queries; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                 QUERY_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     160 </span>            : 
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :                 if (rec-&gt;server == NULL &amp;&amp;</span></a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :                     (rec-&gt;server_tag == NULL ||</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :                      g_ascii_strcasecmp(rec-&gt;server_tag, server-&gt;tag) == 0)) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                         window_item_change_server((WI_ITEM_REC *) rec, server);</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :                         server-&gt;queries = g_slist_append(server-&gt;queries, rec);</span></a>
+<span class="lineNum">     166 </span>            :                 }
+<span class="lineNum">     167 </span>            :         }
+<a name="168"><span class="lineNum">     168 </span>            : }</a>
+<a name="169"><span class="lineNum">     169 </span>            : </a>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 : static void cmd_window_server(const char *data)</span>
+<span class="lineNum">     171 </span>            : {
+<span class="lineNum">     172 </span>            :         SERVER_REC *server;
+<a name="173"><span class="lineNum">     173 </span>            :         QUERY_REC *query;</a>
+<span class="lineNum">     174 </span>            :         TEXT_DEST_REC dest;
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         server = server_find_tag(data);</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         query = QUERY(active_win-&gt;active);</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         if (server == NULL || query == NULL)</span>
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span>            :         /* /WINDOW SERVER used in a query window */
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         format_create_dest_tag(&amp;dest, query-&gt;server, query-&gt;server_tag,</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineNoCov">          0 :                                query-&gt;name, MSGLEVEL_CLIENTNOTICE, NULL);</span></a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :         printformat_dest(&amp;dest, TXT_QUERY_SERVER_CHANGED,</span>
+<span class="lineNum">     187 </span>            :                          query-&gt;name, server-&gt;tag);
+<span class="lineNum">     188 </span>            : 
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :         query_change_server(query, server);</span></a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :         signal_stop();</span>
+<span class="lineNum">     191 </span>            : }
+<a name="192"><span class="lineNum">     192 </span>            : </a>
+<a name="193"><span class="lineNum">     193 </span>            : /* SYNTAX: UNQUERY [&lt;nick&gt;] */</a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 : static void cmd_unquery(const char *data, SERVER_REC *server, WI_ITEM_REC *item)</span>
+<span class="lineNum">     195 </span>            : {
+<span class="lineNum">     196 </span>            :         QUERY_REC *query;
+<a name="197"><span class="lineNum">     197 </span>            :         char *nick;</a>
+<span class="lineNum">     198 </span>            :         void *free_arg;
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="201"><span class="lineNum">     201 </span>            : </a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 1, &amp;nick))</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     204 </span>            : 
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :         if (*nick == '\0') {</span></a>
+<span class="lineNum">     206 </span>            :                 /* remove current query */
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 query = QUERY(item);</span>
+<span class="lineNum">     208 </span>            :         } else {
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :                 query = query_find(server, nick);</span></a>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 if (query == NULL) {</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                         printformat(server, NULL, MSGLEVEL_CLIENTERROR,</span>
+<span class="lineNum">     212 </span>            :                                     TXT_NO_QUERY, nick);
+<a name="213"><span class="lineNum">     213 </span>            :                 }</a>
+<span class="lineNum">     214 </span>            :         }
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :         if (query != NULL)</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :                 query_destroy(query);</span></a>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<span class="lineNum">     220 </span>            : }
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span>            : /* SYNTAX: QUERY [-window] [-&lt;server tag&gt;] &lt;nick&gt; [&lt;message&gt;] */
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 : static void cmd_query(const char *data, SERVER_REC *server, WI_ITEM_REC *item)</span>
+<span class="lineNum">     224 </span>            : {
+<a name="225"><span class="lineNum">     225 </span>            :         GHashTable *optlist;</a>
+<span class="lineNum">     226 </span>            :         QUERY_REC *query;
+<span class="lineNum">     227 </span>            :         char *nick, *msg;
+<span class="lineNum">     228 </span>            :         void *free_arg;
+<a name="229"><span class="lineNum">     229 </span>            : </a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :         if (!cmd_get_params(data, &amp;free_arg, 2 | PARAM_FLAG_GETREST |</span>
+<a name="233"><span class="lineNum">     233 </span>            :                             PARAM_FLAG_OPTIONS | PARAM_FLAG_UNKNOWN_OPTIONS,</a>
+<span class="lineNum">     234 </span>            :                             &quot;query&quot;, &amp;optlist, &amp;nick, &amp;msg))
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     236 </span>            : 
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 :         if (*nick == '\0') {</span></a>
+<span class="lineNum">     238 </span>            :                 /* remove current query */
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :                 cmd_unquery(&quot;&quot;, server, item);</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                 cmd_params_free(free_arg);</span>
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     242 </span>            :         }
+<span class="lineNum">     243 </span>            : 
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         server = cmd_options_get_server(&quot;query&quot;, optlist, server);</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :         if (server == NULL) {</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                 cmd_params_free(free_arg);</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     248 </span>            :         }
+<a name="249"><span class="lineNum">     249 </span>            : </a>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :         if (*nick != '=' &amp;&amp; (server == NULL || !server-&gt;connected))</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                 cmd_param_error(CMDERR_NOT_CONNECTED);</span>
+<span class="lineNum">     252 </span>            : 
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;window&quot;) != NULL) {</span></a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 signal_add(&quot;query created&quot;,</span>
+<span class="lineNum">     255 </span>            :                            (SIGNAL_FUNC) signal_query_created_curwin);
+<span class="lineNum">     256 </span>            :         }
+<a name="257"><span class="lineNum">     257 </span>            : </a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         query = query_find(server, nick);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :         if (query == NULL)</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :                 query = CHAT_PROTOCOL(server)-&gt;</span>
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :                         query_create(server-&gt;tag, nick, FALSE);</span></a>
+<span class="lineNum">     262 </span>            :         else {
+<span class="lineNum">     263 </span>            :                 /* query already exists, set it active */
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                 WINDOW_REC *window = window_item_window(query);</span>
+<a name="265"><span class="lineNum">     265 </span>            : </a>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :                 if (window != active_win)</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :                         window_set_active(window);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :                 window_item_set_active(active_win, (WI_ITEM_REC *) query);</span>
+<a name="269"><span class="lineNum">     269 </span>            :         }</a>
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         if (g_hash_table_lookup(optlist, &quot;window&quot;) != NULL) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                 signal_remove(&quot;query created&quot;,</span>
+<a name="273"><span class="lineNum">     273 </span>            :                               (SIGNAL_FUNC) signal_query_created_curwin);</a>
+<span class="lineNum">     274 </span>            :         }
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :         if (*msg != '\0') {</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :                 msg = g_strdup_printf(&quot;-nick %s %s&quot;, nick, msg);</span></a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;command msg&quot;, 3, msg, server, query);</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :                 g_free(msg);</span>
+<span class="lineNum">     280 </span>            :         }
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :         cmd_params_free(free_arg);</span>
+<a name="283"><span class="lineNum">     283 </span>            : }</a>
+<span class="lineNum">     284 </span>            : 
+<a name="285"><span class="lineNum">     285 </span><span class="lineCov">         10 : static void window_reset_query_timestamps(WINDOW_REC *window)</span></a>
+<span class="lineNum">     286 </span>            : {
+<span class="lineNum">     287 </span>            :         GSList *tmp;
+<span class="lineNum">     288 </span>            : 
+<a name="289"><span class="lineNum">     289 </span><span class="lineCov">         10 :         if (window == NULL)</span></a>
+<span class="lineNum">     290 </span><span class="lineCov">          3 :                 return;</span>
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span><span class="lineCov">          7 :         for (tmp = window-&gt;items; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :                 QUERY_REC *query = QUERY(tmp-&gt;data);</span></a>
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                 if (query != NULL)</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :                         query-&gt;last_unread_msg = time(NULL);</span>
+<a name="297"><span class="lineNum">     297 </span>            :         }</a>
+<a name="298"><span class="lineNum">     298 </span>            : }</a>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineCov">          5 : static void sig_window_changed(WINDOW_REC *window, WINDOW_REC *old_window)</span>
+<a name="301"><span class="lineNum">     301 </span>            : {</a>
+<span class="lineNum">     302 </span>            :         /* reset the queries last_unread_msg so query doesn't get closed
+<span class="lineNum">     303 </span>            :            immediately after switched to the window, or after changed to
+<span class="lineNum">     304 </span>            :            some other window from it */
+<a name="305"><span class="lineNum">     305 </span><span class="lineCov">          5 :         window_reset_query_timestamps(window);</span></a>
+<span class="lineNum">     306 </span><span class="lineCov">          5 :         window_reset_query_timestamps(old_window);</span>
+<a name="307"><span class="lineNum">     307 </span><span class="lineCov">          5 : }</span></a>
+<span class="lineNum">     308 </span>            : 
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 : static int sig_query_autoclose(void)</span></a>
+<span class="lineNum">     310 </span>            : {
+<span class="lineNum">     311 </span>            :         WINDOW_REC *window;
+<span class="lineNum">     312 </span>            :         GSList *tmp, *next;
+<a name="313"><span class="lineNum">     313 </span>            :         time_t now;</a>
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :         now = time(NULL);</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         for (tmp = queries; tmp != NULL; tmp = next) {</span>
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :                 QUERY_REC *rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                 window = window_item_window((WI_ITEM_REC *) rec);</span>
+<a name="321"><span class="lineNum">     321 </span><span class="lineNoCov">          0 :                 if (window != active_win &amp;&amp; rec-&gt;data_level &lt; DATA_LEVEL_MSG &amp;&amp;</span></a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                     now-rec-&gt;last_unread_msg &gt; query_auto_close)</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                         query_destroy(rec);</span>
+<span class="lineNum">     324 </span>            :         }
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :      return 1;</span></a>
+<a name="326"><span class="lineNum">     326 </span>            : }</a>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 : static void sig_message_private(SERVER_REC *server, const char *msg,</span>
+<a name="329"><span class="lineNum">     329 </span>            :                                 const char *nick, const char *address, const char *target)</a>
+<span class="lineNum">     330 </span>            : {
+<span class="lineNum">     331 </span>            :         QUERY_REC *query;
+<span class="lineNum">     332 </span>            : 
+<a name="333"><span class="lineNum">     333 </span>            :         /* own message returned by bouncer? */</a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :         int own = (!g_strcmp0(nick, server-&gt;nick));</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span>            :         /* create query window if needed */
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :         query = privmsg_get_query(server, own ? target : nick, FALSE, MSGLEVEL_MSGS);</span></a>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span>            :         /* reset the query's last_unread_msg timestamp */
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         if (query != NULL)</span>
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :                 query-&gt;last_unread_msg = time(NULL);</span></a>
+<a name="342"><span class="lineNum">     342 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span><span class="lineCov">          1 : static void read_settings(void)</span>
+<a name="345"><span class="lineNum">     345 </span>            : {</a>
+<span class="lineNum">     346 </span><span class="lineCov">          1 :         querycreate_level = settings_get_level(&quot;autocreate_query_level&quot;);</span>
+<span class="lineNum">     347 </span><span class="lineCov">          1 :         query_auto_close = settings_get_time(&quot;autoclose_query&quot;)/1000;</span>
+<span class="lineNum">     348 </span><span class="lineCov">          1 :         if (query_auto_close &gt; 0 &amp;&amp; queryclose_tag == -1)</span>
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :                 queryclose_tag = g_timeout_add(5000, (GSourceFunc) sig_query_autoclose, NULL);</span></a>
+<span class="lineNum">     350 </span><span class="lineCov">          1 :         else if (query_auto_close &lt;= 0 &amp;&amp; queryclose_tag != -1) {</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :                 g_source_remove(queryclose_tag);</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :                 queryclose_tag = -1;</span>
+<a name="353"><span class="lineNum">     353 </span>            :         }</a>
+<a name="354"><span class="lineNum">     354 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     355 </span>            : 
+<span class="lineNum">     356 </span><span class="lineCov">          1 : void fe_queries_init(void)</span>
+<a name="357"><span class="lineNum">     357 </span>            : {</a>
+<span class="lineNum">     358 </span><span class="lineCov">          1 :         settings_add_level(&quot;lookandfeel&quot;, &quot;autocreate_query_level&quot;, &quot;MSGS DCCMSGS&quot;);</span>
+<span class="lineNum">     359 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;autocreate_own_query&quot;, TRUE);</span>
+<span class="lineNum">     360 </span><span class="lineCov">          1 :         settings_add_time(&quot;lookandfeel&quot;, &quot;autoclose_query&quot;, &quot;0&quot;);</span>
+<a name="361"><span class="lineNum">     361 </span>            : </a>
+<span class="lineNum">     362 </span><span class="lineCov">          1 :         queryclose_tag = -1;</span>
+<span class="lineNum">     363 </span><span class="lineCov">          1 :         read_settings();</span>
+<span class="lineNum">     364 </span>            : 
+<a name="365"><span class="lineNum">     365 </span><span class="lineCov">          1 :         signal_add(&quot;query created&quot;, (SIGNAL_FUNC) signal_query_created);</span></a>
+<span class="lineNum">     366 </span><span class="lineCov">          1 :         signal_add(&quot;query destroyed&quot;, (SIGNAL_FUNC) signal_query_destroyed);</span>
+<span class="lineNum">     367 </span><span class="lineCov">          1 :         signal_add(&quot;query server changed&quot;, (SIGNAL_FUNC) signal_query_server_changed);</span>
+<span class="lineNum">     368 </span><span class="lineCov">          1 :         signal_add(&quot;query nick changed&quot;, (SIGNAL_FUNC) signal_query_nick_changed);</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineCov">          1 :         signal_add(&quot;window item server changed&quot;, (SIGNAL_FUNC) signal_window_item_server_changed);</span></a>
+<span class="lineNum">     370 </span><span class="lineCov">          1 :         signal_add(&quot;server connected&quot;, (SIGNAL_FUNC) sig_server_connected);</span>
+<span class="lineNum">     371 </span><span class="lineCov">          1 :         signal_add(&quot;window changed&quot;, (SIGNAL_FUNC) sig_window_changed);</span>
+<span class="lineNum">     372 </span><span class="lineCov">          1 :         signal_add_first(&quot;message private&quot;, (SIGNAL_FUNC) sig_message_private);</span>
+<a name="373"><span class="lineNum">     373 </span><span class="lineCov">          1 :         signal_add(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span></a>
+<span class="lineNum">     374 </span>            : 
+<span class="lineNum">     375 </span><span class="lineCov">          1 :         command_bind(&quot;query&quot;, NULL, (SIGNAL_FUNC) cmd_query);</span>
+<span class="lineNum">     376 </span><span class="lineCov">          1 :         command_bind(&quot;unquery&quot;, NULL, (SIGNAL_FUNC) cmd_unquery);</span>
+<a name="377"><span class="lineNum">     377 </span><span class="lineCov">          1 :         command_bind(&quot;window server&quot;, NULL, (SIGNAL_FUNC) cmd_window_server);</span></a>
+<span class="lineNum">     378 </span>            : 
+<span class="lineNum">     379 </span><span class="lineCov">          1 :         command_set_options(&quot;query&quot;, &quot;window&quot;);</span>
+<a name="380"><span class="lineNum">     380 </span><span class="lineCov">          1 : }</span></a>
+<a name="381"><span class="lineNum">     381 </span>            : </a>
+<span class="lineNum">     382 </span><span class="lineCov">          1 : void fe_queries_deinit(void)</span>
+<span class="lineNum">     383 </span>            : {
+<span class="lineNum">     384 </span><span class="lineCov">          1 :         if (queryclose_tag != -1) g_source_remove(queryclose_tag);</span>
+<a name="385"><span class="lineNum">     385 </span>            : </a>
+<span class="lineNum">     386 </span><span class="lineCov">          1 :         signal_remove(&quot;query created&quot;, (SIGNAL_FUNC) signal_query_created);</span>
+<span class="lineNum">     387 </span><span class="lineCov">          1 :         signal_remove(&quot;query destroyed&quot;, (SIGNAL_FUNC) signal_query_destroyed);</span>
+<span class="lineNum">     388 </span><span class="lineCov">          1 :         signal_remove(&quot;query server changed&quot;, (SIGNAL_FUNC) signal_query_server_changed);</span>
+<a name="389"><span class="lineNum">     389 </span><span class="lineCov">          1 :         signal_remove(&quot;query nick changed&quot;, (SIGNAL_FUNC) signal_query_nick_changed);</span></a>
+<span class="lineNum">     390 </span><span class="lineCov">          1 :         signal_remove(&quot;window item server changed&quot;, (SIGNAL_FUNC) signal_window_item_server_changed);</span>
+<span class="lineNum">     391 </span><span class="lineCov">          1 :         signal_remove(&quot;server connected&quot;, (SIGNAL_FUNC) sig_server_connected);</span>
+<span class="lineNum">     392 </span><span class="lineCov">          1 :         signal_remove(&quot;window changed&quot;, (SIGNAL_FUNC) sig_window_changed);</span>
+<a name="393"><span class="lineNum">     393 </span><span class="lineCov">          1 :         signal_remove(&quot;message private&quot;, (SIGNAL_FUNC) sig_message_private);</span></a>
+<span class="lineNum">     394 </span><span class="lineCov">          1 :         signal_remove(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span><span class="lineCov">          1 :         command_unbind(&quot;query&quot;, (SIGNAL_FUNC) cmd_query);</span>
+<a name="397"><span class="lineNum">     397 </span><span class="lineCov">          1 :         command_unbind(&quot;unquery&quot;, (SIGNAL_FUNC) cmd_unquery);</span></a>
+<span class="lineNum">     398 </span><span class="lineCov">          1 :         command_unbind(&quot;window server&quot;, (SIGNAL_FUNC) cmd_window_server);</span>
+<span class="lineNum">     399 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

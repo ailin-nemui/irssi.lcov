@@ -1,0 +1,515 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/signals.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - signals.c<span style="font-size: 80%;"> (source / <a href="signals.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">139</td>
+            <td class="headerCovTableEntry">191</td>
+            <td class="headerCovTableEntryLo">72.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntry">24</td>
+            <td class="headerCovTableEntryLo">62.5 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  signals.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2002 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;modules.h&quot;
+<span class="lineNum">      24 </span>            : 
+<a name="25"><span class="lineNum">      25 </span>            : typedef struct _SignalHook {</a>
+<span class="lineNum">      26 </span>            :         struct _SignalHook *next;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            :         int priority;
+<a name="29"><span class="lineNum">      29 </span>            :         const char *module;</a>
+<span class="lineNum">      30 </span>            :         SIGNAL_FUNC func;
+<span class="lineNum">      31 </span>            :         void *user_data;
+<span class="lineNum">      32 </span>            : } SignalHook;
+<a name="33"><span class="lineNum">      33 </span>            : </a>
+<span class="lineNum">      34 </span>            : typedef struct {
+<span class="lineNum">      35 </span>            :         int id; /* signal id */
+<span class="lineNum">      36 </span>            :         int refcount;
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span>            :         int emitting; /* signal is being emitted */
+<span class="lineNum">      39 </span>            :         int stop_emit; /* this signal was stopped */
+<span class="lineNum">      40 </span>            :         int continue_emit; /* this signal emit was continued elsewhere */
+<a name="41"><span class="lineNum">      41 </span>            :         int remove_count; /* hooks were removed from signal */</a>
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            :         SignalHook *hooks;
+<span class="lineNum">      44 </span>            : } Signal;
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span>            : void *signal_user_data;
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : static GHashTable *signals;
+<a name="49"><span class="lineNum">      49 </span>            : static Signal *current_emitted_signal;</a>
+<span class="lineNum">      50 </span>            : static SignalHook *current_emitted_hook;
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : #define signal_ref(signal) ++(signal)-&gt;refcount
+<a name="53"><span class="lineNum">      53 </span>            : #define signal_unref(signal) (signal_unref_full(signal, TRUE))</a>
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span><span class="lineCov">       1248 : static int signal_unref_full(Signal *rec, int remove)</span>
+<span class="lineNum">      56 </span>            : {
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">       1248 :         g_assert(rec-&gt;refcount &gt; 0);</span></a>
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span><span class="lineCov">       1248 :         if (--rec-&gt;refcount != 0)</span>
+<span class="lineNum">      60 </span><span class="lineCov">        537 :                 return TRUE;</span>
+<a name="61"><span class="lineNum">      61 </span>            : </a>
+<span class="lineNum">      62 </span>            :         /* remove whole signal from memory */
+<span class="lineNum">      63 </span><span class="lineCov">        711 :         if (rec-&gt;hooks != NULL) {</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 g_error(&quot;signal_unref(%s) : BUG - hook list wasn't empty&quot;,</span>
+<a name="65"><span class="lineNum">      65 </span>            :                         signal_get_id_str(rec-&gt;id));</a>
+<span class="lineNum">      66 </span>            :         }
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span><span class="lineCov">        711 :         if (remove)</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineCov">        711 :                 g_hash_table_remove(signals, GINT_TO_POINTER(rec-&gt;id));</span></a>
+<span class="lineNum">      70 </span><span class="lineCov">        711 :         g_free(rec);</span>
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineCov">        711 :         return FALSE;</span>
+<a name="73"><span class="lineNum">      73 </span>            : }</a>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 : static void signal_hash_ref(void *key, Signal *rec)</span>
+<span class="lineNum">      76 </span>            : {
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :         signal_ref(rec);</span></a>
+<a name="78"><span class="lineNum">      78 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 : static int signal_hash_unref(void *key, Signal *rec)</span>
+<a name="81"><span class="lineNum">      81 </span>            : {</a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         return !signal_unref_full(rec, FALSE);</span>
+<a name="83"><span class="lineNum">      83 </span>            : }</a>
+<span class="lineNum">      84 </span>            : 
+<a name="85"><span class="lineNum">      85 </span><span class="lineCov">        982 : void signal_add_full(const char *module, int priority,</span></a>
+<span class="lineNum">      86 </span>            :                      const char *signal, SIGNAL_FUNC func, void *user_data)
+<span class="lineNum">      87 </span>            : {
+<span class="lineNum">      88 </span><span class="lineCov">        982 :         signal_add_full_id(module, priority, signal_get_uniq_id(signal),</span>
+<a name="89"><span class="lineNum">      89 </span>            :                            func, user_data);</a>
+<span class="lineNum">      90 </span><span class="lineCov">        982 : }</span>
+<a name="91"><span class="lineNum">      91 </span>            : </a>
+<span class="lineNum">      92 </span>            : /* bind a signal */
+<a name="93"><span class="lineNum">      93 </span><span class="lineCov">       1016 : void signal_add_full_id(const char *module, int priority,</span></a>
+<span class="lineNum">      94 </span>            :                         int signal_id, SIGNAL_FUNC func, void *user_data)
+<span class="lineNum">      95 </span>            : {
+<span class="lineNum">      96 </span>            :         Signal *signal;
+<a name="97"><span class="lineNum">      97 </span>            :         SignalHook *hook, **tmp;</a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineCov">       1016 :         g_return_if_fail(signal_id &gt;= 0);</span>
+<span class="lineNum">     100 </span><span class="lineCov">       1016 :         g_return_if_fail(func != NULL);</span>
+<a name="101"><span class="lineNum">     101 </span>            : </a>
+<span class="lineNum">     102 </span><span class="lineCov">       1016 :         signal = g_hash_table_lookup(signals, GINT_TO_POINTER(signal_id));</span>
+<span class="lineNum">     103 </span><span class="lineCov">       1016 :         if (signal == NULL) {</span>
+<span class="lineNum">     104 </span>            :                 /* new signal */
+<a name="105"><span class="lineNum">     105 </span><span class="lineCov">        711 :                 signal = g_new0(Signal, 1);</span></a>
+<span class="lineNum">     106 </span><span class="lineCov">        711 :                 signal-&gt;id = signal_id;</span>
+<span class="lineNum">     107 </span><span class="lineCov">        711 :                 g_hash_table_insert(signals, GINT_TO_POINTER(signal_id), signal);</span>
+<span class="lineNum">     108 </span>            :         }
+<a name="109"><span class="lineNum">     109 </span>            : </a>
+<span class="lineNum">     110 </span><span class="lineCov">       1016 :         hook = g_new0(SignalHook, 1);</span>
+<span class="lineNum">     111 </span><span class="lineCov">       1016 :         hook-&gt;priority = priority;</span>
+<span class="lineNum">     112 </span><span class="lineCov">       1016 :         hook-&gt;module = module;</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineCov">       1016 :         hook-&gt;func = func;</span></a>
+<span class="lineNum">     114 </span><span class="lineCov">       1016 :         hook-&gt;user_data = user_data;</span>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span>            :         /* insert signal to proper position in list */
+<a name="117"><span class="lineNum">     117 </span><span class="lineCov">       1255 :         for (tmp = &amp;signal-&gt;hooks; ; tmp = &amp;(*tmp)-&gt;next) {</span></a>
+<span class="lineNum">     118 </span><span class="lineCov">       1494 :                 if (*tmp == NULL) {</span>
+<span class="lineNum">     119 </span>            :                         /* last in list */
+<span class="lineNum">     120 </span><span class="lineCov">        754 :                         *tmp = hook;</span>
+<a name="121"><span class="lineNum">     121 </span><span class="lineCov">        754 :                         break;</span></a>
+<span class="lineNum">     122 </span><span class="lineCov">        501 :                 } else if (priority &lt;= (*tmp)-&gt;priority) {</span>
+<span class="lineNum">     123 </span>            :                         /* insert before others with same priority */
+<span class="lineNum">     124 </span><span class="lineCov">        262 :                         hook-&gt;next = *tmp;</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineCov">        262 :                         *tmp = hook;</span></a>
+<span class="lineNum">     126 </span><span class="lineCov">        262 :                         break;</span>
+<span class="lineNum">     127 </span>            :                 }
+<span class="lineNum">     128 </span>            :         }
+<a name="129"><span class="lineNum">     129 </span>            : </a>
+<span class="lineNum">     130 </span><span class="lineCov">       1016 :         signal_ref(signal);</span>
+<a name="131"><span class="lineNum">     131 </span>            : }</a>
+<span class="lineNum">     132 </span>            : 
+<a name="133"><span class="lineNum">     133 </span><span class="lineCov">       1016 : static void signal_remove_hook(Signal *rec, SignalHook **hook_pos)</span></a>
+<span class="lineNum">     134 </span>            : {
+<span class="lineNum">     135 </span>            :         SignalHook *hook;
+<span class="lineNum">     136 </span>            : 
+<a name="137"><span class="lineNum">     137 </span><span class="lineCov">       1016 :         hook = *hook_pos;</span></a>
+<span class="lineNum">     138 </span><span class="lineCov">       1016 :         *hook_pos = hook-&gt;next;</span>
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineCov">       1016 :         g_free(hook);</span>
+<a name="141"><span class="lineNum">     141 </span>            : </a>
+<span class="lineNum">     142 </span><span class="lineCov">       1016 :         signal_unref(rec);</span>
+<span class="lineNum">     143 </span><span class="lineCov">       1016 : }</span>
+<a name="144"><span class="lineNum">     144 </span>            : </a>
+<a name="145"><span class="lineNum">     145 </span>            : /* Remove function from signal's emit list */</a>
+<span class="lineNum">     146 </span><span class="lineCov">       1105 : static int signal_remove_func(Signal *rec, SIGNAL_FUNC func, void *user_data)</span>
+<span class="lineNum">     147 </span>            : {
+<span class="lineNum">     148 </span>            :         SignalHook **hook;
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<span class="lineNum">     150 </span><span class="lineCov">       1670 :         for (hook = &amp;rec-&gt;hooks; *hook != NULL; hook = &amp;(*hook)-&gt;next) {</span>
+<span class="lineNum">     151 </span><span class="lineCov">       1581 :                 if ((*hook)-&gt;func == func &amp;&amp; (*hook)-&gt;user_data == user_data) {</span>
+<span class="lineNum">     152 </span><span class="lineCov">       1016 :                         if (rec-&gt;emitting) {</span>
+<a name="153"><span class="lineNum">     153 </span>            :                                 /* mark it removed after emitting is done */</a>
+<span class="lineNum">     154 </span><span class="lineCov">          2 :                                 (*hook)-&gt;func = NULL;</span>
+<span class="lineNum">     155 </span><span class="lineCov">          2 :                                 rec-&gt;remove_count++;</span>
+<span class="lineNum">     156 </span>            :                         } else {
+<a name="157"><span class="lineNum">     157 </span>            :                                 /* remove the function from emit list */</a>
+<span class="lineNum">     158 </span><span class="lineCov">       1014 :                                 signal_remove_hook(rec, hook);</span>
+<span class="lineNum">     159 </span>            :                         }
+<span class="lineNum">     160 </span><span class="lineCov">       1016 :                         return TRUE;</span>
+<a name="161"><span class="lineNum">     161 </span>            :                 }</a>
+<span class="lineNum">     162 </span>            :         }
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineCov">         89 :         return FALSE;</span>
+<a name="165"><span class="lineNum">     165 </span>            : }</a>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineCov">       1119 : void signal_remove_id(int signal_id, SIGNAL_FUNC func, void *user_data)</span>
+<span class="lineNum">     168 </span>            : {
+<a name="169"><span class="lineNum">     169 </span>            :         Signal *rec;</a>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineCov">       1119 :         g_return_if_fail(signal_id &gt;= 0);</span>
+<span class="lineNum">     172 </span><span class="lineCov">       1119 :         g_return_if_fail(func != NULL);</span>
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<span class="lineNum">     174 </span><span class="lineCov">       1119 :         rec = g_hash_table_lookup(signals, GINT_TO_POINTER(signal_id));</span>
+<span class="lineNum">     175 </span><span class="lineCov">       1119 :         if (rec != NULL)</span>
+<span class="lineNum">     176 </span><span class="lineCov">       1105 :                 signal_remove_func(rec, func, user_data);</span>
+<a name="177"><span class="lineNum">     177 </span>            : }</a>
+<a name="178"><span class="lineNum">     178 </span>            : </a>
+<span class="lineNum">     179 </span>            : /* unbind signal */
+<span class="lineNum">     180 </span><span class="lineCov">        983 : void signal_remove_full(const char *signal, SIGNAL_FUNC func, void *user_data)</span>
+<a name="181"><span class="lineNum">     181 </span>            : {</a>
+<span class="lineNum">     182 </span><span class="lineCov">        983 :         g_return_if_fail(signal != NULL);</span>
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineCov">        983 :         signal_remove_id(signal_get_uniq_id(signal), func, user_data);</span>
+<a name="185"><span class="lineNum">     185 </span>            : }</a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineCov">          1 : static void signal_hooks_clean(Signal *rec)</span>
+<span class="lineNum">     188 </span>            : {
+<a name="189"><span class="lineNum">     189 </span>            :         SignalHook **hook, **next;</a>
+<span class="lineNum">     190 </span>            :         int count;
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineCov">          1 :         count = rec-&gt;remove_count;</span>
+<a name="193"><span class="lineNum">     193 </span><span class="lineCov">          1 :         rec-&gt;remove_count = 0;</span></a>
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineCov">          2 :         for (hook = &amp;rec-&gt;hooks; *hook != NULL; hook = next) {</span>
+<span class="lineNum">     196 </span><span class="lineCov">          2 :                 next = &amp;(*hook)-&gt;next;</span>
+<a name="197"><span class="lineNum">     197 </span>            : </a>
+<span class="lineNum">     198 </span><span class="lineCov">          2 :                 if ((*hook)-&gt;func == NULL) {</span>
+<span class="lineNum">     199 </span><span class="lineCov">          2 :                         next = hook;</span>
+<span class="lineNum">     200 </span><span class="lineCov">          2 :                         signal_remove_hook(rec, hook);</span>
+<a name="201"><span class="lineNum">     201 </span>            : </a>
+<span class="lineNum">     202 </span><span class="lineCov">          2 :                         if (--count == 0)</span>
+<span class="lineNum">     203 </span><span class="lineCov">          1 :                                 break;</span>
+<span class="lineNum">     204 </span>            :                 }
+<a name="205"><span class="lineNum">     205 </span>            :         }</a>
+<a name="206"><span class="lineNum">     206 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineCov">        232 : static int signal_emit_real(Signal *rec, int params, va_list va,</span>
+<a name="209"><span class="lineNum">     209 </span>            :                             SignalHook *first_hook)</a>
+<span class="lineNum">     210 </span>            : {
+<span class="lineNum">     211 </span>            :         const void *arglist[SIGNAL_MAX_ARGUMENTS];
+<span class="lineNum">     212 </span>            :         Signal *prev_emitted_signal;
+<a name="213"><span class="lineNum">     213 </span>            :         SignalHook *hook, *prev_emitted_hook;</a>
+<span class="lineNum">     214 </span>            :         int i, stopped, stop_emit_count, continue_emit_count;
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineCov">       1624 :         for (i = 0; i &lt; SIGNAL_MAX_ARGUMENTS; i++)</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">       1392 :                 arglist[i] = i &gt;= params ? NULL : va_arg(va, const void *);</span></a>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span>            :         /* signal_stop_by_name(&quot;signal&quot;); signal_emit(&quot;signal&quot;, ...);
+<span class="lineNum">     220 </span>            :            fails if we compare rec-&gt;stop_emit against 0. */
+<a name="221"><span class="lineNum">     221 </span><span class="lineCov">        232 :         stop_emit_count = rec-&gt;stop_emit;</span></a>
+<span class="lineNum">     222 </span><span class="lineCov">        232 :         continue_emit_count = rec-&gt;continue_emit;</span>
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineCov">        232 :         signal_ref(rec);</span>
+<a name="225"><span class="lineNum">     225 </span>            : </a>
+<span class="lineNum">     226 </span><span class="lineCov">        232 :         stopped = FALSE;</span>
+<span class="lineNum">     227 </span><span class="lineCov">        232 :         rec-&gt;emitting++;</span>
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">        232 :         prev_emitted_signal = current_emitted_signal;</span></a>
+<span class="lineNum">     230 </span><span class="lineCov">        232 :         prev_emitted_hook = current_emitted_hook;</span>
+<span class="lineNum">     231 </span><span class="lineCov">        232 :         current_emitted_signal = rec;</span>
+<span class="lineNum">     232 </span>            : 
+<a name="233"><span class="lineNum">     233 </span><span class="lineCov">        542 :         for (hook = first_hook; hook != NULL; hook = hook-&gt;next) {</span></a>
+<span class="lineNum">     234 </span><span class="lineCov">        317 :                 if (hook-&gt;func == NULL)</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                         continue; /* removed */</span>
+<span class="lineNum">     236 </span>            : 
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">        317 :                 current_emitted_hook = hook;</span></a>
+<span class="lineNum">     238 </span>            : #if SIGNAL_MAX_ARGUMENTS != 6
+<span class="lineNum">     239 </span>            : #  error SIGNAL_MAX_ARGUMENTS changed - update code
+<span class="lineNum">     240 </span>            : #endif
+<a name="241"><span class="lineNum">     241 </span><span class="lineCov">        317 :                 signal_user_data = hook-&gt;user_data;</span></a>
+<span class="lineNum">     242 </span><span class="lineCov">        317 :                 hook-&gt;func(arglist[0], arglist[1], arglist[2], arglist[3],</span>
+<span class="lineNum">     243 </span>            :                            arglist[4], arglist[5]);
+<span class="lineNum">     244 </span>            : 
+<a name="245"><span class="lineNum">     245 </span><span class="lineCov">        317 :                 if (rec-&gt;continue_emit != continue_emit_count)</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                         rec-&gt;continue_emit--;</span>
+<span class="lineNum">     247 </span>            : 
+<span class="lineNum">     248 </span><span class="lineCov">        317 :                 if (rec-&gt;stop_emit != stop_emit_count) {</span>
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">          7 :                         stopped = TRUE;</span></a>
+<span class="lineNum">     250 </span><span class="lineCov">          7 :                         rec-&gt;stop_emit--;</span>
+<span class="lineNum">     251 </span><span class="lineCov">          7 :                         break;</span>
+<span class="lineNum">     252 </span>            :                 }
+<a name="253"><span class="lineNum">     253 </span>            :         }</a>
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span><span class="lineCov">        232 :         current_emitted_signal = prev_emitted_signal;</span>
+<span class="lineNum">     256 </span><span class="lineCov">        232 :         current_emitted_hook = prev_emitted_hook;</span>
+<a name="257"><span class="lineNum">     257 </span>            : </a>
+<span class="lineNum">     258 </span><span class="lineCov">        232 :         rec-&gt;emitting--;</span>
+<span class="lineNum">     259 </span><span class="lineCov">        232 :         signal_user_data = NULL;</span>
+<span class="lineNum">     260 </span>            : 
+<a name="261"><span class="lineNum">     261 </span><span class="lineCov">        232 :         if (!rec-&gt;emitting) {</span></a>
+<span class="lineNum">     262 </span><span class="lineCov">        232 :                 g_assert(rec-&gt;stop_emit == 0);</span>
+<span class="lineNum">     263 </span><span class="lineCov">        232 :                 g_assert(rec-&gt;continue_emit == 0);</span>
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span><span class="lineCov">        232 :                 if (rec-&gt;remove_count &gt; 0)</span></a>
+<span class="lineNum">     266 </span><span class="lineCov">          1 :                         signal_hooks_clean(rec);</span>
+<span class="lineNum">     267 </span>            :         }
+<span class="lineNum">     268 </span>            : 
+<a name="269"><span class="lineNum">     269 </span><span class="lineCov">        232 :         signal_unref(rec);</span></a>
+<span class="lineNum">     270 </span><span class="lineCov">        232 :         return stopped;</span>
+<a name="271"><span class="lineNum">     271 </span>            : }</a>
+<span class="lineNum">     272 </span>            : 
+<a name="273"><span class="lineNum">     273 </span><span class="lineCov">       1071 : int signal_emit(const char *signal, int params, ...)</span></a>
+<span class="lineNum">     274 </span>            : {
+<span class="lineNum">     275 </span>            :         Signal *rec;
+<span class="lineNum">     276 </span>            :         va_list va;
+<a name="277"><span class="lineNum">     277 </span>            :         int signal_id;</a>
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span><span class="lineCov">       1071 :         g_return_val_if_fail(params &gt;= 0 &amp;&amp; params &lt;= SIGNAL_MAX_ARGUMENTS, FALSE);</span>
+<span class="lineNum">     280 </span>            : 
+<a name="281"><span class="lineNum">     281 </span><span class="lineCov">       1071 :         signal_id = signal_get_uniq_id(signal);</span></a>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineCov">       1071 :         rec = g_hash_table_lookup(signals, GINT_TO_POINTER(signal_id));</span>
+<span class="lineNum">     284 </span><span class="lineCov">       1071 :         if (rec != NULL) {</span>
+<a name="285"><span class="lineNum">     285 </span><span class="lineCov">        123 :                 va_start(va, params);</span></a>
+<span class="lineNum">     286 </span><span class="lineCov">        123 :                 signal_emit_real(rec, params, va, rec-&gt;hooks);</span>
+<span class="lineNum">     287 </span><span class="lineCov">        123 :                 va_end(va);</span>
+<span class="lineNum">     288 </span>            :         }
+<a name="289"><span class="lineNum">     289 </span>            : </a>
+<span class="lineNum">     290 </span><span class="lineCov">       1071 :         return rec != NULL;</span>
+<a name="291"><span class="lineNum">     291 </span>            : }</a>
+<span class="lineNum">     292 </span>            : 
+<a name="293"><span class="lineNum">     293 </span><span class="lineCov">        117 : int signal_emit_id(int signal_id, int params, ...)</span></a>
+<span class="lineNum">     294 </span>            : {
+<span class="lineNum">     295 </span>            :         Signal *rec;
+<span class="lineNum">     296 </span>            :         va_list va;
+<a name="297"><span class="lineNum">     297 </span>            : </a>
+<span class="lineNum">     298 </span><span class="lineCov">        117 :         g_return_val_if_fail(signal_id &gt;= 0, FALSE);</span>
+<span class="lineNum">     299 </span><span class="lineCov">        117 :         g_return_val_if_fail(params &gt;= 0 &amp;&amp; params &lt;= SIGNAL_MAX_ARGUMENTS, FALSE);</span>
+<span class="lineNum">     300 </span>            : 
+<a name="301"><span class="lineNum">     301 </span><span class="lineCov">        117 :         rec = g_hash_table_lookup(signals, GINT_TO_POINTER(signal_id));</span></a>
+<span class="lineNum">     302 </span><span class="lineCov">        117 :         if (rec != NULL) {</span>
+<span class="lineNum">     303 </span><span class="lineCov">        109 :                 va_start(va, params);</span>
+<span class="lineNum">     304 </span><span class="lineCov">        109 :                 signal_emit_real(rec, params, va, rec-&gt;hooks);</span>
+<a name="305"><span class="lineNum">     305 </span><span class="lineCov">        109 :                 va_end(va);</span></a>
+<span class="lineNum">     306 </span>            :         }
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineCov">        117 :         return rec != NULL;</span>
+<a name="309"><span class="lineNum">     309 </span>            : }</a>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 : void signal_continue(int params, ...)</span>
+<span class="lineNum">     312 </span>            : {
+<a name="313"><span class="lineNum">     313 </span>            :         Signal *rec;</a>
+<span class="lineNum">     314 </span>            :         va_list va;
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         rec = current_emitted_signal;</span>
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :         if (rec == NULL || rec-&gt;emitting &lt;= rec-&gt;continue_emit)</span></a>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :                 g_warning(&quot;signal_continue() : no signals are being emitted currently&quot;);</span>
+<span class="lineNum">     319 </span>            :         else {
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :                 va_start(va, params);</span>
+<a name="321"><span class="lineNum">     321 </span>            : </a>
+<span class="lineNum">     322 </span>            :                 /* stop the signal */
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 if (rec-&gt;emitting &gt; rec-&gt;stop_emit)</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                         rec-&gt;stop_emit++;</span>
+<a name="325"><span class="lineNum">     325 </span>            : </a>
+<span class="lineNum">     326 </span>            :                 /* re-emit */
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                 rec-&gt;continue_emit++;</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :                 signal_emit_real(rec, params, va, current_emitted_hook-&gt;next);</span>
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :                 va_end(va);</span></a>
+<span class="lineNum">     330 </span>            :         }
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 : }</span>
+<a name="332"><span class="lineNum">     332 </span>            : </a>
+<a name="333"><span class="lineNum">     333 </span>            : /* stop the current ongoing signal emission */</a>
+<span class="lineNum">     334 </span><span class="lineCov">          7 : void signal_stop(void)</span>
+<span class="lineNum">     335 </span>            : {
+<span class="lineNum">     336 </span>            :         Signal *rec;
+<a name="337"><span class="lineNum">     337 </span>            : </a>
+<span class="lineNum">     338 </span><span class="lineCov">          7 :         rec = current_emitted_signal;</span>
+<span class="lineNum">     339 </span><span class="lineCov">          7 :         if (rec == NULL)</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :                 g_warning(&quot;signal_stop() : no signals are being emitted currently&quot;);</span>
+<a name="341"><span class="lineNum">     341 </span><span class="lineCov">          7 :         else if (rec-&gt;emitting &gt; rec-&gt;stop_emit)</span></a>
+<span class="lineNum">     342 </span><span class="lineCov">          7 :                 rec-&gt;stop_emit++;</span>
+<span class="lineNum">     343 </span><span class="lineCov">          7 : }</span>
+<a name="344"><span class="lineNum">     344 </span>            : </a>
+<a name="345"><span class="lineNum">     345 </span>            : /* stop ongoing signal emission by signal name */</a>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 : void signal_stop_by_name(const char *signal)</span>
+<span class="lineNum">     347 </span>            : {
+<span class="lineNum">     348 </span>            :         Signal *rec;
+<a name="349"><span class="lineNum">     349 </span>            :         int signal_id;</a>
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :         signal_id = signal_get_uniq_id(signal);</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(signals, GINT_TO_POINTER(signal_id));</span>
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :         if (rec == NULL)</span></a>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :                 g_warning(&quot;signal_stop_by_name() : unknown signal \&quot;%s\&quot;&quot;, signal);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :         else if (rec-&gt;emitting &gt; rec-&gt;stop_emit)</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :                 rec-&gt;stop_emit++;</span>
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="358"><span class="lineNum">     358 </span>            : </a>
+<span class="lineNum">     359 </span>            : /* return the name of the signal that is currently being emitted */
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 : const char *signal_get_emitted(void)</span>
+<a name="361"><span class="lineNum">     361 </span>            : {</a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         return signal_get_id_str(signal_get_emitted_id());</span>
+<span class="lineNum">     363 </span>            : }
+<a name="364"><span class="lineNum">     364 </span>            : </a>
+<a name="365"><span class="lineNum">     365 </span>            : /* return the ID of the signal that is currently being emitted */</a>
+<span class="lineNum">     366 </span><span class="lineCov">          8 : int signal_get_emitted_id(void)</span>
+<span class="lineNum">     367 </span>            : {
+<span class="lineNum">     368 </span>            :         Signal *rec;
+<a name="369"><span class="lineNum">     369 </span>            : </a>
+<span class="lineNum">     370 </span><span class="lineCov">          8 :         rec = current_emitted_signal;</span>
+<span class="lineNum">     371 </span><span class="lineCov">          8 :         g_return_val_if_fail(rec != NULL, -1);</span>
+<span class="lineNum">     372 </span><span class="lineCov">          8 :         return rec-&gt;id;</span>
+<a name="373"><span class="lineNum">     373 </span>            : }</a>
+<a name="374"><span class="lineNum">     374 </span>            : </a>
+<span class="lineNum">     375 </span>            : /* return TRUE if specified signal was stopped */
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 : int signal_is_stopped(int signal_id)</span>
+<a name="377"><span class="lineNum">     377 </span>            : {</a>
+<span class="lineNum">     378 </span>            :         Signal *rec;
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(signals, GINT_TO_POINTER(signal_id));</span>
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(rec != NULL, FALSE);</span></a>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :         return rec-&gt;emitting &lt;= rec-&gt;stop_emit;</span>
+<a name="384"><span class="lineNum">     384 </span>            : }</a>
+<a name="385"><span class="lineNum">     385 </span>            : </a>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 : static void signal_remove_module(void *signal, Signal *rec,</span>
+<span class="lineNum">     387 </span>            :                                  const char *module)
+<span class="lineNum">     388 </span>            : {
+<a name="389"><span class="lineNum">     389 </span>            :         SignalHook **hook, **next;</a>
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :         for (hook = &amp;rec-&gt;hooks; *hook != NULL; hook = next) {</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                 next = &amp;(*hook)-&gt;next;</span>
+<a name="393"><span class="lineNum">     393 </span>            : </a>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 if (strcasecmp((*hook)-&gt;module, module) == 0) {</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                         next = hook;</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                         signal_remove_hook(rec, hook);</span>
+<a name="397"><span class="lineNum">     397 </span>            :                 }</a>
+<span class="lineNum">     398 </span>            :         }
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 : }</span>
+<a name="400"><span class="lineNum">     400 </span>            : </a>
+<a name="401"><span class="lineNum">     401 </span>            : /* remove all signals that belong to `module' */</a>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 : void signals_remove_module(const char *module)</span>
+<span class="lineNum">     403 </span>            : {
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         g_return_if_fail(module != NULL);</span>
+<a name="405"><span class="lineNum">     405 </span>            : </a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :         g_hash_table_foreach(signals, (GHFunc) signal_hash_ref, NULL);</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :         g_hash_table_foreach(signals, (GHFunc) signal_remove_module,</span>
+<span class="lineNum">     408 </span>            :                              (void *) module);
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :         g_hash_table_foreach_remove(signals, (GHRFunc) signal_hash_unref, NULL);</span></a>
+<a name="410"><span class="lineNum">     410 </span>            : }</a>
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineCov">          1 : void signals_init(void)</span>
+<a name="413"><span class="lineNum">     413 </span>            : {</a>
+<span class="lineNum">     414 </span><span class="lineCov">          1 :         signals = g_hash_table_new(NULL, NULL);</span>
+<a name="415"><span class="lineNum">     415 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     416 </span>            : 
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 : static void signal_free(void *key, Signal *rec)</span></a>
+<span class="lineNum">     418 </span>            : {
+<span class="lineNum">     419 </span>            :         /* refcount-1 because we just referenced it ourself */
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :         g_warning(&quot;signal_free(%s) : signal still has %d references:&quot;,</span>
+<a name="421"><span class="lineNum">     421 </span>            :                   signal_get_id_str(rec-&gt;id), rec-&gt;refcount-1);</a>
+<span class="lineNum">     422 </span>            : 
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :         while (rec-&gt;hooks != NULL) {</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                 g_warning(&quot; - module '%s' function %p&quot;,</span>
+<a name="425"><span class="lineNum">     425 </span>            :                           rec-&gt;hooks-&gt;module, rec-&gt;hooks-&gt;func);</a>
+<span class="lineNum">     426 </span>            : 
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :                 signal_remove_hook(rec, &amp;rec-&gt;hooks);</span>
+<span class="lineNum">     428 </span>            :         }
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span><span class="lineCov">          1 : void signals_deinit(void)</span>
+<span class="lineNum">     432 </span>            : {
+<a name="433"><span class="lineNum">     433 </span><span class="lineCov">          1 :         g_hash_table_foreach(signals, (GHFunc) signal_hash_ref, NULL);</span></a>
+<span class="lineNum">     434 </span><span class="lineCov">          1 :         g_hash_table_foreach(signals, (GHFunc) signal_free, NULL);</span>
+<span class="lineNum">     435 </span><span class="lineCov">          1 :         g_hash_table_foreach_remove(signals, (GHRFunc) signal_hash_unref, NULL);</span>
+<span class="lineNum">     436 </span><span class="lineCov">          1 :         g_hash_table_destroy(signals);</span>
+<a name="437"><span class="lineNum">     437 </span>            : </a>
+<span class="lineNum">     438 </span><span class="lineCov">          1 :         module_uniq_destroy(&quot;signals&quot;);</span>
+<span class="lineNum">     439 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,591 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-common/irc/fe-netjoin.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-common/irc</a> - fe-netjoin.c<span style="font-size: 80%;"> (source / <a href="fe-netjoin.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">28</td>
+            <td class="headerCovTableEntry">247</td>
+            <td class="headerCovTableEntryLo">11.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntryLo">17.6 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  fe-netjoin.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;levels.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;misc.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;irc-servers.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;modes.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;ignore.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;netsplit.h&quot;
+<span class="lineNum">      32 </span>            : 
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;printtext.h&quot;</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #define NETJOIN_WAIT_TIME 5 /* how many seconds to wait for the netsplitted JOIN messages to stop */
+<span class="lineNum">      36 </span>            : #define NETJOIN_MAX_WAIT 30 /* how many seconds to wait for nick to join to the rest of the channels she was before the netsplit */
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span>            : typedef struct {
+<span class="lineNum">      39 </span>            :         char *nick;
+<span class="lineNum">      40 </span>            :         GSList *old_channels;
+<a name="41"><span class="lineNum">      41 </span>            :         GSList *now_channels;</a>
+<span class="lineNum">      42 </span>            : } NETJOIN_REC;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : typedef struct {
+<a name="45"><span class="lineNum">      45 </span>            :         IRC_SERVER_REC *server;</a>
+<span class="lineNum">      46 </span>            :         time_t last_netjoin;
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            :         GSList *netjoins;
+<a name="49"><span class="lineNum">      49 </span>            : } NETJOIN_SERVER_REC;</a>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            : typedef struct {
+<span class="lineNum">      52 </span>            :         int count;
+<a name="53"><span class="lineNum">      53 </span>            :         GString *nicks;</a>
+<span class="lineNum">      54 </span>            : } TEMP_PRINT_REC;
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span>            : static int join_tag;
+<a name="57"><span class="lineNum">      57 </span>            : static int netjoin_max_nicks, hide_netsplit_quits;</a>
+<span class="lineNum">      58 </span>            : static int printing_joins;
+<a name="59"><span class="lineNum">      59 </span>            : static GSList *joinservers;</a>
+<span class="lineNum">      60 </span>            : 
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 : static NETJOIN_SERVER_REC *netjoin_find_server(IRC_SERVER_REC *server)</span></a>
+<span class="lineNum">      62 </span>            : {
+<span class="lineNum">      63 </span>            :         GSList *tmp;
+<span class="lineNum">      64 </span>            : 
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(server != NULL, NULL);</span></a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :         for (tmp = joinservers; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :                 NETJOIN_SERVER_REC *rec = tmp-&gt;data;</span>
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :                 if (rec-&gt;server == server)</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                         return rec;</span>
+<span class="lineNum">      72 </span>            :         }
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="75"><span class="lineNum">      75 </span>            : }</a>
+<span class="lineNum">      76 </span>            : 
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 : static NETJOIN_REC *netjoin_add(IRC_SERVER_REC *server, const char *nick,</span></a>
+<span class="lineNum">      78 </span>            :                                 GSList *channels)
+<span class="lineNum">      79 </span>            : {
+<span class="lineNum">      80 </span>            :         NETJOIN_REC *rec;
+<a name="81"><span class="lineNum">      81 </span>            :         NETJOIN_SERVER_REC *srec;</a>
+<span class="lineNum">      82 </span>            : 
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(server != NULL, NULL);</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, NULL);</span>
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         rec = g_new0(NETJOIN_REC, 1);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :         rec-&gt;nick = g_strdup(nick);</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         while (channels != NULL) {</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :                 NETSPLIT_CHAN_REC *channel = channels-&gt;data;</span></a>
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                 rec-&gt;old_channels = g_slist_append(rec-&gt;old_channels,</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :                                                    g_strdup(channel-&gt;name));</span>
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :                 channels = channels-&gt;next;</span></a>
+<span class="lineNum">      94 </span>            :         }
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         srec = netjoin_find_server(server);</span>
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :         if (srec == NULL) {</span></a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :                 srec = g_new0(NETJOIN_SERVER_REC, 1);</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :                 srec-&gt;server = server;</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :                 joinservers = g_slist_append(joinservers, srec);</span>
+<a name="101"><span class="lineNum">     101 </span>            :         }</a>
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :         srec-&gt;last_netjoin = time(NULL);</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :         srec-&gt;netjoins = g_slist_append(srec-&gt;netjoins, rec);</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :         return rec;</span></a>
+<a name="106"><span class="lineNum">     106 </span>            : }</a>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 : static NETJOIN_REC *netjoin_find(IRC_SERVER_REC *server, const char *nick)</span>
+<a name="109"><span class="lineNum">     109 </span>            : {</a>
+<span class="lineNum">     110 </span>            :         NETJOIN_SERVER_REC *srec;
+<span class="lineNum">     111 </span>            :         GSList *tmp;
+<span class="lineNum">     112 </span>            : 
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(server != NULL, NULL);</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, NULL);</span>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :         srec = netjoin_find_server(server);</span>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :         if (srec == NULL) return NULL;</span></a>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :         for (tmp = srec-&gt;netjoins; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                 NETJOIN_REC *rec = tmp-&gt;data;</span>
+<a name="121"><span class="lineNum">     121 </span>            : </a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :                 if (g_ascii_strcasecmp(rec-&gt;nick, nick) == 0)</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :                         return rec;</span>
+<span class="lineNum">     124 </span>            :         }
+<a name="125"><span class="lineNum">     125 </span>            : </a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="127"><span class="lineNum">     127 </span>            : }</a>
+<span class="lineNum">     128 </span>            : 
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 : static void netjoin_remove(NETJOIN_SERVER_REC *server, NETJOIN_REC *rec)</span></a>
+<span class="lineNum">     130 </span>            : {
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :         server-&gt;netjoins = g_slist_remove(server-&gt;netjoins, rec);</span>
+<span class="lineNum">     132 </span>            : 
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :         g_slist_foreach(rec-&gt;old_channels, (GFunc) g_free, NULL);</span></a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :         g_slist_foreach(rec-&gt;now_channels, (GFunc) g_free, NULL);</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :         g_slist_free(rec-&gt;old_channels);</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         g_slist_free(rec-&gt;now_channels);</span>
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :         g_free(rec-&gt;nick);</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :         g_free(rec);</span>
+<a name="140"><span class="lineNum">     140 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="141"><span class="lineNum">     141 </span>            : </a>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 : static void netjoin_server_remove(NETJOIN_SERVER_REC *server)</span>
+<span class="lineNum">     143 </span>            : {
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :         joinservers = g_slist_remove(joinservers, server);</span>
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :         while (server-&gt;netjoins != NULL)</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                 netjoin_remove(server, server-&gt;netjoins-&gt;data);</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :         g_free(server);</span>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 : static void print_channel_netjoins(char *channel, TEMP_PRINT_REC *rec,</span>
+<span class="lineNum">     152 </span>            :                                    NETJOIN_SERVER_REC *server)
+<a name="153"><span class="lineNum">     153 </span>            : {</a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         if (rec-&gt;nicks-&gt;len &gt; 0)</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :                 g_string_truncate(rec-&gt;nicks, rec-&gt;nicks-&gt;len-2);</span>
+<span class="lineNum">     156 </span>            : 
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 :         printformat(server-&gt;server, channel, MSGLEVEL_JOINS,</span></a>
+<span class="lineNum">     158 </span>            :                     rec-&gt;count &gt; netjoin_max_nicks ?
+<span class="lineNum">     159 </span>            :                     IRCTXT_NETSPLIT_JOIN_MORE : IRCTXT_NETSPLIT_JOIN,
+<span class="lineNum">     160 </span>            :                     rec-&gt;nicks-&gt;str, rec-&gt;count-netjoin_max_nicks);
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         g_string_free(rec-&gt;nicks, TRUE);</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         g_free(rec);</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         g_free(channel);</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 : static void print_netjoins(NETJOIN_SERVER_REC *server, const char *filter_channel)</span>
+<span class="lineNum">     168 </span>            : {
+<a name="169"><span class="lineNum">     169 </span>            :         TEMP_PRINT_REC *temp;</a>
+<span class="lineNum">     170 </span>            :         GHashTable *channels;
+<span class="lineNum">     171 </span>            :         GSList *tmp, *tmp2, *next, *next2, *old;
+<span class="lineNum">     172 </span>            : 
+<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 :         g_return_if_fail(server != NULL);</span></a>
+<span class="lineNum">     174 </span>            : 
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :         printing_joins = TRUE;</span>
+<span class="lineNum">     176 </span>            : 
+<a name="177"><span class="lineNum">     177 </span>            :         /* save nicks to string, clear now_channels and remove the same</a>
+<span class="lineNum">     178 </span>            :            channels from old_channels list */
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         channels = g_hash_table_new((GHashFunc) g_istr_hash,</span>
+<span class="lineNum">     180 </span>            :                                     (GCompareFunc) g_istr_equal);
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :         for (tmp = server-&gt;netjoins; tmp != NULL; tmp = next) {</span></a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :                 NETJOIN_REC *rec = tmp-&gt;data;</span>
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                 next = g_slist_next(tmp);</span>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :                 for (tmp2 = rec-&gt;now_channels; tmp2 != NULL; tmp2 = next2) {</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :                         char *channel = tmp2-&gt;data;</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                         char *realchannel = channel + 1;</span>
+<a name="189"><span class="lineNum">     189 </span>            : </a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                         next2 = g_slist_next(tmp2);</span>
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            :                         /* Filter the results by channel if asked to do so */
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :                         if (filter_channel != NULL &amp;&amp;</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :                             strcasecmp(realchannel, filter_channel) != 0)</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     196 </span>            : 
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :                         temp = g_hash_table_lookup(channels, realchannel);</span></a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                         if (temp == NULL) {</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                                 temp = g_new0(TEMP_PRINT_REC, 1);</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                                 temp-&gt;nicks = g_string_new(NULL);</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :                                 g_hash_table_insert(channels,</span></a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                                                     g_strdup(realchannel),</span>
+<span class="lineNum">     203 </span>            :                                                     temp);
+<span class="lineNum">     204 </span>            :                         }
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :                         temp-&gt;count++;</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                         if (temp-&gt;count &lt;= netjoin_max_nicks) {</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :                                 if (*channel != ' ')</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :                                         g_string_append_c(temp-&gt;nicks,</span></a>
+<span class="lineNum">     210 </span>            :                                                           *channel);
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                                 g_string_append_printf(temp-&gt;nicks, &quot;%s, &quot;,</span>
+<span class="lineNum">     212 </span>            :                                                   rec-&gt;nick);
+<a name="213"><span class="lineNum">     213 </span>            :                         }</a>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            :                         /* remove the channel from old_channels too */
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                         old = gslist_find_icase_string(rec-&gt;old_channels,</span>
+<a name="217"><span class="lineNum">     217 </span>            :                                                        realchannel);</a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                         if (old != NULL) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                                 void *data = old-&gt;data;</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                                 rec-&gt;old_channels =</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :                                         g_slist_remove(rec-&gt;old_channels, data);</span></a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                                 g_free(data);</span>
+<span class="lineNum">     223 </span>            :                         }
+<span class="lineNum">     224 </span>            : 
+<a name="225"><span class="lineNum">     225 </span>            :                         /* drop tmp2 from the list */</a>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :                         rec-&gt;now_channels = g_slist_delete_link(rec-&gt;now_channels, tmp2);</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :                         g_free(channel);</span>
+<span class="lineNum">     228 </span>            :                 }
+<a name="229"><span class="lineNum">     229 </span>            : </a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 if (rec-&gt;old_channels == NULL)</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :                         netjoin_remove(server, rec);</span>
+<span class="lineNum">     232 </span>            :         }
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         g_hash_table_foreach(channels, (GHFunc) print_channel_netjoins,</span>
+<span class="lineNum">     235 </span>            :                              server);
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :         g_hash_table_destroy(channels);</span>
+<a name="237"><span class="lineNum">     237 </span>            : </a>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :         if (server-&gt;netjoins == NULL)</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :                 netjoin_server_remove(server);</span>
+<span class="lineNum">     240 </span>            : 
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :         printing_joins = FALSE;</span></a>
+<span class="lineNum">     242 </span>            : }
+<span class="lineNum">     243 </span>            : 
+<a name="244"><span class="lineNum">     244 </span>            : /* something is going to be printed to screen, print our current netsplit</a>
+<a name="245"><span class="lineNum">     245 </span>            :    message before it. */</a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 : static void sig_print_starting(TEXT_DEST_REC *dest)</span>
+<span class="lineNum">     247 </span>            : {
+<span class="lineNum">     248 </span>            :         NETJOIN_SERVER_REC *rec;
+<a name="249"><span class="lineNum">     249 </span>            : </a>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :         if (printing_joins)</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     252 </span>            : 
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER(dest-&gt;server))</span></a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :         if (!(dest-&gt;level &amp; MSGLEVEL_PUBLIC))</span>
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :         if (!server_ischannel(dest-&gt;server, dest-&gt;target))</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="261"><span class="lineNum">     261 </span>            : </a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :         rec = netjoin_find_server(IRC_SERVER(dest-&gt;server));</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :         if (rec != NULL &amp;&amp; rec-&gt;netjoins != NULL)</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                 print_netjoins(rec, dest-&gt;target);</span>
+<a name="265"><span class="lineNum">     265 </span>            : }</a>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 : static int sig_check_netjoins(void)</span>
+<span class="lineNum">     268 </span>            : {
+<a name="269"><span class="lineNum">     269 </span>            :         GSList *tmp, *next;</a>
+<span class="lineNum">     270 </span>            :         int diff;
+<span class="lineNum">     271 </span>            :         time_t now;
+<span class="lineNum">     272 </span>            : 
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :         now = time(NULL);</span></a>
+<span class="lineNum">     274 </span>            :         /* first print all netjoins which haven't had any new joins
+<span class="lineNum">     275 </span>            :          * for NETJOIN_WAIT_TIME; this may cause them to be removed
+<span class="lineNum">     276 </span>            :          * (all users who rejoined, rejoined all channels) */
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :         for (tmp = joinservers; tmp != NULL; tmp = next) {</span></a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                 NETJOIN_SERVER_REC *server = tmp-&gt;data;</span>
+<span class="lineNum">     279 </span>            : 
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span>
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :                 diff = now-server-&gt;last_netjoin;</span></a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :                 if (diff &lt;= NETJOIN_WAIT_TIME) {</span>
+<span class="lineNum">     283 </span>            :                         /* wait for more JOINs */
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                         continue;</span>
+<a name="285"><span class="lineNum">     285 </span>            :                 }</a>
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :                 if (server-&gt;netjoins != NULL)</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :                         print_netjoins(server, NULL);</span>
+<a name="289"><span class="lineNum">     289 </span>            :         }</a>
+<span class="lineNum">     290 </span>            : 
+<span class="lineNum">     291 </span>            :         /* now remove all netjoins which haven't had any new joins
+<span class="lineNum">     292 </span>            :          * for NETJOIN_MAX_WAIT (user rejoined some but not all channels
+<a name="293"><span class="lineNum">     293 </span>            :          * after split) */</a>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :         for (tmp = joinservers; tmp != NULL; tmp = next) {</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                 NETJOIN_SERVER_REC *server = tmp-&gt;data;</span>
+<span class="lineNum">     296 </span>            : 
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :                 next = tmp-&gt;next;</span></a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 diff = now-server-&gt;last_netjoin;</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                 if (diff &gt;= NETJOIN_MAX_WAIT) {</span>
+<span class="lineNum">     300 </span>            :                         /* waited long enough, forget about the rest */
+<a name="301"><span class="lineNum">     301 </span><span class="lineNoCov">          0 :                         netjoin_server_remove(server);</span></a>
+<span class="lineNum">     302 </span>            :                 }
+<span class="lineNum">     303 </span>            :         }
+<span class="lineNum">     304 </span>            : 
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :         if (joinservers == NULL) {</span></a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 g_source_remove(join_tag);</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                 signal_remove(&quot;print starting&quot;, (SIGNAL_FUNC) sig_print_starting);</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 join_tag = -1;</span>
+<a name="309"><span class="lineNum">     309 </span>            :         }</a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :         return 1;</span>
+<a name="311"><span class="lineNum">     311 </span>            : }</a>
+<span class="lineNum">     312 </span>            : 
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 : static void msg_quit(IRC_SERVER_REC *server, const char *nick,</span></a>
+<span class="lineNum">     314 </span>            :                      const char *address, const char *reason)
+<span class="lineNum">     315 </span>            : {
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :         if (IS_IRC_SERVER(server) &amp;&amp; quitmsg_is_split(reason))</span>
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :                 signal_stop();</span></a>
+<a name="318"><span class="lineNum">     318 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 : static void msg_join(IRC_SERVER_REC *server, const char *channel,</span>
+<a name="321"><span class="lineNum">     321 </span>            :                      const char *nick, const char *address)</a>
+<span class="lineNum">     322 </span>            : {
+<span class="lineNum">     323 </span>            :         NETSPLIT_REC *split;
+<span class="lineNum">     324 </span>            :         NETJOIN_REC *netjoin;
+<a name="325"><span class="lineNum">     325 </span>            :         GSList *channels;</a>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :         int rejoin = 1;</span>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER(server))</span>
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :         if (ignore_check(SERVER(server), nick, address,</span>
+<span class="lineNum">     332 </span>            :                          channel, NULL, MSGLEVEL_JOINS))
+<a name="333"><span class="lineNum">     333 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :         split = netsplit_find(server, nick, address);</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         netjoin = netjoin_find(server, nick);</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :         if (split == NULL &amp;&amp; netjoin == NULL)</span></a>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span>            :         /* if this was not a channel they split from, treat it normally */
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :         if (netjoin != NULL) {</span></a>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                 if (!gslist_find_icase_string(netjoin-&gt;old_channels, channel))</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">     344 </span>            :         } else {
+<a name="345"><span class="lineNum">     345 </span><span class="lineNoCov">          0 :                 channels = split-&gt;channels;</span></a>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :                 while (channels != NULL) {</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :                         NETSPLIT_CHAN_REC *schannel = channels-&gt;data;</span>
+<span class="lineNum">     348 </span>            : 
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :                         if (!strcasecmp(schannel-&gt;name, channel))</span></a>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :                         channels = channels-&gt;next;</span>
+<span class="lineNum">     352 </span>            :                 }
+<a name="353"><span class="lineNum">     353 </span>            :                 /* we still need to create a NETJOIN_REC now as the</a>
+<span class="lineNum">     354 </span>            :                  * NETSPLIT_REC will be destroyed */
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                 if (channels == NULL)</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :                         rejoin = 0;</span>
+<a name="357"><span class="lineNum">     357 </span>            :         }</a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :         if (join_tag == -1) {</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :                 join_tag = g_timeout_add(1000, (GSourceFunc)</span>
+<a name="361"><span class="lineNum">     361 </span>            :                                          sig_check_netjoins, NULL);</a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :                 signal_add(&quot;print starting&quot;, (SIGNAL_FUNC) sig_print_starting);</span>
+<span class="lineNum">     363 </span>            :         }
+<span class="lineNum">     364 </span>            : 
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :         if (netjoin == NULL)</span></a>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :                 netjoin = netjoin_add(server, nick, split-&gt;channels);</span>
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         if (rejoin)</span>
+<a name="369"><span class="lineNum">     369 </span>            :         {</a>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :                 netjoin-&gt;now_channels = g_slist_append(netjoin-&gt;now_channels,</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                                                        g_strconcat(&quot; &quot;, channel, NULL));</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                 signal_stop();</span>
+<a name="373"><span class="lineNum">     373 </span>            :         }</a>
+<a name="374"><span class="lineNum">     374 </span>            : }</a>
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 : static int netjoin_set_nickmode(IRC_SERVER_REC *server, NETJOIN_REC *rec,</span>
+<a name="377"><span class="lineNum">     377 </span>            :                                 const char *channel, char prefix)</a>
+<span class="lineNum">     378 </span>            : {
+<span class="lineNum">     379 </span>            :         GSList *pos;
+<span class="lineNum">     380 </span>            :         const char *flags;
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :         char *found_chan = NULL;</span></a>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span><span class="lineNoCov">          0 :         for (pos = rec-&gt;now_channels; pos != NULL; pos = pos-&gt;next) {</span>
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :                 char *chan = pos-&gt;data;</span>
+<a name="385"><span class="lineNum">     385 </span><span class="lineNoCov">          0 :                 if (strcasecmp(chan+1, channel) == 0) {</span></a>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :                         found_chan = chan;</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     388 </span>            :                 }
+<a name="389"><span class="lineNum">     389 </span>            :         }</a>
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :         if (found_chan == NULL)</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                 return FALSE;</span>
+<a name="393"><span class="lineNum">     393 </span>            : </a>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :         flags = server-&gt;get_nick_flags(SERVER(server));</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :         while (*flags != '\0') {</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                 if (found_chan[0] == *flags)</span>
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :                 if (prefix == *flags) {</span>
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :                         found_chan[0] = prefix;</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :                         break;</span>
+<a name="401"><span class="lineNum">     401 </span>            :                 }</a>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :                 flags++;</span>
+<span class="lineNum">     403 </span>            :         }
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         return TRUE;</span>
+<a name="405"><span class="lineNum">     405 </span>            : }</a>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 : static void msg_mode(IRC_SERVER_REC *server, const char *channel,</span>
+<span class="lineNum">     408 </span>            :                      const char *sender, const char *addr, const char *data)
+<a name="409"><span class="lineNum">     409 </span>            : {</a>
+<span class="lineNum">     410 </span>            :         NETJOIN_REC *rec;
+<span class="lineNum">     411 </span>            :         char *params, *mode, *nicks;
+<span class="lineNum">     412 </span>            :         char **nicklist, **nick, type, prefix;
+<a name="413"><span class="lineNum">     413 </span>            :         int show;</a>
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :         if (!server_ischannel(SERVER(server), channel) || addr != NULL)</span>
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2 | PARAM_FLAG_GETREST,</span>
+<span class="lineNum">     420 </span>            :                                   &amp;mode, &amp;nicks);
+<a name="421"><span class="lineNum">     421 </span>            : </a>
+<span class="lineNum">     422 </span>            :         /* parse server mode changes - hide operator status changes and
+<span class="lineNum">     423 </span>            :            show them in the netjoin message instead as @ before the nick */
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :         nick = nicklist = g_strsplit(nicks, &quot; &quot;, -1);</span>
+<a name="425"><span class="lineNum">     425 </span>            : </a>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :         type = '+'; show = FALSE;</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :         for (; *mode != '\0'; mode++) {</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :                 if (*mode == '+' || *mode == '-') {</span>
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 :                         type = *mode;</span></a>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     431 </span>            :                 }
+<span class="lineNum">     432 </span>            : 
+<a name="433"><span class="lineNum">     433 </span><span class="lineNoCov">          0 :                 if (*nick != NULL &amp;&amp; GET_MODE_PREFIX(server, *mode)) {</span></a>
+<span class="lineNum">     434 </span>            :                         /* give/remove ops */
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                         rec = netjoin_find(server, *nick);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                         prefix = GET_MODE_PREFIX(server, *mode);</span>
+<a name="437"><span class="lineNum">     437 </span><span class="lineNoCov">          0 :                         if (rec == NULL || type != '+' || prefix == '\0' ||</span></a>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :                             !netjoin_set_nickmode(server, rec, channel, prefix))</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                                 show = TRUE;</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                         nick++;</span>
+<a name="441"><span class="lineNum">     441 </span>            :                 } else {</a>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                         if (HAS_MODE_ARG(server, type, *mode) &amp;&amp; *nick != NULL)</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                                 nick++;</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                         show = TRUE;</span>
+<a name="445"><span class="lineNum">     445 </span>            :                 }</a>
+<span class="lineNum">     446 </span>            :         }
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :         if (!show) signal_stop();</span>
+<a name="449"><span class="lineNum">     449 </span>            : </a>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :         g_strfreev(nicklist);</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="452"><span class="lineNum">     452 </span>            : }</a>
+<a name="453"><span class="lineNum">     453 </span>            : </a>
+<span class="lineNum">     454 </span><span class="lineCov">          1 : static void read_settings(void)</span>
+<span class="lineNum">     455 </span>            : {
+<span class="lineNum">     456 </span>            :         int old_hide;
+<a name="457"><span class="lineNum">     457 </span>            : </a>
+<span class="lineNum">     458 </span><span class="lineCov">          1 :         old_hide = hide_netsplit_quits;</span>
+<span class="lineNum">     459 </span><span class="lineCov">          1 :         hide_netsplit_quits = settings_get_bool(&quot;hide_netsplit_quits&quot;);</span>
+<span class="lineNum">     460 </span><span class="lineCov">          1 :         netjoin_max_nicks = settings_get_int(&quot;netjoin_max_nicks&quot;);</span>
+<a name="461"><span class="lineNum">     461 </span>            : </a>
+<span class="lineNum">     462 </span><span class="lineCov">          1 :         if (old_hide &amp;&amp; !hide_netsplit_quits) {</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                 signal_remove(&quot;message quit&quot;, (SIGNAL_FUNC) msg_quit);</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                 signal_remove(&quot;message join&quot;, (SIGNAL_FUNC) msg_join);</span>
+<a name="465"><span class="lineNum">     465 </span><span class="lineNoCov">          0 :                 signal_remove(&quot;message irc mode&quot;, (SIGNAL_FUNC) msg_mode);</span></a>
+<span class="lineNum">     466 </span><span class="lineCov">          1 :         } else if (!old_hide &amp;&amp; hide_netsplit_quits) {</span>
+<span class="lineNum">     467 </span><span class="lineCov">          1 :                 signal_add(&quot;message quit&quot;, (SIGNAL_FUNC) msg_quit);</span>
+<span class="lineNum">     468 </span><span class="lineCov">          1 :                 signal_add(&quot;message join&quot;, (SIGNAL_FUNC) msg_join);</span>
+<a name="469"><span class="lineNum">     469 </span><span class="lineCov">          1 :                 signal_add(&quot;message irc mode&quot;, (SIGNAL_FUNC) msg_mode);</span></a>
+<span class="lineNum">     470 </span>            :         }
+<a name="471"><span class="lineNum">     471 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     472 </span>            : 
+<a name="473"><span class="lineNum">     473 </span><span class="lineNoCov">          0 : static void sig_server_disconnected(IRC_SERVER_REC *server)</span></a>
+<span class="lineNum">     474 </span>            : {
+<span class="lineNum">     475 </span>            :         NETJOIN_SERVER_REC *netjoin_server;
+<span class="lineNum">     476 </span>            : 
+<a name="477"><span class="lineNum">     477 </span><span class="lineNoCov">          0 :         g_return_if_fail(server != NULL);</span></a>
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER(server))</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="481"><span class="lineNum">     481 </span>            : </a>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :         if ((netjoin_server = netjoin_find_server(server))) {</span>
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :                 netjoin_server_remove(netjoin_server);</span>
+<span class="lineNum">     484 </span>            :         }
+<a name="485"><span class="lineNum">     485 </span>            : }</a>
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span><span class="lineCov">          1 : void fe_netjoin_init(void)</span>
+<span class="lineNum">     488 </span>            : {
+<a name="489"><span class="lineNum">     489 </span><span class="lineCov">          1 :         settings_add_bool(&quot;misc&quot;, &quot;hide_netsplit_quits&quot;, TRUE);</span></a>
+<span class="lineNum">     490 </span><span class="lineCov">          1 :         settings_add_int(&quot;misc&quot;, &quot;netjoin_max_nicks&quot;, 10);</span>
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span><span class="lineCov">          1 :         join_tag = -1;</span>
+<a name="493"><span class="lineNum">     493 </span><span class="lineCov">          1 :         printing_joins = FALSE;</span></a>
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span><span class="lineCov">          1 :         read_settings();</span>
+<span class="lineNum">     496 </span><span class="lineCov">          1 :         signal_add(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span>
+<a name="497"><span class="lineNum">     497 </span><span class="lineCov">          1 :         signal_add(&quot;server disconnected&quot;, (SIGNAL_FUNC) sig_server_disconnected);</span></a>
+<a name="498"><span class="lineNum">     498 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineCov">          1 : void fe_netjoin_deinit(void)</span>
+<a name="501"><span class="lineNum">     501 </span>            : {</a>
+<span class="lineNum">     502 </span><span class="lineCov">          2 :         while (joinservers != NULL)</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :                 netjoin_server_remove(joinservers-&gt;data);</span>
+<span class="lineNum">     504 </span><span class="lineCov">          1 :         if (join_tag != -1) {</span>
+<a name="505"><span class="lineNum">     505 </span><span class="lineNoCov">          0 :                 g_source_remove(join_tag);</span></a>
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 :                 signal_remove(&quot;print starting&quot;, (SIGNAL_FUNC) sig_print_starting);</span>
+<span class="lineNum">     507 </span>            :         }
+<span class="lineNum">     508 </span>            : 
+<a name="509"><span class="lineNum">     509 </span><span class="lineCov">          1 :         signal_remove(&quot;setup changed&quot;, (SIGNAL_FUNC) read_settings);</span></a>
+<span class="lineNum">     510 </span><span class="lineCov">          1 :         signal_remove(&quot;server disconnected&quot;, (SIGNAL_FUNC) sig_server_disconnected);</span>
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span><span class="lineCov">          1 :         signal_remove(&quot;message quit&quot;, (SIGNAL_FUNC) msg_quit);</span>
+<a name="513"><span class="lineNum">     513 </span><span class="lineCov">          1 :         signal_remove(&quot;message join&quot;, (SIGNAL_FUNC) msg_join);</span></a>
+<span class="lineNum">     514 </span><span class="lineCov">          1 :         signal_remove(&quot;message irc mode&quot;, (SIGNAL_FUNC) msg_mode);</span>
+<span class="lineNum">     515 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

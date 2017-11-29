@@ -1,0 +1,465 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/irc/core/channel-events.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/irc/core</a> - channel-events.c<span style="font-size: 80%;"> (source / <a href="channel-events.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">25</td>
+            <td class="headerCovTableEntry">183</td>
+            <td class="headerCovTableEntryLo">13.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntryLo">13.3 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  channel-events.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;channels-setup.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;settings.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;recode.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;irc-servers.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;irc-channels.h&quot;</a>
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span><span class="lineNoCov">          0 : static void check_join_failure(IRC_SERVER_REC *server, const char *channel)</span>
+<span class="lineNum">      32 </span>            : {
+<a name="33"><span class="lineNum">      33 </span>            :         CHANNEL_REC *chanrec;</a>
+<span class="lineNum">      34 </span>            :         char *chan2;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span><span class="lineNoCov">          0 :         if (channel[0] == '!' &amp;&amp; channel[1] == '!')</span>
+<a name="37"><span class="lineNum">      37 </span><span class="lineNoCov">          0 :                 channel++; /* server didn't understand !channels */</span></a>
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span><span class="lineNoCov">          0 :         chanrec = channel_find(SERVER(server), channel);</span>
+<span class="lineNum">      40 </span><span class="lineNoCov">          0 :         if (chanrec == NULL &amp;&amp; channel[0] == '!' &amp;&amp; strlen(channel) &gt; 6) {</span>
+<a name="41"><span class="lineNum">      41 </span>            :                 /* it probably replied with the full !channel name,</a>
+<span class="lineNum">      42 </span>            :                    find the channel with the short name.. */
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :                 chan2 = g_strdup_printf(&quot;!%s&quot;, channel+6);</span>
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :                 chanrec = channel_find(SERVER(server), chan2);</span>
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :                 g_free(chan2);</span></a>
+<span class="lineNum">      46 </span>            :         }
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :         if (chanrec != NULL &amp;&amp; !chanrec-&gt;joined) {</span>
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :                 chanrec-&gt;left = TRUE;</span></a>
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :                 channel_destroy(chanrec);</span>
+<span class="lineNum">      51 </span>            :         }
+<a name="52"><span class="lineNum">      52 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 : static void irc_server_event(IRC_SERVER_REC *server, const char *line)</span>
+<span class="lineNum">      55 </span>            : {
+<span class="lineNum">      56 </span>            :         char *params, *numeric, *channel;
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<span class="lineNum">      58 </span>            :         /* We'll be checking &quot;4xx &lt;your nick&gt; &lt;channel&gt;&quot; for channels
+<span class="lineNum">      59 </span>            :            which we haven't joined yet. 4xx are error codes and should
+<span class="lineNum">      60 </span>            :            indicate that the join failed. */
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :         params = event_get_params(line, 3, &amp;numeric, NULL, &amp;channel);</span></a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :         if (numeric[0] == '4')</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 check_join_failure(server, channel);</span>
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="67"><span class="lineNum">      67 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      68 </span>            : 
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 : static void event_no_such_channel(IRC_SERVER_REC *server, const char *data)</span></a>
+<span class="lineNum">      70 </span>            : {
+<span class="lineNum">      71 </span>            :         CHANNEL_REC *chanrec;
+<span class="lineNum">      72 </span>            :         CHANNEL_SETUP_REC *setup;
+<a name="73"><span class="lineNum">      73 </span>            :         char *params, *channel;</a>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2, NULL, &amp;channel);</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         chanrec = *channel == '!' &amp;&amp; channel[1] != '\0' ?</span>
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :                 channel_find(SERVER(server), channel) : NULL;</span></a>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         if (chanrec != NULL) {</span>
+<span class="lineNum">      80 </span>            :                 /* !channel didn't exist, so join failed */
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :                 setup = channel_setup_find(chanrec-&gt;name,</span></a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :                                            chanrec-&gt;server-&gt;connrec-&gt;chatnet);</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :                 if (setup != NULL &amp;&amp; setup-&gt;autojoin) {</span>
+<span class="lineNum">      84 </span>            :                         /* it's autojoin channel though, so create it */
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :                         irc_send_cmdv(server, &quot;JOIN !%s&quot;, chanrec-&gt;name);</span></a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                         g_free(params);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                         return;</span>
+<span class="lineNum">      88 </span>            :                 }
+<a name="89"><span class="lineNum">      89 </span>            :         }</a>
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :         check_join_failure(server, channel);</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="93"><span class="lineNum">      93 </span>            : }</a>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 : static void event_duplicate_channel(IRC_SERVER_REC *server, const char *data)</span>
+<span class="lineNum">      96 </span>            : {
+<a name="97"><span class="lineNum">      97 </span>            :         CHANNEL_REC *chanrec;</a>
+<span class="lineNum">      98 </span>            :         char *params, *channel, *p;
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<a name="101"><span class="lineNum">     101 </span>            : </a>
+<span class="lineNum">     102 </span>            :         /* this new addition to ircd breaks completely with older
+<span class="lineNum">     103 </span>            :            &quot;standards&quot;, &quot;nick Duplicate ::!!channel ....&quot; */
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 3, NULL, NULL, &amp;channel);</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :         p = strchr(channel, ' ');</span></a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :         if (p != NULL) *p = '\0';</span>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         if (channel[0] == '!') {</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 chanrec = channel_find(SERVER(server),</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                                        channel+(channel[1] == '!'));</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 if (chanrec != NULL &amp;&amp; !chanrec-&gt;names_got) {</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                         chanrec-&gt;left = TRUE;</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :                         channel_destroy(chanrec);</span></a>
+<span class="lineNum">     114 </span>            :                 }
+<span class="lineNum">     115 </span>            :         }
+<span class="lineNum">     116 </span>            : 
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :         g_free(params);</span></a>
+<a name="118"><span class="lineNum">     118 </span>            : }</a>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 : static void channel_change_topic(IRC_SERVER_REC *server, const char *channel,</span>
+<a name="121"><span class="lineNum">     121 </span>            :                                  const char *topic, const char *setby,</a>
+<span class="lineNum">     122 </span>            :                                  time_t settime)
+<span class="lineNum">     123 </span>            : {
+<span class="lineNum">     124 </span>            :         CHANNEL_REC *chanrec;
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :         char *recoded = NULL;</span></a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :         chanrec = channel_find(SERVER(server), channel);</span>
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :         if (chanrec == NULL) return;</span>
+<a name="129"><span class="lineNum">     129 </span>            :         /* the topic may be send out encoded, so we need to</a>
+<span class="lineNum">     130 </span>            :            recode it back or /topic &lt;tab&gt; will not work properly */
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :         recoded = recode_in(SERVER(server), topic, channel);</span>
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :         if (topic != NULL) {</span>
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :                 g_free_not_null(chanrec-&gt;topic);</span></a>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :                 chanrec-&gt;topic = recoded == NULL ? NULL : g_strdup(recoded);</span>
+<span class="lineNum">     135 </span>            :         }
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         g_free(recoded);</span>
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :         g_free_not_null(chanrec-&gt;topic_by);</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :         chanrec-&gt;topic_by = g_strdup(setby);</span>
+<span class="lineNum">     140 </span>            : 
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :         chanrec-&gt;topic_time = settime;</span></a>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :         signal_emit(&quot;channel topic changed&quot;, 1, chanrec);</span>
+<a name="144"><span class="lineNum">     144 </span>            : }</a>
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 : static void event_topic_get(IRC_SERVER_REC *server, const char *data)</span>
+<span class="lineNum">     147 </span>            : {
+<span class="lineNum">     148 </span>            :         char *params, *channel, *topic;
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 3, NULL, &amp;channel, &amp;topic);</span>
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">          0 :         channel_change_topic(server, channel, topic, NULL, 0);</span></a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="155"><span class="lineNum">     155 </span>            : }</a>
+<span class="lineNum">     156 </span>            : 
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 : static void event_topic(IRC_SERVER_REC *server, const char *data,</span></a>
+<span class="lineNum">     158 </span>            :                         const char *nick, const char *addr)
+<span class="lineNum">     159 </span>            : {
+<span class="lineNum">     160 </span>            :         char *params, *channel, *topic, *mask;
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2, &amp;channel, &amp;topic);</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :         mask = addr == NULL ? g_strdup(nick) :</span></a>
+<span class="lineNum">     166 </span>            :                 g_strconcat(nick, &quot;!&quot;, addr, NULL);
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :         channel_change_topic(server, channel, topic, mask, time(NULL));</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         g_free(mask);</span>
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :         g_free(params);</span></a>
+<a name="170"><span class="lineNum">     170 </span>            : }</a>
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 : static void event_topic_info(IRC_SERVER_REC *server, const char *data)</span>
+<a name="173"><span class="lineNum">     173 </span>            : {</a>
+<span class="lineNum">     174 </span>            :         char *params, *channel, *topicby, *topictime;
+<span class="lineNum">     175 </span>            :         time_t t;
+<span class="lineNum">     176 </span>            : 
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span></a>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 4, NULL, &amp;channel,</span>
+<span class="lineNum">     180 </span>            :                                   &amp;topicby, &amp;topictime);
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         t = (time_t) atol(topictime);</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         channel_change_topic(server, channel, NULL, topicby, t);</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="185"><span class="lineNum">     185 </span>            : }</a>
+<span class="lineNum">     186 </span>            : 
+<a name="187"><span class="lineNum">     187 </span>            : /* Find any unjoined channel that matches `channel'. Long channel names are</a>
+<span class="lineNum">     188 </span>            :    also a bit problematic, so find a channel where start of the name matches. */
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 : static IRC_CHANNEL_REC *channel_find_unjoined(IRC_SERVER_REC *server,</span></a>
+<span class="lineNum">     190 </span>            :                                               const char *channel)
+<span class="lineNum">     191 </span>            : {
+<span class="lineNum">     192 </span>            :         GSList *tmp;
+<a name="193"><span class="lineNum">     193 </span>            :         int len;</a>
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :         len = strlen(channel);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         for (tmp = server-&gt;channels; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :                 IRC_CHANNEL_REC *rec = tmp-&gt;data;</span></a>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :                 if (!IS_IRC_CHANNEL(rec) || rec-&gt;joined)</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :                         continue;</span>
+<a name="201"><span class="lineNum">     201 </span>            : </a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 if (g_ascii_strncasecmp(channel, rec-&gt;name, len) == 0 &amp;&amp;</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                     (len &gt; 20 || rec-&gt;name[len] == '\0'))</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                         return rec;</span>
+<a name="205"><span class="lineNum">     205 </span>            :         }</a>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="208"><span class="lineNum">     208 </span>            : }</a>
+<a name="209"><span class="lineNum">     209 </span>            : </a>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 : static void event_join(IRC_SERVER_REC *server, const char *data, const char *nick, const char *address)</span>
+<span class="lineNum">     211 </span>            : {
+<span class="lineNum">     212 </span>            :         char *params, *channel, *tmp, *shortchan;
+<a name="213"><span class="lineNum">     213 </span>            :         IRC_CHANNEL_REC *chanrec;</a>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     216 </span>            : 
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(nick, server-&gt;nick) != 0) {</span></a>
+<span class="lineNum">     218 </span>            :                 /* someone else joined channel, no need to do anything */
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     220 </span>            :         }
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         if (server-&gt;userhost == NULL)</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                 server-&gt;userhost = g_strdup(address);</span>
+<span class="lineNum">     224 </span>            : 
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 1, &amp;channel);</span></a>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :         tmp = strchr(channel, 7); /* ^G does something weird.. */</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :         if (tmp != NULL) *tmp = '\0';</span>
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :         if (*channel != '!' || strlen(channel) &lt; 7)</span></a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                 shortchan = NULL;</span>
+<span class="lineNum">     231 </span>            :         else {
+<span class="lineNum">     232 </span>            :                 /* !channels have 5 chars long identification string before
+<a name="233"><span class="lineNum">     233 </span>            :                    it's name, it's not known when /join is called so rename</a>
+<span class="lineNum">     234 </span>            :                    !channel here to !ABCDEchannel */
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :                 shortchan = g_strdup_printf(&quot;!%s&quot;, channel+6);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                 chanrec = channel_find_unjoined(server, shortchan);</span>
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 :                 if (chanrec != NULL) {</span></a>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :                         channel_change_name(CHANNEL(chanrec), channel);</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :                         g_free(chanrec-&gt;name);</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                         chanrec-&gt;name = g_strdup(channel);</span>
+<a name="241"><span class="lineNum">     241 </span>            :                 } else {</a>
+<span class="lineNum">     242 </span>            :                         /* well, did we join it with full name? if so, and if
+<span class="lineNum">     243 </span>            :                            this was the first short one, change it's name. */
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :                         chanrec = channel_find_unjoined(server, channel);</span>
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :                         if (chanrec != NULL &amp;&amp;</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                             irc_channel_find(server, shortchan) == NULL) {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                                 channel_change_visible_name(CHANNEL(chanrec),</span>
+<span class="lineNum">     248 </span>            :                                                             shortchan);
+<a name="249"><span class="lineNum">     249 </span>            :                         }</a>
+<span class="lineNum">     250 </span>            :                 }
+<span class="lineNum">     251 </span>            :         }
+<span class="lineNum">     252 </span>            : 
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :         chanrec = irc_channel_find(server, channel);</span></a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :         if (chanrec != NULL &amp;&amp; chanrec-&gt;joined) {</span>
+<span class="lineNum">     255 </span>            :                 /* already joined this channel - probably a broken proxy that
+<span class="lineNum">     256 </span>            :                    forgot to send PART between */
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 chanrec-&gt;left = TRUE;</span></a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 channel_destroy(CHANNEL(chanrec));</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                 chanrec = NULL;</span>
+<span class="lineNum">     260 </span>            :         }
+<a name="261"><span class="lineNum">     261 </span>            : </a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :         if (chanrec == NULL) {</span>
+<span class="lineNum">     263 </span>            :                 /* look again, because of the channel name cut issues. */
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :                 chanrec = channel_find_unjoined(server, channel);</span>
+<a name="265"><span class="lineNum">     265 </span>            :         }</a>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         if (chanrec == NULL) {</span>
+<span class="lineNum">     268 </span>            :                 /* didn't get here with /join command.. */
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 chanrec = irc_channel_create(server, channel, shortchan, TRUE);</span></a>
+<span class="lineNum">     270 </span>            :         }
+<span class="lineNum">     271 </span>            : 
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :         chanrec-&gt;joined = TRUE;</span>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :         if (g_strcmp0(chanrec-&gt;name, channel) != 0) {</span></a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :                 g_free(chanrec-&gt;name);</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :                 chanrec-&gt;name = g_strdup(channel);</span>
+<span class="lineNum">     276 </span>            :         }
+<a name="277"><span class="lineNum">     277 </span>            : </a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :         g_free(shortchan);</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="280"><span class="lineNum">     280 </span>            : }</a>
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 : static void event_part(IRC_SERVER_REC *server, const char *data, const char *nick)</span>
+<span class="lineNum">     283 </span>            : {
+<span class="lineNum">     284 </span>            :         char *params, *channel, *reason;
+<a name="285"><span class="lineNum">     285 </span>            :         CHANNEL_REC *chanrec;</a>
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     288 </span>            : 
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(nick, server-&gt;nick) != 0) {</span></a>
+<span class="lineNum">     290 </span>            :                 /* someone else part, no need to do anything here */
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     292 </span>            :         }
+<a name="293"><span class="lineNum">     293 </span>            : </a>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2, &amp;channel, &amp;reason);</span>
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :         chanrec = channel_find(SERVER(server), channel);</span>
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :         if (chanrec != NULL &amp;&amp; chanrec-&gt;joined) {</span></a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 chanrec-&gt;left = TRUE;</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                 channel_destroy(chanrec);</span>
+<span class="lineNum">     300 </span>            :         }
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="303"><span class="lineNum">     303 </span>            : }</a>
+<span class="lineNum">     304 </span>            : 
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 : static void event_kick(IRC_SERVER_REC *server, const char *data)</span></a>
+<span class="lineNum">     306 </span>            : {
+<span class="lineNum">     307 </span>            :         CHANNEL_REC *chanrec;
+<span class="lineNum">     308 </span>            :         char *params, *channel, *nick, *reason;
+<a name="309"><span class="lineNum">     309 </span>            : </a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 3, &amp;channel, &amp;nick, &amp;reason);</span>
+<a name="313"><span class="lineNum">     313 </span>            : </a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :         if (g_ascii_strcasecmp(nick, server-&gt;nick) != 0) {</span>
+<span class="lineNum">     315 </span>            :                 /* someone else was kicked, no need to do anything */
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :                 g_free(params);</span>
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     318 </span>            :         }
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :         chanrec = channel_find(SERVER(server), channel);</span>
+<a name="321"><span class="lineNum">     321 </span><span class="lineNoCov">          0 :         if (chanrec != NULL) {</span></a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                 irc_server_purge_output(server, channel);</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 chanrec-&gt;kicked = TRUE;</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                 channel_destroy(chanrec);</span>
+<a name="325"><span class="lineNum">     325 </span>            :         }</a>
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="328"><span class="lineNum">     328 </span>            : }</a>
+<a name="329"><span class="lineNum">     329 </span>            : </a>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 : static void event_invite(IRC_SERVER_REC *server, const char *data)</span>
+<span class="lineNum">     331 </span>            : {
+<span class="lineNum">     332 </span>            :         char *params, *channel, *shortchan;
+<a name="333"><span class="lineNum">     333 </span>            : </a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 2, NULL, &amp;channel);</span>
+<a name="337"><span class="lineNum">     337 </span>            : </a>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :         if (irc_channel_find(server, channel) == NULL) {</span>
+<span class="lineNum">     339 </span>            :                 /* check if we're supposed to autojoin this channel */
+<span class="lineNum">     340 </span>            :                 CHANNEL_SETUP_REC *setup;
+<a name="341"><span class="lineNum">     341 </span>            : </a>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                 setup = channel_setup_find(channel, server-&gt;connrec-&gt;chatnet);</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                 if (setup == NULL &amp;&amp; channel[0] == '!' &amp;&amp;</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :                     strlen(channel) &gt; 6) {</span>
+<a name="345"><span class="lineNum">     345 </span><span class="lineNoCov">          0 :                         shortchan = g_strdup_printf(&quot;!%s&quot;, channel+6);</span></a>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :                         setup = channel_setup_find(shortchan,</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :                                                    server-&gt;connrec-&gt;chatnet);</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :                         g_free(shortchan);</span>
+<a name="349"><span class="lineNum">     349 </span>            :                 }</a>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :                 if (setup != NULL &amp;&amp; setup-&gt;autojoin &amp;&amp; settings_get_bool(&quot;join_auto_chans_on_invite&quot;))</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :                         server-&gt;channels_join(SERVER(server), channel, TRUE);</span>
+<span class="lineNum">     352 </span>            :         }
+<a name="353"><span class="lineNum">     353 </span>            : </a>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :         g_free_not_null(server-&gt;last_invite);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :         server-&gt;last_invite = g_strdup(channel);</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="357"><span class="lineNum">     357 </span>            : }</a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineCov">          1 : void channel_events_init(void)</span>
+<span class="lineNum">     360 </span>            : {
+<a name="361"><span class="lineNum">     361 </span><span class="lineCov">          1 :         settings_add_bool(&quot;misc&quot;, &quot;join_auto_chans_on_invite&quot;, TRUE);</span></a>
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span><span class="lineCov">          1 :         signal_add_last(&quot;server event&quot;, (SIGNAL_FUNC) irc_server_event);</span>
+<span class="lineNum">     364 </span><span class="lineCov">          1 :         signal_add_first(&quot;event 403&quot;, (SIGNAL_FUNC) event_no_such_channel); /* no such channel */</span>
+<a name="365"><span class="lineNum">     365 </span><span class="lineCov">          1 :         signal_add_first(&quot;event 407&quot;, (SIGNAL_FUNC) event_duplicate_channel); /* duplicate channel */</span></a>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineCov">          1 :         signal_add(&quot;event topic&quot;, (SIGNAL_FUNC) event_topic);</span>
+<span class="lineNum">     368 </span><span class="lineCov">          1 :         signal_add_first(&quot;event join&quot;, (SIGNAL_FUNC) event_join);</span>
+<a name="369"><span class="lineNum">     369 </span><span class="lineCov">          1 :         signal_add(&quot;event part&quot;, (SIGNAL_FUNC) event_part);</span></a>
+<span class="lineNum">     370 </span><span class="lineCov">          1 :         signal_add(&quot;event kick&quot;, (SIGNAL_FUNC) event_kick);</span>
+<span class="lineNum">     371 </span><span class="lineCov">          1 :         signal_add(&quot;event invite&quot;, (SIGNAL_FUNC) event_invite);</span>
+<span class="lineNum">     372 </span><span class="lineCov">          1 :         signal_add(&quot;event 332&quot;, (SIGNAL_FUNC) event_topic_get);</span>
+<a name="373"><span class="lineNum">     373 </span><span class="lineCov">          1 :         signal_add(&quot;event 333&quot;, (SIGNAL_FUNC) event_topic_info);</span></a>
+<a name="374"><span class="lineNum">     374 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span><span class="lineCov">          1 : void channel_events_deinit(void)</span>
+<a name="377"><span class="lineNum">     377 </span>            : {</a>
+<span class="lineNum">     378 </span><span class="lineCov">          1 :         signal_remove(&quot;server event&quot;, (SIGNAL_FUNC) irc_server_event);</span>
+<span class="lineNum">     379 </span><span class="lineCov">          1 :         signal_remove(&quot;event 403&quot;, (SIGNAL_FUNC) event_no_such_channel); /* no such channel */</span>
+<span class="lineNum">     380 </span><span class="lineCov">          1 :         signal_remove(&quot;event 407&quot;, (SIGNAL_FUNC) event_duplicate_channel); /* duplicate channel */</span>
+<a name="381"><span class="lineNum">     381 </span>            : </a>
+<span class="lineNum">     382 </span><span class="lineCov">          1 :         signal_remove(&quot;event topic&quot;, (SIGNAL_FUNC) event_topic);</span>
+<span class="lineNum">     383 </span><span class="lineCov">          1 :         signal_remove(&quot;event join&quot;, (SIGNAL_FUNC) event_join);</span>
+<span class="lineNum">     384 </span><span class="lineCov">          1 :         signal_remove(&quot;event part&quot;, (SIGNAL_FUNC) event_part);</span>
+<a name="385"><span class="lineNum">     385 </span><span class="lineCov">          1 :         signal_remove(&quot;event kick&quot;, (SIGNAL_FUNC) event_kick);</span></a>
+<span class="lineNum">     386 </span><span class="lineCov">          1 :         signal_remove(&quot;event invite&quot;, (SIGNAL_FUNC) event_invite);</span>
+<span class="lineNum">     387 </span><span class="lineCov">          1 :         signal_remove(&quot;event 332&quot;, (SIGNAL_FUNC) event_topic_get);</span>
+<span class="lineNum">     388 </span><span class="lineCov">          1 :         signal_remove(&quot;event 333&quot;, (SIGNAL_FUNC) event_topic_info);</span>
+<a name="389"><span class="lineNum">     389 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,675 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/nicklist.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - nicklist.c<span style="font-size: 80%;"> (source / <a href="nicklist.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">274</td>
+            <td class="headerCovTableEntryLo">3.3 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">32</td>
+            <td class="headerCovTableEntryLo">6.2 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  nicklist.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      24 </span>            : 
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;servers.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;channels.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;nicklist.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;masks.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<span class="lineNum">      30 </span>            : #define isalnumhigh(a) \
+<a name="31"><span class="lineNum">      31 </span>            :         (i_isalnum(a) || (unsigned char) (a) &gt;= 128)</a>
+<span class="lineNum">      32 </span>            : 
+<a name="33"><span class="lineNum">      33 </span><span class="lineNoCov">          0 : static void nick_hash_add(CHANNEL_REC *channel, NICK_REC *nick)</span></a>
+<span class="lineNum">      34 </span>            : {
+<span class="lineNum">      35 </span>            :         NICK_REC *list;
+<span class="lineNum">      36 </span>            : 
+<a name="37"><span class="lineNum">      37 </span><span class="lineNoCov">          0 :         nick-&gt;next = NULL;</span></a>
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span><span class="lineNoCov">          0 :         list = g_hash_table_lookup(channel-&gt;nicks, nick-&gt;nick);</span>
+<span class="lineNum">      40 </span><span class="lineNoCov">          0 :         if (list == NULL)</span>
+<a name="41"><span class="lineNum">      41 </span><span class="lineNoCov">          0 :                 g_hash_table_insert(channel-&gt;nicks, nick-&gt;nick, nick);</span></a>
+<span class="lineNum">      42 </span>            :         else {
+<span class="lineNum">      43 </span>            :                 /* multiple nicks with same name */
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :                 while (list-&gt;next != NULL)</span>
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :                         list = list-&gt;next;</span></a>
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :                 list-&gt;next = nick;</span>
+<span class="lineNum">      47 </span>            :         }
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :         if (nick == channel-&gt;ownnick) {</span></a>
+<span class="lineNum">      50 </span>            :                 /* move our own nick to beginning of the nick list.. */
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :                 nicklist_set_own(channel, nick);</span>
+<span class="lineNum">      52 </span>            :         }
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 : static void nick_hash_remove(CHANNEL_REC *channel, NICK_REC *nick)</span>
+<span class="lineNum">      56 </span>            : {
+<a name="57"><span class="lineNum">      57 </span>            :         NICK_REC *list, *newlist;</a>
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :         list = g_hash_table_lookup(channel-&gt;nicks, nick-&gt;nick);</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :         if (list == NULL)</span>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :         if (list == nick) {</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 newlist = nick-&gt;next;</span>
+<a name="65"><span class="lineNum">      65 </span>            :         } else {</a>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :                 newlist = list;</span>
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :                 while (list-&gt;next != nick)</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :                         list = list-&gt;next;</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :                 list-&gt;next = nick-&gt;next;</span></a>
+<span class="lineNum">      70 </span>            :         }
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :         g_hash_table_remove(channel-&gt;nicks, nick-&gt;nick);</span>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :         if (newlist != NULL) {</span></a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :                 g_hash_table_insert(channel-&gt;nicks, newlist-&gt;nick,</span>
+<span class="lineNum">      75 </span>            :                                     newlist);
+<span class="lineNum">      76 </span>            :         }
+<a name="77"><span class="lineNum">      77 </span>            : }</a>
+<a name="78"><span class="lineNum">      78 </span>            : </a>
+<span class="lineNum">      79 </span>            : /* Add new nick to list */
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 : void nicklist_insert(CHANNEL_REC *channel, NICK_REC *nick)</span>
+<a name="81"><span class="lineNum">      81 </span>            : {</a>
+<span class="lineNum">      82 </span>            :         /*MODULE_DATA_INIT(nick);*/
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         nick-&gt;type = module_get_uniq_id(&quot;NICK&quot;, 0);</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :         nick-&gt;chat_type = channel-&gt;chat_type;</span></a>
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :         nick_hash_add(channel, nick);</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         signal_emit(&quot;nicklist new&quot;, 2, channel, nick);</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="90"><span class="lineNum">      90 </span>            : </a>
+<span class="lineNum">      91 </span>            : /* Set host address for nick */
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 : void nicklist_set_host(CHANNEL_REC *channel, NICK_REC *nick, const char *host)</span>
+<a name="93"><span class="lineNum">      93 </span>            : {</a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :         g_return_if_fail(channel != NULL);</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         g_return_if_fail(nick != NULL);</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         g_return_if_fail(host != NULL);</span>
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         g_free_not_null(nick-&gt;host);</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         nick-&gt;host = g_strdup(host);</span>
+<span class="lineNum">     100 </span>            : 
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :         signal_emit(&quot;nicklist host changed&quot;, 2, channel, nick);</span></a>
+<a name="102"><span class="lineNum">     102 </span>            : }</a>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 : static void nicklist_destroy(CHANNEL_REC *channel, NICK_REC *nick)</span>
+<a name="105"><span class="lineNum">     105 </span>            : {</a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :         signal_emit(&quot;nicklist remove&quot;, 2, channel, nick);</span>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         if (channel-&gt;ownnick == nick)</span>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 channel-&gt;ownnick = NULL;</span></a>
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span>            :         /*MODULE_DATA_DEINIT(nick);*/
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :         g_free(nick-&gt;nick);</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :         g_free_not_null(nick-&gt;realname);</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :         g_free_not_null(nick-&gt;host);</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :         g_free(nick);</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 : }</span>
+<a name="117"><span class="lineNum">     117 </span>            : </a>
+<span class="lineNum">     118 </span>            : /* Remove nick from list */
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 : void nicklist_remove(CHANNEL_REC *channel, NICK_REC *nick)</span>
+<span class="lineNum">     120 </span>            : {
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_CHANNEL(channel));</span></a>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :         g_return_if_fail(nick != NULL);</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         nick_hash_remove(channel, nick);</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :         nicklist_destroy(channel, nick);</span></a>
+<a name="126"><span class="lineNum">     126 </span>            : }</a>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 : static void nicklist_rename_list(SERVER_REC *server, void *new_nick_id,</span>
+<a name="129"><span class="lineNum">     129 </span>            :                                  const char *old_nick, const char *new_nick,</a>
+<span class="lineNum">     130 </span>            :                                  GSList *nicks)
+<span class="lineNum">     131 </span>            : {
+<span class="lineNum">     132 </span>            :         CHANNEL_REC *channel;
+<a name="133"><span class="lineNum">     133 </span>            :         NICK_REC *nickrec;</a>
+<span class="lineNum">     134 </span>            :         GSList *tmp;
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :         for (tmp = nicks; tmp != NULL; tmp = tmp-&gt;next-&gt;next) {</span>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :                 channel = tmp-&gt;data;</span></a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :                 nickrec = tmp-&gt;next-&gt;data;</span>
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span>            :                 /* remove old nick from hash table */
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 nick_hash_remove(channel, nickrec);</span></a>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                 if (new_nick_id != NULL)</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :                         nickrec-&gt;unique_id = new_nick_id;</span>
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                 g_free(nickrec-&gt;nick);</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                 nickrec-&gt;nick = g_strdup(new_nick);</span>
+<span class="lineNum">     148 </span>            : 
+<a name="149"><span class="lineNum">     149 </span>            :                 /* add new nick to hash table */</a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :                 nick_hash_add(channel, nickrec);</span>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;nicklist changed&quot;, 3, channel, nickrec, old_nick);</span>
+<a name="153"><span class="lineNum">     153 </span>            :         }</a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         g_slist_free(nicks);</span>
+<a name="155"><span class="lineNum">     155 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     156 </span>            : 
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 : void nicklist_rename(SERVER_REC *server, const char *old_nick,</span></a>
+<span class="lineNum">     158 </span>            :                      const char *new_nick)
+<span class="lineNum">     159 </span>            : {
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :         nicklist_rename_list(server, NULL, old_nick, new_nick,</span>
+<a name="161"><span class="lineNum">     161 </span>            :                              nicklist_get_same(server, old_nick));</a>
+<a name="162"><span class="lineNum">     162 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 : void nicklist_rename_unique(SERVER_REC *server,</span>
+<a name="165"><span class="lineNum">     165 </span>            :                             void *old_nick_id, const char *old_nick,</a>
+<span class="lineNum">     166 </span>            :                             void *new_nick_id, const char *new_nick)
+<span class="lineNum">     167 </span>            : {
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         nicklist_rename_list(server, new_nick_id, old_nick, new_nick,</span>
+<a name="169"><span class="lineNum">     169 </span>            :                              nicklist_get_same_unique(server, old_nick_id));</a>
+<a name="170"><span class="lineNum">     170 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 : static NICK_REC *nicklist_find_wildcards(CHANNEL_REC *channel,</span>
+<a name="173"><span class="lineNum">     173 </span>            :                                          const char *mask)</a>
+<span class="lineNum">     174 </span>            : {
+<span class="lineNum">     175 </span>            :         NICK_REC *nick;
+<span class="lineNum">     176 </span>            :         GHashTableIter iter;
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         g_hash_table_iter_init(&amp;iter, channel-&gt;nicks);</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         while (g_hash_table_iter_next(&amp;iter, NULL, (void*)&amp;nick)) {</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 for (; nick != NULL; nick = nick-&gt;next) {</span>
+<a name="181"><span class="lineNum">     181 </span><span class="lineNoCov">          0 :                         if (mask_match_address(channel-&gt;server, mask,</span></a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :                                                nick-&gt;nick, nick-&gt;host))</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                                 return nick;</span>
+<span class="lineNum">     184 </span>            :                 }
+<a name="185"><span class="lineNum">     185 </span>            :         }</a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="188"><span class="lineNum">     188 </span>            : }</a>
+<a name="189"><span class="lineNum">     189 </span>            : </a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 : GSList *nicklist_find_multiple(CHANNEL_REC *channel, const char *mask)</span>
+<span class="lineNum">     191 </span>            : {
+<span class="lineNum">     192 </span>            :         GSList *nicks;
+<a name="193"><span class="lineNum">     193 </span>            :         NICK_REC *nick;</a>
+<span class="lineNum">     194 </span>            :         GHashTableIter iter;
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_CHANNEL(channel), NULL);</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(mask != NULL, NULL);</span></a>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :         nicks = NULL;</span>
+<span class="lineNum">     200 </span>            : 
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :         g_hash_table_iter_init(&amp;iter, channel-&gt;nicks);</span></a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :         while (g_hash_table_iter_next(&amp;iter, NULL, (void*)&amp;nick)) {</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                 for (; nick != NULL; nick = nick-&gt;next) {</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :                         if (mask_match_address(channel-&gt;server, mask,</span>
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :                                                nick-&gt;nick, nick-&gt;host))</span></a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :                                 nicks = g_slist_prepend(nicks, nick);</span>
+<span class="lineNum">     207 </span>            :                 }
+<span class="lineNum">     208 </span>            :         }
+<a name="209"><span class="lineNum">     209 </span>            : </a>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :         return nicks;</span>
+<span class="lineNum">     211 </span>            : }
+<a name="212"><span class="lineNum">     212 </span>            : </a>
+<a name="213"><span class="lineNum">     213 </span>            : /* Find nick */</a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 : NICK_REC *nicklist_find(CHANNEL_REC *channel, const char *nick)</span>
+<span class="lineNum">     215 </span>            : {
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_CHANNEL(channel), NULL);</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, NULL);</span></a>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         return g_hash_table_lookup(channel-&gt;nicks, nick);</span>
+<a name="220"><span class="lineNum">     220 </span>            : }</a>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 : NICK_REC *nicklist_find_unique(CHANNEL_REC *channel, const char *nick,</span>
+<span class="lineNum">     223 </span>            :                                void *id)
+<span class="lineNum">     224 </span>            : {
+<a name="225"><span class="lineNum">     225 </span>            :         NICK_REC *rec;</a>
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_CHANNEL(channel), NULL);</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, NULL);</span>
+<a name="229"><span class="lineNum">     229 </span>            : </a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(channel-&gt;nicks, nick);</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :         while (rec != NULL &amp;&amp; rec-&gt;unique_id != id)</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :                 rec = rec-&gt;next;</span>
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :         return rec;</span>
+<span class="lineNum">     235 </span>            : }
+<a name="236"><span class="lineNum">     236 </span>            : </a>
+<a name="237"><span class="lineNum">     237 </span>            : /* Find nick mask, wildcards allowed */</a>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 : NICK_REC *nicklist_find_mask(CHANNEL_REC *channel, const char *mask)</span>
+<span class="lineNum">     239 </span>            : {
+<span class="lineNum">     240 </span>            :         NICK_REC *nickrec;
+<a name="241"><span class="lineNum">     241 </span>            :         char *nick, *host;</a>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_CHANNEL(channel), NULL);</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(mask != NULL, NULL);</span>
+<a name="245"><span class="lineNum">     245 </span>            : </a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :         nick = g_strdup(mask);</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :         host = strchr(nick, '!');</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :         if (host != NULL) *host++ = '\0';</span>
+<a name="249"><span class="lineNum">     249 </span>            : </a>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :         if (strchr(nick, '*') || strchr(nick, '?')) {</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                 g_free(nick);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                 return nicklist_find_wildcards(channel, mask);</span>
+<a name="253"><span class="lineNum">     253 </span>            :         }</a>
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :         nickrec = g_hash_table_lookup(channel-&gt;nicks, nick);</span>
+<span class="lineNum">     256 </span>            : 
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :         if (host != NULL) {</span></a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :                 while (nickrec != NULL) {</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                         if (nickrec-&gt;host != NULL &amp;&amp;</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :                             match_wildcards(host, nickrec-&gt;host))</span>
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :                                 break; /* match */</span></a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :                         nickrec = nickrec-&gt;next;</span>
+<span class="lineNum">     263 </span>            :                 }
+<span class="lineNum">     264 </span>            :         }
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :         g_free(nick);</span></a>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :         return nickrec;</span>
+<a name="267"><span class="lineNum">     267 </span>            : }</a>
+<span class="lineNum">     268 </span>            : 
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 : static void get_nicks_hash(gpointer key, NICK_REC *rec, GSList **list)</span></a>
+<span class="lineNum">     270 </span>            : {
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         while (rec != NULL) {</span>
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                 *list = g_slist_prepend(*list, rec);</span>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :                 rec = rec-&gt;next;</span></a>
+<span class="lineNum">     274 </span>            :         }
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 : }</span>
+<a name="276"><span class="lineNum">     276 </span>            : </a>
+<a name="277"><span class="lineNum">     277 </span>            : /* Get list of nicks */</a>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 : GSList *nicklist_getnicks(CHANNEL_REC *channel)</span>
+<span class="lineNum">     279 </span>            : {
+<span class="lineNum">     280 </span>            :         GSList *list;
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_CHANNEL(channel), NULL);</span>
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :         list = NULL;</span>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :         g_hash_table_foreach(channel-&gt;nicks, (GHFunc) get_nicks_hash, &amp;list);</span></a>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :         return list;</span>
+<a name="287"><span class="lineNum">     287 </span>            : }</a>
+<span class="lineNum">     288 </span>            : 
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 : GSList *nicklist_get_same(SERVER_REC *server, const char *nick)</span></a>
+<span class="lineNum">     290 </span>            : {
+<span class="lineNum">     291 </span>            :         GSList *tmp;
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :         GSList *list = NULL;</span>
+<a name="293"><span class="lineNum">     293 </span>            : </a>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_SERVER(server), NULL);</span>
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :         for (tmp = server-&gt;channels; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="297"><span class="lineNum">     297 </span>            :                 NICK_REC *nick_rec;</a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 CHANNEL_REC *channel = tmp-&gt;data;</span>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :                 for (nick_rec = g_hash_table_lookup(channel-&gt;nicks, nick);</span>
+<a name="301"><span class="lineNum">     301 </span>            :                      nick_rec != NULL;</a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :                      nick_rec = nick_rec-&gt;next) {</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :                         list = g_slist_append(list, channel);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :                         list = g_slist_append(list, nick_rec);</span>
+<a name="305"><span class="lineNum">     305 </span>            :                 }</a>
+<span class="lineNum">     306 </span>            :         }
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :         return list;</span>
+<a name="309"><span class="lineNum">     309 </span>            : }</a>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span>            : typedef struct {
+<span class="lineNum">     312 </span>            :         CHANNEL_REC *channel;
+<a name="313"><span class="lineNum">     313 </span>            :         void *id;</a>
+<span class="lineNum">     314 </span>            :         GSList *list;
+<a name="315"><span class="lineNum">     315 </span>            : } NICKLIST_GET_SAME_UNIQUE_REC;</a>
+<span class="lineNum">     316 </span>            : 
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 : static void get_nicks_same_hash_unique(gpointer key, NICK_REC *nick,</span></a>
+<span class="lineNum">     318 </span>            :                                        NICKLIST_GET_SAME_UNIQUE_REC *rec)
+<span class="lineNum">     319 </span>            : {
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :         while (nick != NULL) {</span>
+<a name="321"><span class="lineNum">     321 </span><span class="lineNoCov">          0 :                 if (nick-&gt;unique_id == rec-&gt;id) {</span></a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :                         rec-&gt;list = g_slist_append(rec-&gt;list, rec-&gt;channel);</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                         rec-&gt;list = g_slist_append(rec-&gt;list, nick);</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                         break;</span>
+<a name="325"><span class="lineNum">     325 </span>            :                 }</a>
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :                 nick = nick-&gt;next;</span>
+<span class="lineNum">     328 </span>            :         }
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 : GSList *nicklist_get_same_unique(SERVER_REC *server, void *id)</span>
+<span class="lineNum">     332 </span>            : {
+<a name="333"><span class="lineNum">     333 </span>            :         NICKLIST_GET_SAME_UNIQUE_REC rec;</a>
+<span class="lineNum">     334 </span>            :         GSList *tmp;
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(IS_SERVER(server), NULL);</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(id != NULL, NULL);</span></a>
+<span class="lineNum">     338 </span>            : 
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :         rec.id = id;</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         rec.list = NULL;</span>
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :         for (tmp = server-&gt;channels; tmp != NULL; tmp = tmp-&gt;next) {</span></a>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :                 rec.channel = tmp-&gt;data;</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :                 g_hash_table_foreach(rec.channel-&gt;nicks,</span>
+<span class="lineNum">     344 </span>            :                                      (GHFunc) get_nicks_same_hash_unique,
+<a name="345"><span class="lineNum">     345 </span>            :                                      &amp;rec);</a>
+<span class="lineNum">     346 </span>            :         }
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :         return rec.list;</span>
+<span class="lineNum">     348 </span>            : }
+<a name="349"><span class="lineNum">     349 </span>            : </a>
+<span class="lineNum">     350 </span>            : /* nick record comparison for sort functions */
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 : int nicklist_compare(NICK_REC *p1, NICK_REC *p2, const char *nick_prefix)</span>
+<span class="lineNum">     352 </span>            : {
+<a name="353"><span class="lineNum">     353 </span>            :         int i;</a>
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :         if (p1 == NULL) return -1;</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :         if (p2 == NULL) return 1;</span>
+<a name="357"><span class="lineNum">     357 </span>            : </a>
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :         if (p1-&gt;prefixes[0] == p2-&gt;prefixes[0])</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :                 return g_ascii_strcasecmp(p1-&gt;nick, p2-&gt;nick);</span>
+<span class="lineNum">     360 </span>            : 
+<a name="361"><span class="lineNum">     361 </span><span class="lineNoCov">          0 :         if (!p1-&gt;prefixes[0])</span></a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :                 return 1;</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :         if (!p2-&gt;prefixes[0])</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<a name="365"><span class="lineNum">     365 </span>            : </a>
+<span class="lineNum">     366 </span>            :         /* They aren't equal.  We've taken care of that already.
+<span class="lineNum">     367 </span>            :          * The first one we encounter in this list is the greater.
+<span class="lineNum">     368 </span>            :          */
+<a name="369"><span class="lineNum">     369 </span>            : </a>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :         for (i = 0; nick_prefix[i] != '\0'; i++) {</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 if (p1-&gt;prefixes[0] == nick_prefix[i])</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<a name="373"><span class="lineNum">     373 </span><span class="lineNoCov">          0 :                 if (p2-&gt;prefixes[0] == nick_prefix[i])</span></a>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                         return 1;</span>
+<span class="lineNum">     375 </span>            :         }
+<span class="lineNum">     376 </span>            : 
+<a name="377"><span class="lineNum">     377 </span>            :         /* we should never have gotten here... */</a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         return g_ascii_strcasecmp(p1-&gt;nick, p2-&gt;nick);</span>
+<a name="379"><span class="lineNum">     379 </span>            : }</a>
+<span class="lineNum">     380 </span>            : 
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 : static void nicklist_update_flags_list(SERVER_REC *server, int gone,</span></a>
+<span class="lineNum">     382 </span>            :                                        int serverop, GSList *nicks)
+<span class="lineNum">     383 </span>            : {
+<span class="lineNum">     384 </span>            :         GSList *tmp;
+<a name="385"><span class="lineNum">     385 </span>            :         CHANNEL_REC *channel;</a>
+<span class="lineNum">     386 </span>            :         NICK_REC *rec;
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_SERVER(server));</span>
+<a name="389"><span class="lineNum">     389 </span>            : </a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         for (tmp = nicks; tmp != NULL; tmp = tmp-&gt;next-&gt;next) {</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :                 channel = tmp-&gt;data;</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :                 rec = tmp-&gt;next-&gt;data;</span>
+<a name="393"><span class="lineNum">     393 </span>            : </a>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :                 rec-&gt;last_check = time(NULL);</span>
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                 if (gone != -1 &amp;&amp; (int)rec-&gt;gone != gone) {</span>
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :                         rec-&gt;gone = gone;</span></a>
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;nicklist gone changed&quot;, 2, channel, rec);</span>
+<span class="lineNum">     399 </span>            :                 }
+<span class="lineNum">     400 </span>            : 
+<a name="401"><span class="lineNum">     401 </span><span class="lineNoCov">          0 :                 if (serverop != -1 &amp;&amp; (int)rec-&gt;serverop != serverop) {</span></a>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :                         rec-&gt;serverop = serverop;</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;nicklist serverop changed&quot;, 2, channel, rec);</span>
+<span class="lineNum">     404 </span>            :                 }
+<a name="405"><span class="lineNum">     405 </span>            :         }</a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :         g_slist_free(nicks);</span>
+<a name="407"><span class="lineNum">     407 </span>            : }</a>
+<span class="lineNum">     408 </span>            : 
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 : void nicklist_update_flags(SERVER_REC *server, const char *nick,</span></a>
+<span class="lineNum">     410 </span>            :                            int gone, int serverop)
+<span class="lineNum">     411 </span>            : {
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :         nicklist_update_flags_list(server, gone, serverop,</span>
+<a name="413"><span class="lineNum">     413 </span>            :                                    nicklist_get_same(server, nick));</a>
+<a name="414"><span class="lineNum">     414 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 : void nicklist_update_flags_unique(SERVER_REC *server, void *id,</span>
+<a name="417"><span class="lineNum">     417 </span>            :                                   int gone, int serverop)</a>
+<span class="lineNum">     418 </span>            : {
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :         nicklist_update_flags_list(server, gone, serverop,</span>
+<span class="lineNum">     420 </span>            :                                    nicklist_get_same_unique(server, id));
+<a name="421"><span class="lineNum">     421 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="422"><span class="lineNum">     422 </span>            : </a>
+<span class="lineNum">     423 </span>            : /* Specify which nick in channel is ours */
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 : void nicklist_set_own(CHANNEL_REC *channel, NICK_REC *nick)</span>
+<a name="425"><span class="lineNum">     425 </span>            : {</a>
+<span class="lineNum">     426 </span>            :         NICK_REC *first, *next;
+<span class="lineNum">     427 </span>            : 
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :         channel-&gt;ownnick = nick;</span>
+<a name="429"><span class="lineNum">     429 </span>            : </a>
+<span class="lineNum">     430 </span>            :         /* move our nick in the list to first, makes some things easier
+<span class="lineNum">     431 </span>            :            (like handling multiple identical nicks in fe-messages.c) */
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :         first = g_hash_table_lookup(channel-&gt;nicks, nick-&gt;nick);</span>
+<a name="433"><span class="lineNum">     433 </span><span class="lineNoCov">          0 :         if (first-&gt;next == NULL)</span></a>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :         next = nick-&gt;next;</span>
+<a name="437"><span class="lineNum">     437 </span><span class="lineNoCov">          0 :         nick-&gt;next = first;</span></a>
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :         while (first-&gt;next != nick)</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                 first = first-&gt;next;</span>
+<a name="441"><span class="lineNum">     441 </span><span class="lineNoCov">          0 :         first-&gt;next = next;</span></a>
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :         g_hash_table_insert(channel-&gt;nicks, nick-&gt;nick, nick);</span>
+<a name="444"><span class="lineNum">     444 </span>            : }</a>
+<a name="445"><span class="lineNum">     445 </span>            : </a>
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 : static void sig_channel_created(CHANNEL_REC *channel)</span>
+<span class="lineNum">     447 </span>            : {
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_CHANNEL(channel));</span>
+<a name="449"><span class="lineNum">     449 </span>            : </a>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :         channel-&gt;nicks = g_hash_table_new((GHashFunc) g_istr_hash,</span>
+<span class="lineNum">     451 </span>            :                                           (GCompareFunc) g_istr_equal);
+<a name="452"><span class="lineNum">     452 </span>            : }</a>
+<a name="453"><span class="lineNum">     453 </span>            : </a>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 : static void nicklist_remove_hash(gpointer key, NICK_REC *nick,</span>
+<span class="lineNum">     455 </span>            :                                  CHANNEL_REC *channel)
+<span class="lineNum">     456 </span>            : {
+<a name="457"><span class="lineNum">     457 </span>            :         NICK_REC *next;</a>
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :         while (nick != NULL) {</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 next = nick-&gt;next;</span>
+<a name="461"><span class="lineNum">     461 </span><span class="lineNoCov">          0 :                 nicklist_destroy(channel, nick);</span></a>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :                 nick = next;</span>
+<span class="lineNum">     463 </span>            :         }
+<a name="464"><span class="lineNum">     464 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="465"><span class="lineNum">     465 </span>            : </a>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 : static void sig_channel_destroyed(CHANNEL_REC *channel)</span>
+<span class="lineNum">     467 </span>            : {
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_CHANNEL(channel));</span>
+<a name="469"><span class="lineNum">     469 </span>            : </a>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :         g_hash_table_foreach(channel-&gt;nicks,</span>
+<span class="lineNum">     471 </span>            :                              (GHFunc) nicklist_remove_hash, channel);
+<span class="lineNum">     472 </span><span class="lineNoCov">          0 :         g_hash_table_destroy(channel-&gt;nicks);</span>
+<a name="473"><span class="lineNum">     473 </span>            : }</a>
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 : static NICK_REC *nick_nfind(CHANNEL_REC *channel, const char *nick, int len)</span>
+<span class="lineNum">     476 </span>            : {
+<a name="477"><span class="lineNum">     477 </span>            :         NICK_REC *rec;</a>
+<span class="lineNum">     478 </span>            :         char *tmpnick;
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :         tmpnick = g_strndup(nick, len);</span>
+<a name="481"><span class="lineNum">     481 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(channel-&gt;nicks, tmpnick);</span></a>
+<span class="lineNum">     482 </span>            : 
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :         if (rec != NULL) {</span>
+<span class="lineNum">     484 </span>            :                 /* if there's multiple, get the one with identical case */
+<a name="485"><span class="lineNum">     485 </span><span class="lineNoCov">          0 :                 while (rec-&gt;next != NULL) {</span></a>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                         if (g_strcmp0(rec-&gt;nick, tmpnick) == 0)</span>
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :                                 break;</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :                         rec = rec-&gt;next;</span>
+<a name="489"><span class="lineNum">     489 </span>            :                 }</a>
+<span class="lineNum">     490 </span>            :         }
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :         g_free(tmpnick);</span>
+<a name="493"><span class="lineNum">     493 </span><span class="lineNoCov">          0 :         return rec;</span></a>
+<span class="lineNum">     494 </span>            : }
+<a name="495"><span class="lineNum">     495 </span>            : </a>
+<span class="lineNum">     496 </span>            : /* Check is `msg' is meant for `nick'. */
+<a name="497"><span class="lineNum">     497 </span><span class="lineNoCov">          0 : int nick_match_msg(CHANNEL_REC *channel, const char *msg, const char *nick)</span></a>
+<span class="lineNum">     498 </span>            : {
+<span class="lineNum">     499 </span>            :         const char *msgstart, *orignick;
+<span class="lineNum">     500 </span>            :         int len, fullmatch;
+<a name="501"><span class="lineNum">     501 </span>            : </a>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, FALSE);</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(msg != NULL, FALSE);</span>
+<span class="lineNum">     504 </span>            : 
+<a name="505"><span class="lineNum">     505 </span><span class="lineNoCov">          0 :         if (channel != NULL &amp;&amp; channel-&gt;server-&gt;nick_match_msg != NULL)</span></a>
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 :                 return channel-&gt;server-&gt;nick_match_msg(msg, nick);</span>
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span>            :         /* first check for identical match */
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :         len = strlen(nick);</span></a>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :         if (g_ascii_strncasecmp(msg, nick, len) == 0 &amp;&amp;</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :             !isalnumhigh((int) msg[len]))</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :                 return TRUE;</span>
+<a name="513"><span class="lineNum">     513 </span>            : </a>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :         orignick = nick;</span>
+<span class="lineNum">     515 </span>            :         for (;;) {
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :                 nick = orignick;</span>
+<a name="517"><span class="lineNum">     517 </span><span class="lineNoCov">          0 :                 msgstart = msg;</span></a>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :                 fullmatch = TRUE;</span>
+<span class="lineNum">     519 </span>            : 
+<span class="lineNum">     520 </span>            :                 /* check if it matches for alphanumeric parts of nick */
+<a name="521"><span class="lineNum">     521 </span><span class="lineNoCov">          0 :                 while (*nick != '\0' &amp;&amp; *msg != '\0') {</span></a>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :                         if (i_toupper(*nick) == i_toupper(*msg)) {</span>
+<span class="lineNum">     523 </span>            :                                 /* total match */
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                                 msg++;</span>
+<a name="525"><span class="lineNum">     525 </span><span class="lineNoCov">          0 :                         } else if (i_isalnum(*msg) &amp;&amp; !i_isalnum(*nick)) {</span></a>
+<span class="lineNum">     526 </span>            :                                 /* some strange char in your nick, pass it */
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :                                 fullmatch = FALSE;</span>
+<span class="lineNum">     528 </span>            :                         } else
+<a name="529"><span class="lineNum">     529 </span>            :                                 break;</a>
+<span class="lineNum">     530 </span>            : 
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                         nick++;</span>
+<span class="lineNum">     532 </span>            :                 }
+<a name="533"><span class="lineNum">     533 </span>            : </a>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :                 if (msg != msgstart &amp;&amp; !isalnumhigh(*msg)) {</span>
+<span class="lineNum">     535 </span>            :                         /* at least some of the chars in line matched the
+<span class="lineNum">     536 </span>            :                            nick, and msg continue with non-alphanum character,
+<a name="537"><span class="lineNum">     537 </span>            :                            this might be for us.. */</a>
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :                         if (*nick != '\0') {</span>
+<span class="lineNum">     539 </span>            :                                 /* remove the rest of the non-alphanum chars
+<span class="lineNum">     540 </span>            :                                    from nick and check if it then matches. */
+<a name="541"><span class="lineNum">     541 </span><span class="lineNoCov">          0 :                                 fullmatch = FALSE;</span></a>
+<span class="lineNum">     542 </span><span class="lineNoCov">          0 :                                 while (*nick != '\0' &amp;&amp; !i_isalnum(*nick))</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :                                         nick++;</span>
+<span class="lineNum">     544 </span>            :                         }
+<a name="545"><span class="lineNum">     545 </span>            : </a>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :                         if (*nick == '\0') {</span>
+<span class="lineNum">     547 </span>            :                                 /* yes, match! */
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :                                 break;</span>
+<a name="549"><span class="lineNum">     549 </span>            :                         }</a>
+<span class="lineNum">     550 </span>            :                 }
+<span class="lineNum">     551 </span>            : 
+<span class="lineNum">     552 </span>            :                 /* no match. check if this is a message to multiple people
+<a name="553"><span class="lineNum">     553 </span>            :                    (like nick1,nick2: text) */</a>
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 :                 while (*msg != '\0' &amp;&amp; *msg != ' ' &amp;&amp; *msg != ',') msg++;</span>
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :                 if (*msg != ',') {</span>
+<a name="557"><span class="lineNum">     557 </span><span class="lineNoCov">          0 :                         nick = orignick;</span></a>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     559 </span>            :                 }
+<span class="lineNum">     560 </span>            : 
+<a name="561"><span class="lineNum">     561 </span><span class="lineNoCov">          0 :                 msg++;</span></a>
+<span class="lineNum">     562 </span>            :         }
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :         if (*nick != '\0')</span>
+<a name="565"><span class="lineNum">     565 </span><span class="lineNoCov">          0 :                 return FALSE; /* didn't match */</span></a>
+<span class="lineNum">     566 </span>            : 
+<span class="lineNum">     567 </span><span class="lineNoCov">          0 :         if (fullmatch)</span>
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :                 return TRUE; /* matched without fuzzyness */</span>
+<a name="569"><span class="lineNum">     569 </span>            : </a>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :         if (channel != NULL) {</span>
+<span class="lineNum">     571 </span>            :                 /* matched with some fuzzyness .. check if there's an exact match
+<span class="lineNum">     572 </span>            :                    for some other nick in the same channel. */
+<a name="573"><span class="lineNum">     573 </span><span class="lineNoCov">          0 :                 return nick_nfind(channel, msgstart, (int) (msg-msgstart)) == NULL;</span></a>
+<span class="lineNum">     574 </span>            :         } else {
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :                 return TRUE;</span>
+<span class="lineNum">     576 </span>            :         }
+<a name="577"><span class="lineNum">     577 </span>            : }</a>
+<span class="lineNum">     578 </span>            : 
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 : int nick_match_msg_everywhere(CHANNEL_REC *channel, const char *msg, const char *nick)</span>
+<span class="lineNum">     580 </span>            : {
+<a name="581"><span class="lineNum">     581 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(nick != NULL, FALSE);</span></a>
+<span class="lineNum">     582 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(msg != NULL, FALSE);</span>
+<span class="lineNum">     583 </span>            : 
+<span class="lineNum">     584 </span><span class="lineNoCov">          0 :         return stristr_full(msg, nick) != NULL;</span>
+<a name="585"><span class="lineNum">     585 </span>            : }</a>
+<span class="lineNum">     586 </span>            : 
+<span class="lineNum">     587 </span><span class="lineCov">          1 : void nicklist_init(void)</span>
+<span class="lineNum">     588 </span>            : {
+<a name="589"><span class="lineNum">     589 </span><span class="lineCov">          1 :         signal_add_first(&quot;channel created&quot;, (SIGNAL_FUNC) sig_channel_created);</span></a>
+<span class="lineNum">     590 </span><span class="lineCov">          1 :         signal_add(&quot;channel destroyed&quot;, (SIGNAL_FUNC) sig_channel_destroyed);</span>
+<a name="591"><span class="lineNum">     591 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     592 </span>            : 
+<a name="593"><span class="lineNum">     593 </span><span class="lineCov">          1 : void nicklist_deinit(void)</span></a>
+<span class="lineNum">     594 </span>            : {
+<span class="lineNum">     595 </span><span class="lineCov">          1 :         signal_remove(&quot;channel created&quot;, (SIGNAL_FUNC) sig_channel_created);</span>
+<span class="lineNum">     596 </span><span class="lineCov">          1 :         signal_remove(&quot;channel destroyed&quot;, (SIGNAL_FUNC) sig_channel_destroyed);</span>
+<a name="597"><span class="lineNum">     597 </span>            : </a>
+<span class="lineNum">     598 </span><span class="lineCov">          1 :         module_uniq_destroy(&quot;NICK&quot;);</span>
+<span class="lineNum">     599 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

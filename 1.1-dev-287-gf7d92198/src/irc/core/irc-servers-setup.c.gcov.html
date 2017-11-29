@@ -1,0 +1,289 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/irc/core/irc-servers-setup.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/irc/core</a> - irc-servers-setup.c<span style="font-size: 80%;"> (source / <a href="irc-servers-setup.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">39</td>
+            <td class="headerCovTableEntry">114</td>
+            <td class="headerCovTableEntryLo">34.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntryLo">50.0 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  irc-servers-setup.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;network.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;servers-setup.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;lib-config/iconfig.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;settings.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;irc-chatnets.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;irc-servers-setup.h&quot;</a>
+<span class="lineNum">      30 </span>            : #include &quot;irc-servers.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;sasl.h&quot;
+<a name="32"><span class="lineNum">      32 </span>            : </a>
+<a name="33"><span class="lineNum">      33 </span>            : /* Fill information to connection from server setup record */</a>
+<span class="lineNum">      34 </span><span class="lineNoCov">          0 : static void sig_server_setup_fill_reconn(IRC_SERVER_CONNECT_REC *conn,</span>
+<span class="lineNum">      35 </span>            :                                          IRC_SERVER_SETUP_REC *sserver)
+<span class="lineNum">      36 </span>            : {
+<a name="37"><span class="lineNum">      37 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER_CONNECT(conn) ||</span></a>
+<span class="lineNum">      38 </span><span class="lineNoCov">          0 :             !IS_IRC_SERVER_SETUP(sserver))</span>
+<span class="lineNum">      39 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">      40 </span>            : 
+<a name="41"><span class="lineNum">      41 </span><span class="lineNoCov">          0 :         if (sserver-&gt;cmd_queue_speed &gt; 0)</span></a>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 :                 conn-&gt;cmd_queue_speed = sserver-&gt;cmd_queue_speed;</span>
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :         if (sserver-&gt;max_cmds_at_once &gt; 0)</span>
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :                 conn-&gt;max_cmds_at_once = sserver-&gt;max_cmds_at_once;</span>
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :         if (sserver-&gt;max_query_chans &gt; 0)</span></a>
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :                 conn-&gt;max_query_chans = sserver-&gt;max_query_chans;</span>
+<a name="47"><span class="lineNum">      47 </span>            : }</a>
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 : static void sig_server_setup_fill_connect(IRC_SERVER_CONNECT_REC *conn)</span></a>
+<span class="lineNum">      50 </span>            : {
+<span class="lineNum">      51 </span>            :         const char *value;
+<span class="lineNum">      52 </span>            : 
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER_CONNECT(conn))</span></a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :         value = settings_get_str(&quot;alternate_nick&quot;);</span>
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :         conn-&gt;alternate_nick = (value != NULL &amp;&amp; *value != '\0') ?</span></a>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :                 g_strdup(value) : NULL;</span>
+<span class="lineNum">      59 </span>            : 
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :         value = settings_get_str(&quot;usermode&quot;);</span>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :         conn-&gt;usermode = (value != NULL &amp;&amp; *value != '\0') ?</span></a>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :                 g_strdup(value) : NULL;</span>
+<a name="63"><span class="lineNum">      63 </span>            : }</a>
+<span class="lineNum">      64 </span>            : 
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 : static void sig_server_setup_fill_chatnet(IRC_SERVER_CONNECT_REC *conn,</span></a>
+<span class="lineNum">      66 </span>            :                                           IRC_CHATNET_REC *ircnet)
+<span class="lineNum">      67 </span>            : {
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER_CONNECT(conn))</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :         g_return_if_fail(IS_IRCNET(ircnet));</span>
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :         if (ircnet-&gt;alternate_nick != NULL) {</span>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :                 g_free_and_null(conn-&gt;alternate_nick);</span></a>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :                 conn-&gt;alternate_nick = g_strdup(ircnet-&gt;alternate_nick);</span>
+<span class="lineNum">      75 </span>            :         }
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         if (ircnet-&gt;usermode != NULL) {</span>
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :                 g_free_and_null(conn-&gt;usermode);</span></a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :                 conn-&gt;usermode = g_strdup(ircnet-&gt;usermode);</span>
+<span class="lineNum">      79 </span>            :         }
+<span class="lineNum">      80 </span>            : 
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :         if (ircnet-&gt;max_kicks &gt; 0) conn-&gt;max_kicks = ircnet-&gt;max_kicks;</span></a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         if (ircnet-&gt;max_msgs &gt; 0) conn-&gt;max_msgs = ircnet-&gt;max_msgs;</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :         if (ircnet-&gt;max_modes &gt; 0) conn-&gt;max_modes = ircnet-&gt;max_modes;</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         if (ircnet-&gt;max_whois &gt; 0) conn-&gt;max_whois = ircnet-&gt;max_whois;</span>
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         if (ircnet-&gt;max_cmds_at_once &gt; 0)</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 conn-&gt;max_cmds_at_once = ircnet-&gt;max_cmds_at_once;</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         if (ircnet-&gt;cmd_queue_speed &gt; 0)</span>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :                 conn-&gt;cmd_queue_speed = ircnet-&gt;cmd_queue_speed;</span></a>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :         if (ircnet-&gt;max_query_chans &gt; 0)</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                 conn-&gt;max_query_chans = ircnet-&gt;max_query_chans;</span>
+<span class="lineNum">      92 </span>            : 
+<a name="93"><span class="lineNum">      93 </span>            :         /* Validate the SASL parameters filled by sig_chatnet_read() or cmd_network_add */</a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :         conn-&gt;sasl_mechanism = SASL_MECHANISM_NONE;</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :         conn-&gt;sasl_username = NULL;</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         conn-&gt;sasl_password = NULL;</span>
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         if (ircnet-&gt;sasl_mechanism != NULL) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :                 if (!g_ascii_strcasecmp(ircnet-&gt;sasl_mechanism, &quot;plain&quot;)) {</span>
+<span class="lineNum">     100 </span>            :                         /* The PLAIN method needs both the username and the password */
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :                         if (ircnet-&gt;sasl_username != NULL &amp;&amp; *ircnet-&gt;sasl_username &amp;&amp;</span></a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                             ircnet-&gt;sasl_password != NULL &amp;&amp; *ircnet-&gt;sasl_password) {</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :                                 conn-&gt;sasl_mechanism = SASL_MECHANISM_PLAIN;</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                                 conn-&gt;sasl_username = ircnet-&gt;sasl_username;</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :                                 conn-&gt;sasl_password = ircnet-&gt;sasl_password;</span></a>
+<span class="lineNum">     106 </span>            :                         } else
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :                                 g_warning(&quot;The fields sasl_username and sasl_password are either missing or empty&quot;);</span>
+<span class="lineNum">     108 </span>            :                 }
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 else if (!g_ascii_strcasecmp(ircnet-&gt;sasl_mechanism, &quot;external&quot;)) {</span></a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                         conn-&gt;sasl_mechanism = SASL_MECHANISM_EXTERNAL;</span>
+<span class="lineNum">     111 </span>            :                 }
+<span class="lineNum">     112 </span>            :                 else
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :                         g_warning(&quot;Unsupported SASL mechanism \&quot;%s\&quot; selected&quot;, ircnet-&gt;sasl_mechanism);</span></a>
+<span class="lineNum">     114 </span>            :         }
+<a name="115"><span class="lineNum">     115 </span>            : }</a>
+<span class="lineNum">     116 </span>            : 
+<a name="117"><span class="lineNum">     117 </span><span class="lineCov">          1 : static void init_userinfo(void)</span></a>
+<span class="lineNum">     118 </span>            : {
+<span class="lineNum">     119 </span>            :         unsigned int changed;
+<span class="lineNum">     120 </span>            :         const char *set, *nick, *user_name, *str;
+<a name="121"><span class="lineNum">     121 </span>            : </a>
+<span class="lineNum">     122 </span><span class="lineCov">          1 :         changed = 0;</span>
+<span class="lineNum">     123 </span>            :         /* check if nick/username/realname wasn't read from setup.. */
+<span class="lineNum">     124 </span><span class="lineCov">          1 :         set = settings_get_str(&quot;real_name&quot;);</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineCov">          1 :         if (set == NULL || *set == '\0') {</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :                 str = g_getenv(&quot;IRCNAME&quot;);</span>
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 :                 settings_set_str(&quot;real_name&quot;,</span>
+<span class="lineNum">     128 </span>            :                                  str != NULL ? str : g_get_real_name());
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 changed |= USER_SETTINGS_REAL_NAME;</span></a>
+<span class="lineNum">     130 </span>            :         }
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span>            :         /* username */
+<a name="133"><span class="lineNum">     133 </span><span class="lineCov">          1 :         user_name = settings_get_str(&quot;user_name&quot;);</span></a>
+<span class="lineNum">     134 </span><span class="lineCov">          1 :         if (user_name == NULL || *user_name == '\0') {</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :                 str = g_getenv(&quot;IRCUSER&quot;);</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :                 settings_set_str(&quot;user_name&quot;,</span>
+<a name="137"><span class="lineNum">     137 </span>            :                                  str != NULL ? str : g_get_user_name());</a>
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :                 user_name = settings_get_str(&quot;user_name&quot;);</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :                 changed |= USER_SETTINGS_USER_NAME;</span>
+<a name="141"><span class="lineNum">     141 </span>            :         }</a>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span>            :         /* nick */
+<span class="lineNum">     144 </span><span class="lineCov">          1 :         nick = settings_get_str(&quot;nick&quot;);</span>
+<a name="145"><span class="lineNum">     145 </span><span class="lineCov">          1 :         if (nick == NULL || *nick == '\0') {</span></a>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :                 str = g_getenv(&quot;IRCNICK&quot;);</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :                 settings_set_str(&quot;nick&quot;, str != NULL ? str : user_name);</span>
+<span class="lineNum">     148 </span>            : 
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 :                 nick = settings_get_str(&quot;nick&quot;);</span></a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :                 changed |= USER_SETTINGS_NICK;</span>
+<span class="lineNum">     151 </span>            :         }
+<span class="lineNum">     152 </span>            : 
+<a name="153"><span class="lineNum">     153 </span>            :         /* host name */</a>
+<span class="lineNum">     154 </span><span class="lineCov">          1 :         set = settings_get_str(&quot;hostname&quot;);</span>
+<span class="lineNum">     155 </span><span class="lineCov">          1 :         if (set == NULL || *set == '\0') {</span>
+<span class="lineNum">     156 </span><span class="lineCov">          1 :                 str = g_getenv(&quot;IRCHOST&quot;);</span>
+<a name="157"><span class="lineNum">     157 </span><span class="lineCov">          1 :                 if (str != NULL) {</span></a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :                         settings_set_str(&quot;hostname&quot;, str);</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :                         changed |= USER_SETTINGS_HOSTNAME;</span>
+<span class="lineNum">     160 </span>            :                 }
+<a name="161"><span class="lineNum">     161 </span>            :         }</a>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineCov">          1 :         signal_emit(&quot;irssi init userinfo changed&quot;, 1, GUINT_TO_POINTER(changed));</span>
+<a name="164"><span class="lineNum">     164 </span><span class="lineCov">          1 : }</span></a>
+<a name="165"><span class="lineNum">     165 </span>            : </a>
+<span class="lineNum">     166 </span><span class="lineCov">         16 : static void sig_server_setup_read(IRC_SERVER_SETUP_REC *rec, CONFIG_NODE *node)</span>
+<span class="lineNum">     167 </span>            : {
+<span class="lineNum">     168 </span><span class="lineCov">         16 :         g_return_if_fail(rec != NULL);</span>
+<a name="169"><span class="lineNum">     169 </span><span class="lineCov">         16 :         g_return_if_fail(node != NULL);</span></a>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineCov">         16 :         if (!IS_IRC_SERVER_SETUP(rec))</span>
+<span class="lineNum">     172 </span><span class="lineCov">          1 :                 return;</span>
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<span class="lineNum">     174 </span><span class="lineCov">         15 :         rec-&gt;max_cmds_at_once = config_node_get_int(node, &quot;cmds_max_at_once&quot;, 0);</span>
+<span class="lineNum">     175 </span><span class="lineCov">         15 :         rec-&gt;cmd_queue_speed = config_node_get_int(node, &quot;cmd_queue_speed&quot;, 0);</span>
+<span class="lineNum">     176 </span><span class="lineCov">         15 :         rec-&gt;max_query_chans = config_node_get_int(node, &quot;max_query_chans&quot;, 0);</span>
+<a name="177"><span class="lineNum">     177 </span>            : }</a>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 : static void sig_server_setup_saved(IRC_SERVER_SETUP_REC *rec,</span>
+<span class="lineNum">     180 </span>            :                                    CONFIG_NODE *node)
+<a name="181"><span class="lineNum">     181 </span>            : {</a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         if (!IS_IRC_SERVER_SETUP(rec))</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     184 </span>            : 
+<a name="185"><span class="lineNum">     185 </span><span class="lineNoCov">          0 :         if (rec-&gt;max_cmds_at_once &gt; 0)</span></a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :                 iconfig_node_set_int(node, &quot;cmds_max_at_once&quot;, rec-&gt;max_cmds_at_once);</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :         if (rec-&gt;cmd_queue_speed &gt; 0)</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :                 iconfig_node_set_int(node, &quot;cmd_queue_speed&quot;, rec-&gt;cmd_queue_speed);</span>
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :         if (rec-&gt;max_query_chans &gt; 0)</span></a>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :                 iconfig_node_set_int(node, &quot;max_query_chans&quot;, rec-&gt;max_query_chans);</span>
+<a name="191"><span class="lineNum">     191 </span>            : }</a>
+<span class="lineNum">     192 </span>            : 
+<a name="193"><span class="lineNum">     193 </span><span class="lineCov">          1 : void irc_servers_setup_init(void)</span></a>
+<span class="lineNum">     194 </span>            : {
+<span class="lineNum">     195 </span><span class="lineCov">          1 :         settings_add_bool(&quot;server&quot;, &quot;skip_motd&quot;, FALSE);</span>
+<span class="lineNum">     196 </span><span class="lineCov">          1 :         settings_add_str(&quot;server&quot;, &quot;alternate_nick&quot;, &quot;&quot;);</span>
+<a name="197"><span class="lineNum">     197 </span>            : </a>
+<span class="lineNum">     198 </span><span class="lineCov">          1 :         init_userinfo();</span>
+<span class="lineNum">     199 </span><span class="lineCov">          1 :         signal_add(&quot;server setup fill reconn&quot;, (SIGNAL_FUNC) sig_server_setup_fill_reconn);</span>
+<span class="lineNum">     200 </span><span class="lineCov">          1 :         signal_add(&quot;server setup fill connect&quot;, (SIGNAL_FUNC) sig_server_setup_fill_connect);</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineCov">          1 :         signal_add(&quot;server setup fill chatnet&quot;, (SIGNAL_FUNC) sig_server_setup_fill_chatnet);</span></a>
+<span class="lineNum">     202 </span><span class="lineCov">          1 :         signal_add(&quot;server setup read&quot;, (SIGNAL_FUNC) sig_server_setup_read);</span>
+<span class="lineNum">     203 </span><span class="lineCov">          1 :         signal_add(&quot;server setup saved&quot;, (SIGNAL_FUNC) sig_server_setup_saved);</span>
+<a name="204"><span class="lineNum">     204 </span><span class="lineCov">          1 : }</span></a>
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<span class="lineNum">     206 </span><span class="lineCov">          1 : void irc_servers_setup_deinit(void)</span>
+<span class="lineNum">     207 </span>            : {
+<span class="lineNum">     208 </span><span class="lineCov">          1 :         signal_remove(&quot;server setup fill reconn&quot;, (SIGNAL_FUNC) sig_server_setup_fill_reconn);</span>
+<a name="209"><span class="lineNum">     209 </span><span class="lineCov">          1 :         signal_remove(&quot;server setup fill connect&quot;, (SIGNAL_FUNC) sig_server_setup_fill_connect);</span></a>
+<span class="lineNum">     210 </span><span class="lineCov">          1 :         signal_remove(&quot;server setup fill chatnet&quot;, (SIGNAL_FUNC) sig_server_setup_fill_chatnet);</span>
+<span class="lineNum">     211 </span><span class="lineCov">          1 :         signal_remove(&quot;server setup read&quot;, (SIGNAL_FUNC) sig_server_setup_read);</span>
+<span class="lineNum">     212 </span><span class="lineCov">          1 :         signal_remove(&quot;server setup saved&quot;, (SIGNAL_FUNC) sig_server_setup_saved);</span>
+<a name="213"><span class="lineNum">     213 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

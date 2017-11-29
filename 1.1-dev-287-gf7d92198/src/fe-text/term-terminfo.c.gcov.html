@@ -1,0 +1,811 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-text/term-terminfo.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-text</a> - term-terminfo.c<span style="font-size: 80%;"> (source / <a href="term-terminfo.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">225</td>
+            <td class="headerCovTableEntry">370</td>
+            <td class="headerCovTableEntryLo">60.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">24</td>
+            <td class="headerCovTableEntry">41</td>
+            <td class="headerCovTableEntryLo">58.5 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  term-terminfo.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2001 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;term.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;terminfo-core.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;fe-windows.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;utf8.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &lt;signal.h&gt;
+<a name="29"><span class="lineNum">      29 </span>            : #include &lt;termios.h&gt;</a>
+<span class="lineNum">      30 </span>            : #include &lt;stdio.h&gt;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : /* returns number of characters in the beginning of the buffer being a
+<a name="33"><span class="lineNum">      33 </span>            :    a single character, or -1 if more input is needed. The character will be</a>
+<span class="lineNum">      34 </span>            :    saved in result */
+<span class="lineNum">      35 </span>            : typedef int (*TERM_INPUT_FUNC)(const unsigned char *buffer, int size,
+<span class="lineNum">      36 </span>            :                                unichar *result);
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<span class="lineNum">      38 </span>            : struct _TERM_WINDOW {
+<span class="lineNum">      39 </span>            :         /* Terminal to use for window */
+<span class="lineNum">      40 </span>            :         TERM_REC *term;
+<a name="41"><span class="lineNum">      41 </span>            : </a>
+<span class="lineNum">      42 </span>            :         /* Area for window in terminal */
+<span class="lineNum">      43 </span>            :         int x, y;
+<span class="lineNum">      44 </span>            :         int width, height;
+<a name="45"><span class="lineNum">      45 </span>            : };</a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : TERM_WINDOW *root_window;
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span>            : static char *term_lines_empty; /* 1 if line is entirely empty */</a>
+<span class="lineNum">      50 </span>            : static int vcmove, vcx, vcy, curs_visible;
+<span class="lineNum">      51 </span>            : static int crealx, crealy, cforcemove;
+<span class="lineNum">      52 </span>            : static int curs_x, curs_y;
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<span class="lineNum">      54 </span>            : static unsigned int last_fg, last_bg;
+<span class="lineNum">      55 </span>            : static int last_attrs;
+<span class="lineNum">      56 </span>            : 
+<a name="57"><span class="lineNum">      57 </span>            : static GSource *sigcont_source;</a>
+<span class="lineNum">      58 </span>            : static volatile sig_atomic_t got_sigcont;
+<span class="lineNum">      59 </span>            : static int freeze_counter;
+<span class="lineNum">      60 </span>            : 
+<a name="61"><span class="lineNum">      61 </span>            : static TERM_INPUT_FUNC input_func;</a>
+<span class="lineNum">      62 </span>            : static unsigned char term_inbuf[256];
+<span class="lineNum">      63 </span>            : static int term_inbuf_pos;
+<a name="64"><span class="lineNum">      64 </span>            : </a>
+<a name="65"><span class="lineNum">      65 </span>            : /* SIGCONT handler */</a>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 : static void sig_cont(int p)</span>
+<span class="lineNum">      67 </span>            : {
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :         got_sigcont = TRUE;</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="70"><span class="lineNum">      70 </span>            : </a>
+<span class="lineNum">      71 </span>            : /* SIGCONT GSource */
+<span class="lineNum">      72 </span><span class="lineCov">         10 : static gboolean sigcont_prepare(GSource *source, gint *timeout)</span>
+<a name="73"><span class="lineNum">      73 </span>            : {</a>
+<span class="lineNum">      74 </span><span class="lineCov">         10 :         *timeout = -1;</span>
+<span class="lineNum">      75 </span><span class="lineCov">         10 :         return got_sigcont;</span>
+<a name="76"><span class="lineNum">      76 </span>            : }</a>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span><span class="lineCov">          2 : static gboolean sigcont_check(GSource *source)</span>
+<span class="lineNum">      79 </span>            : {
+<span class="lineNum">      80 </span><span class="lineCov">          2 :         return got_sigcont;</span>
+<a name="81"><span class="lineNum">      81 </span>            : }</a>
+<span class="lineNum">      82 </span>            : 
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 : static gboolean sigcont_dispatch(GSource *source, GSourceFunc callback, gpointer user_data)</span>
+<span class="lineNum">      84 </span>            : {
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :         got_sigcont = FALSE;</span></a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         if (callback == NULL)</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 return TRUE;</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         return callback(user_data);</span>
+<a name="89"><span class="lineNum">      89 </span>            : }</a>
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 : static gboolean do_redraw(gpointer unused)</span>
+<span class="lineNum">      92 </span>            : {
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :         terminfo_cont(current_term);</span></a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :         irssi_redraw();</span>
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         return 1;</span>
+<a name="97"><span class="lineNum">      97 </span>            : }</a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span>            : static GSourceFuncs sigcont_funcs = {
+<span class="lineNum">     100 </span>            :         .prepare = sigcont_prepare,
+<a name="101"><span class="lineNum">     101 </span>            :         .check = sigcont_check,</a>
+<span class="lineNum">     102 </span>            :         .dispatch = sigcont_dispatch
+<a name="103"><span class="lineNum">     103 </span>            : };</a>
+<span class="lineNum">     104 </span>            : 
+<a name="105"><span class="lineNum">     105 </span><span class="lineCov">          1 : static void term_atexit(void)</span></a>
+<span class="lineNum">     106 </span>            : {
+<span class="lineNum">     107 </span><span class="lineCov">          1 :         if (!quitting &amp;&amp; current_term &amp;&amp; current_term-&gt;TI_rmcup) {</span>
+<span class="lineNum">     108 </span>            :                 /* Unexpected exit, avoid switching out of alternate screen
+<a name="109"><span class="lineNum">     109 </span>            :                    to keep any on-screen errors (like noperl_die()'s) */</a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 current_term-&gt;TI_rmcup = NULL;</span>
+<span class="lineNum">     111 </span>            :         }
+<span class="lineNum">     112 </span>            : 
+<a name="113"><span class="lineNum">     113 </span><span class="lineCov">          1 :         term_deinit();</span></a>
+<a name="114"><span class="lineNum">     114 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span><span class="lineCov">          1 : int term_init(void)</span>
+<a name="117"><span class="lineNum">     117 </span>            : {</a>
+<span class="lineNum">     118 </span>            :         struct sigaction act;
+<span class="lineNum">     119 </span>            :         int width, height;
+<span class="lineNum">     120 </span>            : 
+<a name="121"><span class="lineNum">     121 </span><span class="lineCov">          1 :         last_fg = last_bg = -1;</span></a>
+<span class="lineNum">     122 </span><span class="lineCov">          1 :         last_attrs = 0;</span>
+<span class="lineNum">     123 </span><span class="lineCov">          1 :         vcx = vcy = 0; crealx = crealy = -1;</span>
+<span class="lineNum">     124 </span><span class="lineCov">          1 :         vcmove = FALSE; cforcemove = TRUE;</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineCov">          1 :         curs_visible = TRUE;</span></a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineCov">          1 :         current_term = terminfo_core_init(stdin, stdout);</span>
+<span class="lineNum">     128 </span><span class="lineCov">          1 :         if (current_term == NULL)</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                 return FALSE;</span></a>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineCov">          1 :         if (term_get_size(&amp;width, &amp;height)) {</span>
+<span class="lineNum">     132 </span><span class="lineCov">          1 :                 current_term-&gt;width = width;</span>
+<a name="133"><span class="lineNum">     133 </span><span class="lineCov">          1 :                 current_term-&gt;height = height;</span></a>
+<span class="lineNum">     134 </span>            :         }
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span>            :         /* grab CONT signal */
+<a name="137"><span class="lineNum">     137 </span><span class="lineCov">          1 :         sigemptyset(&amp;act.sa_mask);</span></a>
+<span class="lineNum">     138 </span><span class="lineCov">          1 :         act.sa_flags = 0;</span>
+<span class="lineNum">     139 </span><span class="lineCov">          1 :         act.sa_handler = sig_cont;</span>
+<span class="lineNum">     140 </span><span class="lineCov">          1 :         sigaction(SIGCONT, &amp;act, NULL);</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineCov">          1 :         sigcont_source = g_source_new(&amp;sigcont_funcs, sizeof(GSource));</span></a>
+<span class="lineNum">     142 </span><span class="lineCov">          1 :         g_source_set_callback(sigcont_source, do_redraw, NULL, NULL);</span>
+<span class="lineNum">     143 </span><span class="lineCov">          1 :         g_source_attach(sigcont_source, NULL);</span>
+<span class="lineNum">     144 </span>            : 
+<a name="145"><span class="lineNum">     145 </span><span class="lineCov">          1 :         curs_x = curs_y = 0;</span></a>
+<span class="lineNum">     146 </span><span class="lineCov">          1 :         term_width = current_term-&gt;width;</span>
+<span class="lineNum">     147 </span><span class="lineCov">          1 :         term_height = current_term-&gt;height;</span>
+<span class="lineNum">     148 </span><span class="lineCov">          1 :         root_window = term_window_create(0, 0, term_width, term_height);</span>
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<span class="lineNum">     150 </span><span class="lineCov">          1 :         term_lines_empty = g_new0(char, term_height);</span>
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineCov">          1 :         term_set_input_type(TERM_TYPE_8BIT);</span>
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">          1 :         term_common_init();</span></a>
+<span class="lineNum">     154 </span><span class="lineCov">          1 :         atexit(term_atexit);</span>
+<span class="lineNum">     155 </span><span class="lineCov">          1 :         return TRUE;</span>
+<a name="156"><span class="lineNum">     156 </span>            : }</a>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span><span class="lineCov">          2 : void term_deinit(void)</span>
+<span class="lineNum">     159 </span>            : {
+<span class="lineNum">     160 </span><span class="lineCov">          2 :         if (current_term != NULL) {</span>
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">          1 :                 signal(SIGCONT, SIG_DFL);</span></a>
+<span class="lineNum">     162 </span><span class="lineCov">          1 :                 g_source_destroy(sigcont_source);</span>
+<span class="lineNum">     163 </span><span class="lineCov">          1 :                 g_source_unref(sigcont_source);</span>
+<span class="lineNum">     164 </span>            : 
+<a name="165"><span class="lineNum">     165 </span><span class="lineCov">          1 :                 term_common_deinit();</span></a>
+<span class="lineNum">     166 </span><span class="lineCov">          1 :                 terminfo_core_deinit(current_term);</span>
+<span class="lineNum">     167 </span><span class="lineCov">          1 :                 current_term = NULL;</span>
+<span class="lineNum">     168 </span>            :         }
+<a name="169"><span class="lineNum">     169 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span><span class="lineCov">        150 : static void term_move_real(void)</span>
+<span class="lineNum">     172 </span>            : {
+<a name="173"><span class="lineNum">     173 </span><span class="lineCov">        150 :         if (vcx != crealx || vcy != crealy || cforcemove) {</span></a>
+<span class="lineNum">     174 </span><span class="lineCov">         85 :                 if (curs_visible) {</span>
+<span class="lineNum">     175 </span><span class="lineCov">         10 :                         terminfo_set_cursor_visible(FALSE);</span>
+<span class="lineNum">     176 </span><span class="lineCov">         10 :                         curs_visible = FALSE;</span>
+<a name="177"><span class="lineNum">     177 </span>            :                 }</a>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineCov">         85 :                 if (cforcemove) {</span>
+<span class="lineNum">     180 </span><span class="lineCov">          4 :                         crealx = crealy = -1;</span>
+<a name="181"><span class="lineNum">     181 </span><span class="lineCov">          4 :                         cforcemove = FALSE;</span></a>
+<span class="lineNum">     182 </span>            :                 }
+<span class="lineNum">     183 </span><span class="lineCov">         85 :                 terminfo_move_relative(crealx, crealy, vcx, vcy);</span>
+<span class="lineNum">     184 </span><span class="lineCov">         85 :                 crealx = vcx; crealy = vcy;</span>
+<a name="185"><span class="lineNum">     185 </span>            :         }</a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span><span class="lineCov">        150 :         vcmove = FALSE;</span>
+<span class="lineNum">     188 </span><span class="lineCov">        150 : }</span>
+<a name="189"><span class="lineNum">     189 </span>            : </a>
+<span class="lineNum">     190 </span>            : /* Cursor position is unknown - move it immediately to known position */
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 : static void term_move_reset(int x, int y)</span>
+<span class="lineNum">     192 </span>            : {
+<a name="193"><span class="lineNum">     193 </span><span class="lineNoCov">          0 :         if (x &gt;= term_width) x = term_width-1;</span></a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :         if (y &gt;= term_height) y = term_height-1;</span>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         vcx = x; vcy = y;</span>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :         cforcemove = TRUE;</span></a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :         term_move_real();</span>
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     200 </span>            : 
+<a name="201"><span class="lineNum">     201 </span>            : /* Resize terminal - if width or height is negative,</a>
+<span class="lineNum">     202 </span>            :    the new size is unknown and should be figured out somehow */
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 : void term_resize(int width, int height)</span>
+<span class="lineNum">     204 </span>            : {
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :         if (width &lt; 0 || height &lt; 0) {</span></a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :                 width = current_term-&gt;width;</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                 height = current_term-&gt;height;</span>
+<span class="lineNum">     208 </span>            :         }
+<a name="209"><span class="lineNum">     209 </span>            : </a>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :         if (term_width != width || term_height != height) {</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                 term_width = current_term-&gt;width = width;</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 term_height = current_term-&gt;height = height;</span>
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 term_window_move(root_window, 0, 0, term_width, term_height);</span></a>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                 g_free(term_lines_empty);</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                 term_lines_empty = g_new0(char, term_height);</span>
+<a name="217"><span class="lineNum">     217 </span>            :         }</a>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         term_move_reset(0, 0);</span>
+<a name="220"><span class="lineNum">     220 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 : void term_resize_final(int width, int height)</span>
+<span class="lineNum">     223 </span>            : {
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 : }</span>
+<a name="225"><span class="lineNum">     225 </span>            : </a>
+<span class="lineNum">     226 </span>            : /* Returns TRUE if terminal has colors */
+<span class="lineNum">     227 </span><span class="lineCov">          2 : int term_has_colors(void)</span>
+<span class="lineNum">     228 </span>            : {
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">          2 :         return current_term-&gt;TI_colors &gt; 0;</span></a>
+<span class="lineNum">     230 </span>            : }
+<a name="231"><span class="lineNum">     231 </span>            : </a>
+<span class="lineNum">     232 </span>            : /* Force the colors on any way you can */
+<a name="233"><span class="lineNum">     233 </span><span class="lineNoCov">          0 : void term_force_colors(int set)</span></a>
+<span class="lineNum">     234 </span>            : {
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :         terminfo_setup_colors(current_term, set);</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 : }</span>
+<a name="237"><span class="lineNum">     237 </span>            : </a>
+<span class="lineNum">     238 </span>            : /* Clear screen */
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 : void term_clear(void)</span>
+<span class="lineNum">     240 </span>            : {
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :         term_set_color(root_window, ATTR_RESET);</span></a>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :         terminfo_clear();</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :         term_move_reset(0, 0);</span>
+<span class="lineNum">     244 </span>            : 
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :         memset(term_lines_empty, 1, term_height);</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 : }</span>
+<a name="247"><span class="lineNum">     247 </span>            : </a>
+<span class="lineNum">     248 </span>            : /* Beep */
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 : void term_beep(void)</span></a>
+<span class="lineNum">     250 </span>            : {
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :         terminfo_beep(current_term);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 : }</span>
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<span class="lineNum">     254 </span>            : /* Create a new window in terminal */
+<span class="lineNum">     255 </span><span class="lineCov">          4 : TERM_WINDOW *term_window_create(int x, int y, int width, int height)</span>
+<span class="lineNum">     256 </span>            : {
+<a name="257"><span class="lineNum">     257 </span>            :         TERM_WINDOW *window;</a>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineCov">          4 :         window = g_new0(TERM_WINDOW, 1);</span>
+<span class="lineNum">     260 </span><span class="lineCov">          4 :         window-&gt;term = current_term;</span>
+<a name="261"><span class="lineNum">     261 </span><span class="lineCov">          4 :         window-&gt;x = x; window-&gt;y = y;</span></a>
+<span class="lineNum">     262 </span><span class="lineCov">          4 :         window-&gt;width = width; window-&gt;height = height;</span>
+<span class="lineNum">     263 </span><span class="lineCov">          4 :         return window;</span>
+<span class="lineNum">     264 </span>            : }
+<a name="265"><span class="lineNum">     265 </span>            : </a>
+<span class="lineNum">     266 </span>            : /* Destroy a terminal window */
+<span class="lineNum">     267 </span><span class="lineCov">          3 : void term_window_destroy(TERM_WINDOW *window)</span>
+<span class="lineNum">     268 </span>            : {
+<a name="269"><span class="lineNum">     269 </span><span class="lineCov">          3 :         g_free(window);</span></a>
+<span class="lineNum">     270 </span><span class="lineCov">          3 : }</span>
+<a name="271"><span class="lineNum">     271 </span>            : </a>
+<span class="lineNum">     272 </span>            : /* Move/resize a window */
+<a name="273"><span class="lineNum">     273 </span><span class="lineCov">          3 : void term_window_move(TERM_WINDOW *window, int x, int y,</span></a>
+<span class="lineNum">     274 </span>            :                       int width, int height)
+<span class="lineNum">     275 </span>            : {
+<span class="lineNum">     276 </span><span class="lineCov">          3 :         window-&gt;x = x;</span>
+<a name="277"><span class="lineNum">     277 </span><span class="lineCov">          3 :         window-&gt;y = y;</span></a>
+<span class="lineNum">     278 </span><span class="lineCov">          3 :         window-&gt;width = width;</span>
+<span class="lineNum">     279 </span><span class="lineCov">          3 :         window-&gt;height = height;</span>
+<span class="lineNum">     280 </span><span class="lineCov">          3 : }</span>
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<span class="lineNum">     282 </span>            : /* Clear window */
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 : void term_window_clear(TERM_WINDOW *window)</span>
+<span class="lineNum">     284 </span>            : {
+<a name="285"><span class="lineNum">     285 </span>            :         int y;</a>
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :         terminfo_set_normal();</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :         if (window-&gt;y == 0 &amp;&amp; window-&gt;height == term_height) {</span>
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :                 term_clear();</span></a>
+<span class="lineNum">     290 </span>            :         } else {
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                 for (y = 0; y &lt; window-&gt;height; y++) {</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                         term_move(window, 0, y);</span>
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :                         term_clrtoeol(window);</span></a>
+<span class="lineNum">     294 </span>            :                 }
+<span class="lineNum">     295 </span>            :         }
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 : }</span>
+<a name="297"><span class="lineNum">     297 </span>            : </a>
+<span class="lineNum">     298 </span>            : /* Scroll window up/down */
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 : void term_window_scroll(TERM_WINDOW *window, int count)</span>
+<span class="lineNum">     300 </span>            : {
+<a name="301"><span class="lineNum">     301 </span>            :         int y;</a>
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         terminfo_scroll(window-&gt;y, window-&gt;y+window-&gt;height-1, count);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :         term_move_reset(vcx, vcy);</span>
+<a name="305"><span class="lineNum">     305 </span>            : </a>
+<span class="lineNum">     306 </span>            :         /* set the newly scrolled area dirty */
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :         for (y = 0; (window-&gt;y+y) &lt; term_height &amp;&amp; y &lt; window-&gt;height; y++)</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                 term_lines_empty[window-&gt;y+y] = FALSE;</span>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 : inline static int term_putchar(int c)</span>
+<span class="lineNum">     312 </span>            : {
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :         return fputc(c, current_term-&gt;out);</span></a>
+<span class="lineNum">     314 </span>            : }
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span>            : /* copied from terminfo-core.c */
+<a name="317"><span class="lineNum">     317 </span>            : int tputs();</a>
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 : static int termctl_set_color_24bit(int bg, unsigned int lc)</span>
+<span class="lineNum">     320 </span>            : {
+<a name="321"><span class="lineNum">     321 </span>            :         static char buf[20];</a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :         const unsigned char color[] = { lc &gt;&gt; 16, lc &gt;&gt; 8, lc };</span>
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :         if (!term_use_colors24) {</span>
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :                 if (bg)</span></a>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                         terminfo_set_bg(color_24bit_256(color));</span>
+<span class="lineNum">     327 </span>            :                 else
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :                         terminfo_set_fg(color_24bit_256(color));</span>
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :                 return -1;</span></a>
+<span class="lineNum">     330 </span>            :         }
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span>            :         /* \e[x8;2;...;...;...m */
+<a name="333"><span class="lineNum">     333 </span><span class="lineNoCov">          0 :         sprintf(buf, &quot;\033[%d8;2;%d;%d;%dm&quot;, bg ? 4 : 3, color[0], color[1], color[2]);</span></a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :         return tputs(buf, 0, term_putchar);</span>
+<span class="lineNum">     335 </span>            : }
+<span class="lineNum">     336 </span>            : 
+<a name="337"><span class="lineNum">     337 </span>            : #define COLOR_RESET UINT_MAX</a>
+<span class="lineNum">     338 </span>            : #define COLOR_BLACK24 COLOR_RESET - 1
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span>            : /* Change active color */
+<a name="341"><span class="lineNum">     341 </span>            : #ifdef TERM_TRUECOLOR</a>
+<a name="342"><span class="lineNum">     342 </span>            : void term_set_color2(TERM_WINDOW *window, int col, unsigned int fgcol24, unsigned int bgcol24)</a>
+<span class="lineNum">     343 </span>            : #else
+<span class="lineNum">     344 </span><span class="lineCov">        157 : void term_set_color(TERM_WINDOW *window, int col)</span>
+<a name="345"><span class="lineNum">     345 </span>            : #endif</a>
+<span class="lineNum">     346 </span>            : {
+<span class="lineNum">     347 </span>            :         int set_normal;
+<span class="lineNum">     348 </span>            : 
+<a name="349"><span class="lineNum">     349 </span>            :         unsigned int fg, bg;</a>
+<span class="lineNum">     350 </span>            : #ifdef TERM_TRUECOLOR
+<span class="lineNum">     351 </span>            :         if (col &amp; ATTR_FGCOLOR24) {
+<span class="lineNum">     352 </span>            :                 if (fgcol24)
+<a name="353"><span class="lineNum">     353 </span>            :                         fg = fgcol24 &lt;&lt; 8;</a>
+<span class="lineNum">     354 </span>            :                 else
+<span class="lineNum">     355 </span>            :                         fg = COLOR_BLACK24;
+<span class="lineNum">     356 </span>            :         } else
+<a name="357"><span class="lineNum">     357 </span>            : #endif</a>
+<span class="lineNum">     358 </span><span class="lineCov">        157 :                 fg = (col &amp; FG_MASK);</span>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span>            : #ifdef TERM_TRUECOLOR
+<a name="361"><span class="lineNum">     361 </span>            :         if (col &amp; ATTR_BGCOLOR24) {</a>
+<span class="lineNum">     362 </span>            :                 if (bgcol24)
+<span class="lineNum">     363 </span>            :                         bg = bgcol24 &lt;&lt; 8;
+<span class="lineNum">     364 </span>            :                 else
+<a name="365"><span class="lineNum">     365 </span>            :                         bg = COLOR_BLACK24;</a>
+<span class="lineNum">     366 </span>            :         } else
+<span class="lineNum">     367 </span>            : #endif
+<span class="lineNum">     368 </span><span class="lineCov">        157 :                 bg = ((col &amp; BG_MASK) &gt;&gt; BG_SHIFT);</span>
+<a name="369"><span class="lineNum">     369 </span>            : </a>
+<span class="lineNum">     370 </span><span class="lineCov">        157 :         if (!term_use_colors &amp;&amp; bg &gt; 0)</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 col |= ATTR_REVERSE;</span>
+<span class="lineNum">     372 </span>            : 
+<a name="373"><span class="lineNum">     373 </span><span class="lineCov">        314 :         set_normal = ((col &amp; ATTR_RESETFG) &amp;&amp; last_fg != COLOR_RESET) ||</span></a>
+<span class="lineNum">     374 </span><span class="lineCov">        242 :                 ((col &amp; ATTR_RESETBG) &amp;&amp; last_bg != COLOR_RESET);</span>
+<span class="lineNum">     375 </span><span class="lineCov">        309 :         if (((last_attrs &amp; ATTR_BOLD) &amp;&amp; (col &amp; ATTR_BOLD) == 0) ||</span>
+<span class="lineNum">     376 </span><span class="lineCov">        304 :             ((last_attrs &amp; ATTR_REVERSE) &amp;&amp; (col &amp; ATTR_REVERSE) == 0) ||</span>
+<a name="377"><span class="lineNum">     377 </span><span class="lineCov">        152 :             ((last_attrs &amp; ATTR_BLINK) &amp;&amp; (col &amp; ATTR_BLINK) == 0)) {</span></a>
+<span class="lineNum">     378 </span>            :                 /* we'll need to get rid of bold/blink/reverse - this
+<span class="lineNum">     379 </span>            :                    can only be done with setting the default color */
+<span class="lineNum">     380 </span><span class="lineCov">          5 :                 set_normal = TRUE;</span>
+<a name="381"><span class="lineNum">     381 </span>            :         }</a>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span><span class="lineCov">        157 :         if (set_normal) {</span>
+<span class="lineNum">     384 </span><span class="lineCov">         25 :                 last_fg = last_bg = COLOR_RESET;</span>
+<a name="385"><span class="lineNum">     385 </span><span class="lineCov">         25 :                 last_attrs = 0;</span></a>
+<span class="lineNum">     386 </span><span class="lineCov">         25 :                 terminfo_set_normal();</span>
+<span class="lineNum">     387 </span>            :         }
+<span class="lineNum">     388 </span>            : 
+<a name="389"><span class="lineNum">     389 </span>            :         /* set foreground color */</a>
+<span class="lineNum">     390 </span><span class="lineCov">        157 :         if (fg != last_fg &amp;&amp;</span>
+<span class="lineNum">     391 </span><span class="lineCov">        106 :             (fg != 0 || (col &amp; ATTR_RESETFG) == 0)) {</span>
+<span class="lineNum">     392 </span><span class="lineCov">         42 :                 if (term_use_colors) {</span>
+<a name="393"><span class="lineNum">     393 </span><span class="lineCov">         42 :                         last_fg = fg;</span></a>
+<span class="lineNum">     394 </span><span class="lineCov">         42 :                         if (fg &gt;&gt; 8)</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :                                 termctl_set_color_24bit(0,</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :                                                         last_fg == COLOR_BLACK24 ? 0</span>
+<a name="397"><span class="lineNum">     397 </span><span class="lineNoCov">          0 :                                                         : last_fg &gt;&gt; 8);</span></a>
+<span class="lineNum">     398 </span>            :                         else
+<span class="lineNum">     399 </span><span class="lineCov">         42 :                                 terminfo_set_fg(last_fg);</span>
+<span class="lineNum">     400 </span>            :                 }
+<a name="401"><span class="lineNum">     401 </span>            :         }</a>
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span>            :         /* set background color */
+<span class="lineNum">     404 </span><span class="lineCov">        292 :         if (window &amp;&amp; window-&gt;term-&gt;TI_colors &amp;&amp;</span>
+<a name="405"><span class="lineNum">     405 </span><span class="lineCov">        135 :             (term_color256map[bg&amp;0xff]&amp;8) == window-&gt;term-&gt;TI_colors)</span></a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :                 col |= ATTR_BLINK;</span>
+<span class="lineNum">     407 </span><span class="lineCov">        157 :         if (col &amp; ATTR_BLINK)</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :                 current_term-&gt;set_blink(current_term);</span>
+<a name="409"><span class="lineNum">     409 </span>            : </a>
+<span class="lineNum">     410 </span><span class="lineCov">        157 :         if (bg != last_bg &amp;&amp;</span>
+<span class="lineNum">     411 </span><span class="lineCov">        125 :             (bg != 0 || (col &amp; ATTR_RESETBG) == 0)) {</span>
+<span class="lineNum">     412 </span><span class="lineCov">          3 :                 if (term_use_colors) {</span>
+<a name="413"><span class="lineNum">     413 </span><span class="lineCov">          3 :                         last_bg = bg;</span></a>
+<span class="lineNum">     414 </span><span class="lineCov">          3 :                         if (bg &gt;&gt; 8)</span>
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :                                 termctl_set_color_24bit(1,</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :                                                         last_bg == COLOR_BLACK24 ? 0</span>
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 :                                                         : last_bg &gt;&gt; 8);</span></a>
+<span class="lineNum">     418 </span>            :                         else
+<span class="lineNum">     419 </span><span class="lineCov">          3 :                                 terminfo_set_bg(last_bg);</span>
+<span class="lineNum">     420 </span>            :                 }
+<a name="421"><span class="lineNum">     421 </span>            :         }</a>
+<span class="lineNum">     422 </span>            : 
+<span class="lineNum">     423 </span>            :         /* reversed text */
+<span class="lineNum">     424 </span><span class="lineCov">        157 :         if (col &amp; ATTR_REVERSE)</span>
+<a name="425"><span class="lineNum">     425 </span><span class="lineNoCov">          0 :                 terminfo_set_reverse();</span></a>
+<span class="lineNum">     426 </span>            : 
+<span class="lineNum">     427 </span>            :         /* bold */
+<span class="lineNum">     428 </span><span class="lineCov">        292 :         if (window &amp;&amp; window-&gt;term-&gt;TI_colors &amp;&amp;</span>
+<a name="429"><span class="lineNum">     429 </span><span class="lineCov">        135 :             (term_color256map[fg&amp;0xff]&amp;8) == window-&gt;term-&gt;TI_colors)</span></a>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :                 col |= ATTR_BOLD;</span>
+<span class="lineNum">     431 </span><span class="lineCov">        157 :         if (col &amp; ATTR_BOLD)</span>
+<span class="lineNum">     432 </span><span class="lineCov">          5 :                 terminfo_set_bold();</span>
+<a name="433"><span class="lineNum">     433 </span>            : </a>
+<span class="lineNum">     434 </span>            :         /* underline */
+<span class="lineNum">     435 </span><span class="lineCov">        157 :         if (col &amp; ATTR_UNDERLINE) {</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                 if ((last_attrs &amp; ATTR_UNDERLINE) == 0)</span>
+<a name="437"><span class="lineNum">     437 </span><span class="lineNoCov">          0 :                         terminfo_set_uline(TRUE);</span></a>
+<span class="lineNum">     438 </span><span class="lineCov">        157 :         } else if (last_attrs &amp; ATTR_UNDERLINE)</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :                 terminfo_set_uline(FALSE);</span>
+<span class="lineNum">     440 </span>            : 
+<a name="441"><span class="lineNum">     441 </span>            :         /* italic */</a>
+<span class="lineNum">     442 </span><span class="lineCov">        157 :         if (col &amp; ATTR_ITALIC) {</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                 if ((last_attrs &amp; ATTR_ITALIC) == 0)</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                         terminfo_set_italic(TRUE);</span>
+<a name="445"><span class="lineNum">     445 </span><span class="lineCov">        157 :         } else if (last_attrs &amp; ATTR_ITALIC)</span></a>
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :                 terminfo_set_italic(FALSE);</span>
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span>            :         /* update the new attribute settings whilst ignoring color values.  */
+<a name="449"><span class="lineNum">     449 </span><span class="lineCov">        157 :         last_attrs = col &amp; ~( BG_MASK | FG_MASK );</span></a>
+<a name="450"><span class="lineNum">     450 </span><span class="lineCov">        157 : }</span></a>
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span><span class="lineCov">        150 : void term_move(TERM_WINDOW *window, int x, int y)</span>
+<a name="453"><span class="lineNum">     453 </span>            : {</a>
+<span class="lineNum">     454 </span><span class="lineCov">        150 :         if (x &gt;= 0 &amp;&amp; y &gt;= 0) {</span>
+<span class="lineNum">     455 </span><span class="lineCov">        150 :         vcmove = TRUE;</span>
+<span class="lineNum">     456 </span><span class="lineCov">        150 :         vcx = x+window-&gt;x;</span>
+<a name="457"><span class="lineNum">     457 </span><span class="lineCov">        150 :         vcy = y+window-&gt;y;</span></a>
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span><span class="lineCov">        150 :         if (vcx &gt;= term_width)</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 vcx = term_width-1;</span>
+<a name="461"><span class="lineNum">     461 </span><span class="lineCov">        150 :         if (vcy &gt;= term_height)</span></a>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :                 vcy = term_height-1;</span>
+<span class="lineNum">     463 </span>            :         }
+<a name="464"><span class="lineNum">     464 </span><span class="lineCov">        150 : }</span></a>
+<a name="465"><span class="lineNum">     465 </span>            : </a>
+<span class="lineNum">     466 </span><span class="lineCov">       1120 : static void term_printed_text(int count)</span>
+<span class="lineNum">     467 </span>            : {
+<span class="lineNum">     468 </span><span class="lineCov">       1120 :         term_lines_empty[vcy] = FALSE;</span>
+<a name="469"><span class="lineNum">     469 </span>            : </a>
+<span class="lineNum">     470 </span>            :         /* if we continued writing past the line, wrap to next line.
+<span class="lineNum">     471 </span>            :            However, next term_move() really shouldn't try to cache
+<span class="lineNum">     472 </span>            :            the move, otherwise terminals would try to combine the
+<a name="473"><span class="lineNum">     473 </span>            :            last word in upper line with first word in lower line. */</a>
+<span class="lineNum">     474 </span><span class="lineCov">       1120 :         vcx += count;</span>
+<span class="lineNum">     475 </span><span class="lineCov">       2243 :         while (vcx &gt;= term_width) {</span>
+<span class="lineNum">     476 </span><span class="lineCov">          3 :                 vcx -= term_width;</span>
+<a name="477"><span class="lineNum">     477 </span><span class="lineCov">          3 :                 if (vcy &lt; term_height-1) vcy++;</span></a>
+<span class="lineNum">     478 </span><span class="lineCov">          3 :                 if (vcx &gt; 0) term_lines_empty[vcy] = FALSE;</span>
+<span class="lineNum">     479 </span>            :         }
+<span class="lineNum">     480 </span>            : 
+<a name="481"><span class="lineNum">     481 </span><span class="lineCov">       1120 :         crealx += count;</span></a>
+<span class="lineNum">     482 </span><span class="lineCov">       1120 :         if (crealx &gt;= term_width)</span>
+<span class="lineNum">     483 </span><span class="lineCov">          3 :                 cforcemove = TRUE;</span>
+<a name="484"><span class="lineNum">     484 </span><span class="lineCov">       1120 : }</span></a>
+<a name="485"><span class="lineNum">     485 </span>            : </a>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 : void term_addch(TERM_WINDOW *window, char chr)</span>
+<span class="lineNum">     487 </span>            : {
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :         if (vcmove) term_move_real();</span>
+<a name="489"><span class="lineNum">     489 </span>            : </a>
+<span class="lineNum">     490 </span>            :         /* With UTF-8, move cursor only if this char is either
+<span class="lineNum">     491 </span>            :            single-byte (8. bit off) or beginning of multibyte
+<span class="lineNum">     492 </span>            :            (7. bit off) */
+<a name="493"><span class="lineNum">     493 </span><span class="lineNoCov">          0 :         if (term_type != TERM_TYPE_UTF8 ||</span></a>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :             (chr &amp; 0x80) == 0 || (chr &amp; 0x40) == 0) {</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :                 term_printed_text(1);</span>
+<span class="lineNum">     496 </span>            :         }
+<a name="497"><span class="lineNum">     497 </span>            : </a>
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :         putc(chr, window-&gt;term-&gt;out);</span>
+<a name="499"><span class="lineNum">     499 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     500 </span>            : 
+<a name="501"><span class="lineNum">     501 </span><span class="lineCov">       1083 : static void term_addch_utf8(TERM_WINDOW *window, unichar chr)</span></a>
+<span class="lineNum">     502 </span>            : {
+<span class="lineNum">     503 </span>            :         char buf[10];
+<span class="lineNum">     504 </span>            :         int i, len;
+<a name="505"><span class="lineNum">     505 </span>            : </a>
+<span class="lineNum">     506 </span><span class="lineCov">       1083 :         len = g_unichar_to_utf8(chr, buf);</span>
+<span class="lineNum">     507 </span><span class="lineCov">       2166 :         for (i = 0;  i &lt; len; i++)</span>
+<span class="lineNum">     508 </span><span class="lineCov">       1083 :                 putc(buf[i], window-&gt;term-&gt;out);</span>
+<a name="509"><span class="lineNum">     509 </span><span class="lineCov">       1083 : }</span></a>
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineCov">       1083 : void term_add_unichar(TERM_WINDOW *window, unichar chr)</span>
+<span class="lineNum">     512 </span>            : {
+<a name="513"><span class="lineNum">     513 </span><span class="lineCov">       1083 :         if (vcmove) term_move_real();</span></a>
+<span class="lineNum">     514 </span>            : 
+<span class="lineNum">     515 </span><span class="lineCov">       1083 :         switch (term_type) {</span>
+<span class="lineNum">     516 </span><span class="lineCov">       1083 :         case TERM_TYPE_UTF8:</span>
+<a name="517"><span class="lineNum">     517 </span><span class="lineCov">       1083 :                 term_printed_text(unichar_isprint(chr) ? mk_wcwidth(chr) : 1);</span></a>
+<span class="lineNum">     518 </span><span class="lineCov">       1083 :                 term_addch_utf8(window, chr);</span>
+<span class="lineNum">     519 </span><span class="lineCov">       1083 :                 break;</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :         case TERM_TYPE_BIG5:</span>
+<a name="521"><span class="lineNum">     521 </span><span class="lineNoCov">          0 :                 if (chr &gt; 0xff) {</span></a>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :                         term_printed_text(2);</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :                         putc((chr &gt;&gt; 8) &amp; 0xff, window-&gt;term-&gt;out);</span>
+<span class="lineNum">     524 </span>            :                 } else {
+<a name="525"><span class="lineNum">     525 </span><span class="lineNoCov">          0 :                         term_printed_text(1);</span></a>
+<span class="lineNum">     526 </span>            :                 }
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :                 putc((chr &amp; 0xff), window-&gt;term-&gt;out);</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :                 break;</span>
+<a name="529"><span class="lineNum">     529 </span><span class="lineNoCov">          0 :         default:</span></a>
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :                 term_printed_text(1);</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :                 putc(chr, window-&gt;term-&gt;out);</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :                 break;</span>
+<a name="533"><span class="lineNum">     533 </span>            :         }</a>
+<a name="534"><span class="lineNum">     534 </span><span class="lineCov">       1083 : }</span></a>
+<span class="lineNum">     535 </span>            : 
+<span class="lineNum">     536 </span><span class="lineCov">         37 : int term_addstr(TERM_WINDOW *window, const char *str)</span>
+<a name="537"><span class="lineNum">     537 </span>            : {</a>
+<span class="lineNum">     538 </span>            :         int len, raw_len;
+<span class="lineNum">     539 </span>            :         unichar tmp;
+<span class="lineNum">     540 </span>            :         const char *ptr;
+<a name="541"><span class="lineNum">     541 </span>            : </a>
+<span class="lineNum">     542 </span><span class="lineCov">         37 :         if (vcmove) term_move_real();</span>
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span><span class="lineCov">         37 :         len = 0;</span>
+<a name="545"><span class="lineNum">     545 </span><span class="lineCov">         37 :         raw_len = strlen(str);</span></a>
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span>            :         /* The string length depends on the terminal encoding */
+<span class="lineNum">     548 </span>            : 
+<a name="549"><span class="lineNum">     549 </span><span class="lineCov">         37 :         ptr = str;</span></a>
+<span class="lineNum">     550 </span>            : 
+<span class="lineNum">     551 </span><span class="lineCov">         37 :         if (term_type == TERM_TYPE_UTF8) {</span>
+<span class="lineNum">     552 </span><span class="lineCov">        306 :                 while (*ptr != '\0') {</span>
+<a name="553"><span class="lineNum">     553 </span><span class="lineCov">        232 :                         tmp = g_utf8_get_char_validated(ptr, -1);</span></a>
+<span class="lineNum">     554 </span>            :                         /* On utf8 error, treat as single byte and try to
+<span class="lineNum">     555 </span>            :                            continue interpretting rest of string as utf8 */
+<span class="lineNum">     556 </span><span class="lineCov">        232 :                         if (tmp == (gunichar)-1 || tmp == (gunichar)-2) {</span>
+<a name="557"><span class="lineNum">     557 </span><span class="lineNoCov">          0 :                                 len++;</span></a>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :                                 ptr++;</span>
+<span class="lineNum">     559 </span>            :                         } else {
+<span class="lineNum">     560 </span><span class="lineCov">        232 :                                 len += unichar_isprint(tmp) ? mk_wcwidth(tmp) : 1;</span>
+<a name="561"><span class="lineNum">     561 </span><span class="lineCov">        232 :                                 ptr = g_utf8_next_char(ptr);</span></a>
+<span class="lineNum">     562 </span>            :                         }
+<span class="lineNum">     563 </span>            :                 }
+<span class="lineNum">     564 </span>            :         } else
+<a name="565"><span class="lineNum">     565 </span><span class="lineNoCov">          0 :                 len = raw_len;</span></a>
+<span class="lineNum">     566 </span>            : 
+<span class="lineNum">     567 </span><span class="lineCov">         37 :         term_printed_text(len);</span>
+<span class="lineNum">     568 </span>            : 
+<a name="569"><span class="lineNum">     569 </span>            :         /* Use strlen() here since we need the number of raw bytes */</a>
+<span class="lineNum">     570 </span><span class="lineCov">         37 :         fwrite(str, 1, raw_len, window-&gt;term-&gt;out);</span>
+<span class="lineNum">     571 </span>            : 
+<span class="lineNum">     572 </span><span class="lineCov">         37 :         return len;</span>
+<a name="573"><span class="lineNum">     573 </span>            : }</a>
+<span class="lineNum">     574 </span>            : 
+<span class="lineNum">     575 </span><span class="lineCov">         83 : void term_clrtoeol(TERM_WINDOW *window)</span>
+<span class="lineNum">     576 </span>            : {
+<a name="577"><span class="lineNum">     577 </span>            :         /* clrtoeol() doesn't necessarily understand colors */</a>
+<span class="lineNum">     578 </span><span class="lineCov">        161 :         if (last_fg == -1 &amp;&amp; last_bg == -1 &amp;&amp;</span>
+<span class="lineNum">     579 </span><span class="lineCov">         78 :             (last_attrs &amp; (ATTR_UNDERLINE|ATTR_REVERSE|ATTR_ITALIC)) == 0) {</span>
+<span class="lineNum">     580 </span><span class="lineCov">        156 :                 if (!term_lines_empty[vcy]) {</span>
+<a name="581"><span class="lineNum">     581 </span><span class="lineCov">         78 :                         if (vcmove) term_move_real();</span></a>
+<span class="lineNum">     582 </span><span class="lineCov">         78 :                         terminfo_clrtoeol();</span>
+<span class="lineNum">     583 </span><span class="lineCov">         78 :                         if (vcx == 0) term_lines_empty[vcy] = TRUE;</span>
+<span class="lineNum">     584 </span>            :                 }
+<a name="585"><span class="lineNum">     585 </span><span class="lineCov">          5 :         } else if (vcx &lt; term_width) {</span></a>
+<span class="lineNum">     586 </span>            :                 /* we'll need to fill the line ourself. */
+<span class="lineNum">     587 </span><span class="lineCov">          5 :                 if (vcmove) term_move_real();</span>
+<span class="lineNum">     588 </span><span class="lineCov">          5 :                 terminfo_repeat(' ', term_width-vcx);</span>
+<a name="589"><span class="lineNum">     589 </span><span class="lineCov">          5 :                 terminfo_move(vcx, vcy);</span></a>
+<span class="lineNum">     590 </span><span class="lineCov">          5 :                 term_lines_empty[vcy] = FALSE;</span>
+<span class="lineNum">     591 </span>            :         }
+<a name="592"><span class="lineNum">     592 </span><span class="lineCov">         83 : }</span></a>
+<a name="593"><span class="lineNum">     593 </span>            : </a>
+<span class="lineNum">     594 </span><span class="lineCov">         13 : void term_move_cursor(int x, int y)</span>
+<span class="lineNum">     595 </span>            : {
+<span class="lineNum">     596 </span><span class="lineCov">         13 :         curs_x = x;</span>
+<a name="597"><span class="lineNum">     597 </span><span class="lineCov">         13 :         curs_y = y;</span></a>
+<a name="598"><span class="lineNum">     598 </span><span class="lineCov">         13 : }</span></a>
+<span class="lineNum">     599 </span>            : 
+<span class="lineNum">     600 </span><span class="lineCov">         45 : void term_refresh(TERM_WINDOW *window)</span>
+<a name="601"><span class="lineNum">     601 </span>            : {</a>
+<span class="lineNum">     602 </span><span class="lineCov">         45 :         if (freeze_counter &gt; 0)</span>
+<span class="lineNum">     603 </span><span class="lineCov">          9 :                 return;</span>
+<span class="lineNum">     604 </span>            : 
+<a name="605"><span class="lineNum">     605 </span><span class="lineCov">         36 :         term_move(root_window, curs_x, curs_y);</span></a>
+<span class="lineNum">     606 </span><span class="lineCov">         36 :         term_move_real();</span>
+<span class="lineNum">     607 </span>            : 
+<span class="lineNum">     608 </span><span class="lineCov">         36 :         if (!curs_visible) {</span>
+<a name="609"><span class="lineNum">     609 </span><span class="lineCov">         10 :                 terminfo_set_cursor_visible(TRUE);</span></a>
+<span class="lineNum">     610 </span><span class="lineCov">         10 :                 curs_visible = TRUE;</span>
+<span class="lineNum">     611 </span>            :         }
+<span class="lineNum">     612 </span>            : 
+<a name="613"><span class="lineNum">     613 </span><span class="lineCov">         36 :         term_set_color(window, ATTR_RESET);</span></a>
+<span class="lineNum">     614 </span><span class="lineCov">         36 :         fflush(window != NULL ? window-&gt;term-&gt;out : current_term-&gt;out);</span>
+<a name="615"><span class="lineNum">     615 </span>            : }</a>
+<span class="lineNum">     616 </span>            : 
+<a name="617"><span class="lineNum">     617 </span><span class="lineCov">         12 : void term_refresh_freeze(void)</span></a>
+<span class="lineNum">     618 </span>            : {
+<span class="lineNum">     619 </span><span class="lineCov">         12 :         freeze_counter++;</span>
+<a name="620"><span class="lineNum">     620 </span><span class="lineCov">         12 : }</span></a>
+<a name="621"><span class="lineNum">     621 </span>            : </a>
+<span class="lineNum">     622 </span><span class="lineCov">         12 : void term_refresh_thaw(void)</span>
+<span class="lineNum">     623 </span>            : {
+<span class="lineNum">     624 </span><span class="lineCov">         12 :         if (--freeze_counter == 0)</span>
+<a name="625"><span class="lineNum">     625 </span><span class="lineCov">         12 :                 term_refresh(NULL);</span></a>
+<a name="626"><span class="lineNum">     626 </span><span class="lineCov">         12 : }</span></a>
+<span class="lineNum">     627 </span>            : 
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 : void term_stop(void)</span>
+<a name="629"><span class="lineNum">     629 </span>            : {</a>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :         terminfo_stop(current_term);</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">          0 :         kill(getpid(), SIGTSTP);</span>
+<span class="lineNum">     632 </span>            :         /* this call needs to stay here in case the TSTP was ignored,
+<a name="633"><span class="lineNum">     633 </span>            :            because then we never see a CONT to call the restoration</a>
+<span class="lineNum">     634 </span>            :            code. On the other hand we also cannot remove the CONT
+<span class="lineNum">     635 </span>            :            handler because then nothing would restore the screen when
+<span class="lineNum">     636 </span>            :            Irssi is killed with TSTP/STOP from external. */
+<a name="637"><span class="lineNum">     637 </span><span class="lineNoCov">          0 :         terminfo_cont(current_term);</span></a>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :         irssi_redraw();</span>
+<a name="639"><span class="lineNum">     639 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     640 </span>            : 
+<a name="641"><span class="lineNum">     641 </span><span class="lineCov">          8 : static int input_utf8(const unsigned char *buffer, int size, unichar *result)</span></a>
+<span class="lineNum">     642 </span>            : {
+<span class="lineNum">     643 </span><span class="lineCov">          8 :         unichar c = g_utf8_get_char_validated((char *)buffer, size);</span>
+<span class="lineNum">     644 </span>            : 
+<a name="645"><span class="lineNum">     645 </span><span class="lineCov">          8 :         switch (c) {</span></a>
+<span class="lineNum">     646 </span><span class="lineNoCov">          0 :         case (unichar)-1:</span>
+<span class="lineNum">     647 </span>            :                 /* not UTF8 - fallback to 8bit ascii */
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :                 *result = *buffer;</span>
+<a name="649"><span class="lineNum">     649 </span><span class="lineNoCov">          0 :                 return 1;</span></a>
+<span class="lineNum">     650 </span><span class="lineNoCov">          0 :         case (unichar)-2:</span>
+<span class="lineNum">     651 </span>            :                 /* need more data */
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :                 return -1;</span>
+<a name="653"><span class="lineNum">     653 </span><span class="lineCov">          8 :         default:</span></a>
+<span class="lineNum">     654 </span><span class="lineCov">          8 :                 *result = c;</span>
+<span class="lineNum">     655 </span><span class="lineCov">          8 :                 return g_utf8_skip[*buffer];</span>
+<span class="lineNum">     656 </span>            :         }
+<a name="657"><span class="lineNum">     657 </span>            : }</a>
+<span class="lineNum">     658 </span>            : 
+<span class="lineNum">     659 </span><span class="lineNoCov">          0 : static int input_big5(const unsigned char *buffer, int size, unichar *result)</span>
+<span class="lineNum">     660 </span>            : {
+<a name="661"><span class="lineNum">     661 </span><span class="lineNoCov">          0 :         if (is_big5_hi(*buffer)) {</span></a>
+<span class="lineNum">     662 </span>            :                 /* could be */
+<span class="lineNum">     663 </span><span class="lineNoCov">          0 :                 if (size == 1)</span>
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 :                         return -1;</span>
+<a name="665"><span class="lineNum">     665 </span>            : </a>
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :                 if (is_big5_los(buffer[1]) || is_big5_lox(buffer[1])) {</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :                         *result = buffer[1] + ((int) *buffer &lt;&lt; 8);</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :                         return 2;</span>
+<a name="669"><span class="lineNum">     669 </span>            :                 }</a>
+<span class="lineNum">     670 </span>            :         }
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :         *result = *buffer;</span>
+<a name="673"><span class="lineNum">     673 </span><span class="lineNoCov">          0 :         return 1;</span></a>
+<a name="674"><span class="lineNum">     674 </span>            : }</a>
+<span class="lineNum">     675 </span>            : 
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 : static int input_8bit(const unsigned char *buffer, int size, unichar *result)</span>
+<a name="677"><span class="lineNum">     677 </span>            : {</a>
+<span class="lineNum">     678 </span><span class="lineNoCov">          0 :         *result = *buffer;</span>
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 :         return 1;</span>
+<a name="680"><span class="lineNum">     680 </span>            : }</a>
+<a name="681"><span class="lineNum">     681 </span>            : </a>
+<span class="lineNum">     682 </span><span class="lineCov">          3 : void term_set_input_type(int type)</span>
+<span class="lineNum">     683 </span>            : {
+<span class="lineNum">     684 </span><span class="lineCov">          3 :         switch (type) {</span>
+<a name="685"><span class="lineNum">     685 </span><span class="lineCov">          2 :         case TERM_TYPE_UTF8:</span></a>
+<span class="lineNum">     686 </span><span class="lineCov">          2 :                 input_func = input_utf8;</span>
+<span class="lineNum">     687 </span><span class="lineCov">          2 :                 break;</span>
+<span class="lineNum">     688 </span><span class="lineNoCov">          0 :         case TERM_TYPE_BIG5:</span>
+<a name="689"><span class="lineNum">     689 </span><span class="lineNoCov">          0 :                 input_func = input_big5;</span></a>
+<span class="lineNum">     690 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">     691 </span><span class="lineCov">          1 :         default:</span>
+<span class="lineNum">     692 </span><span class="lineCov">          1 :                 input_func = input_8bit;</span>
+<a name="693"><span class="lineNum">     693 </span>            :         }</a>
+<a name="694"><span class="lineNum">     694 </span><span class="lineCov">          3 : }</span></a>
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span><span class="lineCov">          8 : void term_gets(GArray *buffer, int *line_count)</span>
+<a name="697"><span class="lineNum">     697 </span>            : {</a>
+<span class="lineNum">     698 </span>            :         int ret, i, char_len;
+<span class="lineNum">     699 </span>            : 
+<span class="lineNum">     700 </span>            :         /* fread() doesn't work */
+<a name="701"><span class="lineNum">     701 </span>            : </a>
+<span class="lineNum">     702 </span><span class="lineCov">          8 :         ret = read(fileno(current_term-&gt;in),</span>
+<span class="lineNum">     703 </span>            :                    term_inbuf + term_inbuf_pos, sizeof(term_inbuf)-term_inbuf_pos);
+<span class="lineNum">     704 </span><span class="lineCov">          8 :         if (ret == 0) {</span>
+<a name="705"><span class="lineNum">     705 </span>            :                 /* EOF - terminal got lost */</a>
+<span class="lineNum">     706 </span><span class="lineNoCov">          0 :                 ret = -1;</span>
+<span class="lineNum">     707 </span><span class="lineCov">          8 :         } else if (ret == -1 &amp;&amp; (errno == EINTR || errno == EAGAIN))</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :                 ret = 0;</span>
+<a name="709"><span class="lineNum">     709 </span><span class="lineCov">          8 :         if (ret == -1)</span></a>
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;command quit&quot;, 1, &quot;Lost terminal&quot;);</span>
+<span class="lineNum">     711 </span>            : 
+<span class="lineNum">     712 </span><span class="lineCov">          8 :         if (ret &gt; 0) {</span>
+<a name="713"><span class="lineNum">     713 </span>            :                 /* convert input to unichars. */</a>
+<span class="lineNum">     714 </span><span class="lineCov">          8 :                 term_inbuf_pos += ret;</span>
+<span class="lineNum">     715 </span><span class="lineCov">         24 :                 for (i = 0; i &lt; term_inbuf_pos; ) {</span>
+<span class="lineNum">     716 </span>            :                         unichar key;
+<a name="717"><span class="lineNum">     717 </span><span class="lineCov">          8 :                         char_len = input_func(term_inbuf+i, term_inbuf_pos-i,</span></a>
+<span class="lineNum">     718 </span>            :                                               &amp;key);
+<span class="lineNum">     719 </span><span class="lineCov">          8 :                         if (char_len &lt; 0)</span>
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 :                                 break;</span>
+<a name="721"><span class="lineNum">     721 </span><span class="lineCov">          8 :                         g_array_append_val(buffer, key);</span></a>
+<span class="lineNum">     722 </span><span class="lineCov">          8 :                         if (key == '\r' || key == '\n')</span>
+<span class="lineNum">     723 </span><span class="lineCov">          2 :                                 (*line_count)++;</span>
+<span class="lineNum">     724 </span>            : 
+<a name="725"><span class="lineNum">     725 </span><span class="lineCov">          8 :                         i += char_len;</span></a>
+<span class="lineNum">     726 </span>            :                 }
+<span class="lineNum">     727 </span>            : 
+<span class="lineNum">     728 </span><span class="lineCov">          8 :                 if (i &gt;= term_inbuf_pos)</span>
+<a name="729"><span class="lineNum">     729 </span><span class="lineCov">          8 :                         term_inbuf_pos = 0;</span></a>
+<span class="lineNum">     730 </span><span class="lineNoCov">          0 :                 else if (i &gt; 0) {</span>
+<span class="lineNum">     731 </span><span class="lineNoCov">          0 :                         memmove(term_inbuf, term_inbuf+i, term_inbuf_pos-i);</span>
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 :                         term_inbuf_pos -= i;</span>
+<a name="733"><span class="lineNum">     733 </span>            :                 }</a>
+<span class="lineNum">     734 </span>            :         }
+<span class="lineNum">     735 </span><span class="lineCov">          8 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

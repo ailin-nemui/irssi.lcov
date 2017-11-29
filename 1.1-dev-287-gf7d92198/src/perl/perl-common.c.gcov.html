@@ -1,0 +1,796 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/perl/perl-common.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/perl</a> - perl-common.c<span style="font-size: 80%;"> (source / <a href="perl-common.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">87</td>
+            <td class="headerCovTableEntry">363</td>
+            <td class="headerCovTableEntryLo">24.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntry">36</td>
+            <td class="headerCovTableEntryLo">22.2 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  perl-common.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #define NEED_PERL_H</a>
+<span class="lineNum">      22 </span>            : #define PERL_NO_GET_CONTEXT
+<span class="lineNum">      23 </span>            : #include &quot;module.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;modules.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;signals.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;core.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;misc.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;settings.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<span class="lineNum">      30 </span>            : #include &quot;commands.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;ignore.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;log.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;rawlog.h&quot;</a>
+<span class="lineNum">      34 </span>            : #include &quot;servers-reconnect.h&quot;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : #include &quot;window-item-def.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : #include &quot;chat-protocols.h&quot;</a>
+<span class="lineNum">      38 </span>            : #include &quot;chatnets.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;channels.h&quot;
+<a name="41"><span class="lineNum">      41 </span>            : #include &quot;queries.h&quot;</a>
+<span class="lineNum">      42 </span>            : #include &quot;nicklist.h&quot;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : #include &quot;perl-core.h&quot;
+<a name="45"><span class="lineNum">      45 </span>            : #include &quot;perl-common.h&quot;</a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : typedef struct {
+<span class="lineNum">      48 </span>            :         char *stash;
+<a name="49"><span class="lineNum">      49 </span>            :         PERL_OBJECT_FUNC fill_func;</a>
+<span class="lineNum">      50 </span>            : } PERL_OBJECT_REC;
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : static GHashTable *iobject_stashes, *plain_stashes;
+<a name="53"><span class="lineNum">      53 </span>            : static GSList *use_protocols;</a>
+<a name="54"><span class="lineNum">      54 </span>            : </a>
+<span class="lineNum">      55 </span>            : /* returns the package who called us */
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 : const char *perl_get_package(void)</span>
+<a name="57"><span class="lineNum">      57 </span>            : {</a>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :         return SvPV_nolen(perl_eval_pv(&quot;caller&quot;, TRUE));</span>
+<span class="lineNum">      59 </span>            : }
+<a name="60"><span class="lineNum">      60 </span>            : </a>
+<a name="61"><span class="lineNum">      61 </span>            : /* Parses the package part from function name */</a>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 : char *perl_function_get_package(const char *function)</span>
+<span class="lineNum">      63 </span>            : {
+<span class="lineNum">      64 </span>            :         const char *p;
+<a name="65"><span class="lineNum">      65 </span>            :         int pos;</a>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :         pos = 0;</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :         for (p = function; *p != '\0'; p++) {</span>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :                 if (*p == ':' &amp;&amp; p[1] == ':') {</span></a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :                         if (++pos == 3)</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                                 return g_strndup(function, (int) (p-function));</span>
+<span class="lineNum">      72 </span>            :                 }
+<a name="73"><span class="lineNum">      73 </span>            :         }</a>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="76"><span class="lineNum">      76 </span>            : }</a>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 : SV *perl_func_sv_inc(SV *func, const char *package)</span>
+<span class="lineNum">      79 </span>            : {
+<span class="lineNum">      80 </span>            :         char *name;
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         if (SvPOK(func)) {</span>
+<span class="lineNum">      83 </span>            :                 /* prefix with package name */
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :                 name = g_strdup_printf(&quot;%s::%s&quot;, package,</span>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :                                        SvPV_nolen(func));</span></a>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :                 func = new_pv(name);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 g_free(name);</span>
+<span class="lineNum">      88 </span>            :         } else {
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :                 SvREFCNT_inc(func);</span></a>
+<span class="lineNum">      90 </span>            :         }
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         return func;</span>
+<a name="93"><span class="lineNum">      93 </span>            : }</a>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 : static int magic_free_object(pTHX_ SV *sv, MAGIC *mg)</span>
+<span class="lineNum">      96 </span>            : {
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :         sv_setiv(sv, 0);</span></a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         return 0;</span>
+<span class="lineNum">      99 </span>            : }
+<span class="lineNum">     100 </span>            : 
+<a name="101"><span class="lineNum">     101 </span>            : static MGVTBL vtbl_free_object =</a>
+<span class="lineNum">     102 </span>            : {
+<span class="lineNum">     103 </span>            :     NULL, NULL, NULL, NULL, magic_free_object
+<a name="104"><span class="lineNum">     104 </span>            : };</a>
+<a name="105"><span class="lineNum">     105 </span>            : </a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 : static SV *create_sv_ptr(void *object)</span>
+<span class="lineNum">     107 </span>            : {
+<span class="lineNum">     108 </span>            :         SV *sv;
+<a name="109"><span class="lineNum">     109 </span>            : </a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :         sv = newSViv((IV)object);</span>
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :         sv_magic(sv, NULL, '~', NULL, 0);</span>
+<a name="113"><span class="lineNum">     113 </span>            : </a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :         SvMAGIC(sv)-&gt;mg_private = 0x1551; /* HF */</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :         SvMAGIC(sv)-&gt;mg_virtual = &amp;vtbl_free_object;</span>
+<span class="lineNum">     116 </span>            : 
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :         return sv;</span></a>
+<a name="118"><span class="lineNum">     118 </span>            : }</a>
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 : SV *irssi_bless_iobject(int type, int chat_type, void *object)</span>
+<a name="121"><span class="lineNum">     121 </span>            : {</a>
+<span class="lineNum">     122 </span>            :         PERL_OBJECT_REC *rec;
+<span class="lineNum">     123 </span>            :         HV *stash, *hv;
+<span class="lineNum">     124 </span>            : 
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :         g_return_val_if_fail((type &amp; ~0xffff) == 0, NULL);</span></a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :         g_return_val_if_fail((chat_type &amp; ~0xffff) == 0, NULL);</span>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :         rec = g_hash_table_lookup(iobject_stashes,</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :                                   GINT_TO_POINTER(type | (chat_type &lt;&lt; 16)));</span></a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :         if (rec == NULL) {</span>
+<span class="lineNum">     131 </span>            :                 /* unknown iobject */
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :                 return create_sv_ptr(object);</span>
+<a name="133"><span class="lineNum">     133 </span>            :         }</a>
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :         stash = gv_stashpv(rec-&gt;stash, 1);</span>
+<span class="lineNum">     136 </span>            : 
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :         hv = newHV();</span></a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;_irssi&quot;, 6, create_sv_ptr(object), 0);</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :         rec-&gt;fill_func(hv, object);</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :         return sv_bless(newRV_noinc((SV*)hv), stash);</span>
+<a name="141"><span class="lineNum">     141 </span>            : }</a>
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 : SV *irssi_bless_plain(const char *stash, void *object)</span>
+<span class="lineNum">     144 </span>            : {
+<a name="145"><span class="lineNum">     145 </span>            :         PERL_OBJECT_FUNC fill_func;</a>
+<span class="lineNum">     146 </span>            :         HV *hv;
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :         fill_func = g_hash_table_lookup(plain_stashes, stash);</span>
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :         hv = newHV();</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;_irssi&quot;, 6, create_sv_ptr(object), 0);</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :         if (fill_func != NULL)</span>
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">          0 :                 fill_func(hv, object);</span></a>
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :         return sv_bless(newRV_noinc((SV*)hv), gv_stashpv((char *)stash, 1));</span>
+<a name="155"><span class="lineNum">     155 </span>            : }</a>
+<span class="lineNum">     156 </span>            : 
+<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 : int irssi_is_ref_object(SV *o)</span></a>
+<span class="lineNum">     158 </span>            : {
+<span class="lineNum">     159 </span>            :         SV **sv;
+<span class="lineNum">     160 </span>            :         HV *hv;
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         hv = hvref(o);</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         if (hv != NULL) {</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :                 sv = hv_fetch(hv, &quot;_irssi&quot;, 6, 0);</span>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 if (sv != NULL)</span></a>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :                         return TRUE;</span>
+<span class="lineNum">     167 </span>            :         }
+<span class="lineNum">     168 </span>            : 
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :         return FALSE;</span></a>
+<a name="170"><span class="lineNum">     170 </span>            : }</a>
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 : void *irssi_ref_object(SV *o)</span>
+<a name="173"><span class="lineNum">     173 </span>            : {</a>
+<span class="lineNum">     174 </span>            :         SV **sv;
+<span class="lineNum">     175 </span>            :         HV *hv;
+<span class="lineNum">     176 </span>            :         void *p;
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         hv = hvref(o);</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         if (hv == NULL)</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :                 return NULL;</span>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 :         sv = hv_fetch(hv, &quot;_irssi&quot;, 6, 0);</span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         if (sv == NULL)</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :                 croak(&quot;variable is damaged&quot;);</span>
+<a name="185"><span class="lineNum">     185 </span><span class="lineNoCov">          0 :         p = GINT_TO_POINTER(SvIV(*sv));</span></a>
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :         return p;</span>
+<a name="187"><span class="lineNum">     187 </span>            : }</a>
+<span class="lineNum">     188 </span>            : 
+<a name="189"><span class="lineNum">     189 </span><span class="lineCov">         12 : void irssi_add_object(int type, int chat_type, const char *stash,</span></a>
+<span class="lineNum">     190 </span>            :                       PERL_OBJECT_FUNC func)
+<span class="lineNum">     191 </span>            : {
+<span class="lineNum">     192 </span>            :         PERL_OBJECT_REC *rec;
+<a name="193"><span class="lineNum">     193 </span>            :         void *hash;</a>
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineCov">         12 :         g_return_if_fail((type &amp; ~0xffff) == 0);</span>
+<span class="lineNum">     196 </span><span class="lineCov">         12 :         g_return_if_fail((chat_type &amp; ~0xffff) == 0);</span>
+<a name="197"><span class="lineNum">     197 </span>            : </a>
+<span class="lineNum">     198 </span><span class="lineCov">         12 :         hash = GINT_TO_POINTER(type | (chat_type &lt;&lt; 16));</span>
+<span class="lineNum">     199 </span><span class="lineCov">         12 :         rec = g_hash_table_lookup(iobject_stashes, hash);</span>
+<span class="lineNum">     200 </span><span class="lineCov">         12 :         if (rec == NULL) {</span>
+<a name="201"><span class="lineNum">     201 </span><span class="lineCov">         12 :                 rec = g_new(PERL_OBJECT_REC, 1);</span></a>
+<span class="lineNum">     202 </span><span class="lineCov">         12 :                 rec-&gt;stash = g_strdup(stash);</span>
+<span class="lineNum">     203 </span><span class="lineCov">         12 :                 g_hash_table_insert(iobject_stashes, hash, rec);</span>
+<span class="lineNum">     204 </span>            :         }
+<a name="205"><span class="lineNum">     205 </span><span class="lineCov">         12 :         rec-&gt;fill_func = func;</span></a>
+<a name="206"><span class="lineNum">     206 </span>            : }</a>
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span><span class="lineCov">          7 : void irssi_add_plain(const char *stash, PERL_OBJECT_FUNC func)</span>
+<a name="209"><span class="lineNum">     209 </span>            : {</a>
+<span class="lineNum">     210 </span><span class="lineCov">          7 :         if (g_hash_table_lookup(plain_stashes, stash) == NULL)</span>
+<span class="lineNum">     211 </span><span class="lineCov">          7 :                 g_hash_table_insert(plain_stashes, g_strdup(stash), func);</span>
+<a name="212"><span class="lineNum">     212 </span><span class="lineCov">          7 : }</span></a>
+<a name="213"><span class="lineNum">     213 </span>            : </a>
+<span class="lineNum">     214 </span><span class="lineCov">          1 : void irssi_add_plains(PLAIN_OBJECT_INIT_REC *objects)</span>
+<span class="lineNum">     215 </span>            : {
+<span class="lineNum">     216 </span><span class="lineCov">          9 :         while (objects-&gt;name != NULL) {</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">          7 :                 irssi_add_plain(objects-&gt;name, objects-&gt;fill_func);</span></a>
+<span class="lineNum">     218 </span><span class="lineCov">          7 :                 objects++;</span>
+<span class="lineNum">     219 </span>            :         }
+<a name="220"><span class="lineNum">     220 </span><span class="lineCov">          1 : }</span></a>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<span class="lineNum">     222 </span><span class="lineCov">          1 : char *perl_get_use_list(void)</span>
+<span class="lineNum">     223 </span>            : {
+<span class="lineNum">     224 </span>            :         GString *str;
+<a name="225"><span class="lineNum">     225 </span>            :         GSList *tmp;</a>
+<span class="lineNum">     226 </span>            :         char *ret;
+<span class="lineNum">     227 </span>            :         const char *use_lib;
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">          1 :         str = g_string_new(NULL);</span></a>
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span><span class="lineCov">          1 :         use_lib = settings_get_str(&quot;perl_use_lib&quot;);</span>
+<span class="lineNum">     232 </span><span class="lineCov">          1 :         g_string_printf(str, &quot;use lib qw(%s/scripts &quot;SCRIPTDIR&quot; %s);&quot;,</span>
+<a name="233"><span class="lineNum">     233 </span>            :                          get_irssi_dir(), use_lib);</a>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineCov">          1 :         g_string_append(str, &quot;use Irssi;&quot;);</span>
+<span class="lineNum">     236 </span><span class="lineCov">          1 :         if (irssi_gui != IRSSI_GUI_NONE)</span>
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">          1 :                 g_string_append(str, &quot;use Irssi::UI;&quot;);</span></a>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineCov">          1 :         for (tmp = use_protocols; tmp != NULL; tmp = tmp-&gt;next)</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                 g_string_append_printf(str, &quot;use Irssi::%s;&quot;, (char *) tmp-&gt;data);</span>
+<a name="241"><span class="lineNum">     241 </span>            : </a>
+<span class="lineNum">     242 </span><span class="lineCov">          1 :         ret = str-&gt;str;</span>
+<span class="lineNum">     243 </span><span class="lineCov">          1 :         g_string_free(str, FALSE);</span>
+<span class="lineNum">     244 </span><span class="lineCov">          1 :         return ret;</span>
+<a name="245"><span class="lineNum">     245 </span>            : }</a>
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 : void irssi_callXS(void (*subaddr)(pTHX_ CV* cv), CV *cv, SV **mark)</span>
+<span class="lineNum">     248 </span>            : {
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :         PUSHMARK(mark);</span></a>
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :         (*subaddr)(aTHX_ cv);</span>
+<a name="252"><span class="lineNum">     252 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 : void perl_chatnet_fill_hash(HV *hv, CHATNET_REC *chatnet)</span>
+<span class="lineNum">     255 </span>            : {
+<span class="lineNum">     256 </span>            :         char *type, *chat_type;
+<a name="257"><span class="lineNum">     257 </span>            : </a>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         g_return_if_fail(hv != NULL);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :         g_return_if_fail(chatnet != NULL);</span>
+<span class="lineNum">     260 </span>            : 
+<a name="261"><span class="lineNum">     261 </span><span class="lineNoCov">          0 :         type = &quot;CHATNET&quot;;</span></a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :         chat_type = (char *) chat_protocol_find_id(chatnet-&gt;chat_type)-&gt;name;</span>
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;type&quot;, 4, new_pv(type), 0);</span>
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;chat_type&quot;, 9, new_pv(chat_type), 0);</span></a>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;name&quot;, 4, new_pv(chatnet-&gt;name), 0);</span>
+<span class="lineNum">     268 </span>            : 
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;nick&quot;, 4, new_pv(chatnet-&gt;nick), 0);</span></a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;username&quot;, 8, new_pv(chatnet-&gt;username), 0);</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;realname&quot;, 8, new_pv(chatnet-&gt;realname), 0);</span>
+<span class="lineNum">     272 </span>            : 
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;own_host&quot;, 8, new_pv(chatnet-&gt;own_host), 0);</span></a>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;autosendcmd&quot;, 11, new_pv(chatnet-&gt;autosendcmd), 0);</span>
+<a name="275"><span class="lineNum">     275 </span>            : }</a>
+<span class="lineNum">     276 </span>            : 
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 : void perl_connect_fill_hash(HV *hv, SERVER_CONNECT_REC *conn)</span></a>
+<span class="lineNum">     278 </span>            : {
+<span class="lineNum">     279 </span>            :         char *type, *chat_type;
+<span class="lineNum">     280 </span>            : 
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :         g_return_if_fail(hv != NULL);</span></a>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :         g_return_if_fail(conn != NULL);</span>
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :         type = &quot;SERVER CONNECT&quot;;</span>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :         chat_type = (char *) chat_protocol_find_id(conn-&gt;chat_type)-&gt;name;</span></a>
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;type&quot;, 4, new_pv(type), 0);</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;chat_type&quot;, 9, new_pv(chat_type), 0);</span>
+<a name="289"><span class="lineNum">     289 </span>            : </a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;tag&quot;, 3, new_pv(conn-&gt;tag), 0);</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;address&quot;, 7, new_pv(conn-&gt;address), 0);</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;port&quot;, 4, newSViv(conn-&gt;port), 0);</span>
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;chatnet&quot;, 7, new_pv(conn-&gt;chatnet), 0);</span></a>
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;password&quot;, 8, new_pv(conn-&gt;password), 0);</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;wanted_nick&quot;, 11, new_pv(conn-&gt;nick), 0);</span>
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;username&quot;, 8, new_pv(conn-&gt;username), 0);</span></a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;realname&quot;, 8, new_pv(conn-&gt;realname), 0);</span>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;reconnection&quot;, 12, newSViv(conn-&gt;reconnection), 0);</span>
+<a name="301"><span class="lineNum">     301 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;no_autojoin_channels&quot;, 20, newSViv(conn-&gt;no_autojoin_channels), 0);</span></a>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;no_autosendcmd&quot;, 14, newSViv(conn-&gt;no_autosendcmd), 0);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;unix_socket&quot;, 11, newSViv(conn-&gt;unix_socket), 0);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;use_ssl&quot;, 7, newSViv(conn-&gt;use_tls), 0);</span>
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;use_tls&quot;, 7, newSViv(conn-&gt;use_tls), 0);</span></a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;no_connect&quot;, 10, newSViv(conn-&gt;no_connect), 0);</span>
+<a name="307"><span class="lineNum">     307 </span>            : }</a>
+<span class="lineNum">     308 </span>            : 
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 : void perl_server_fill_hash(HV *hv, SERVER_REC *server)</span></a>
+<span class="lineNum">     310 </span>            : {
+<span class="lineNum">     311 </span>            :         char *type;
+<span class="lineNum">     312 </span>            :         HV *stash;
+<a name="313"><span class="lineNum">     313 </span>            : </a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :         g_return_if_fail(hv != NULL);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :         g_return_if_fail(server != NULL);</span>
+<span class="lineNum">     316 </span>            : 
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :         perl_connect_fill_hash(hv, server-&gt;connrec);</span></a>
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :         type = &quot;SERVER&quot;;</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;type&quot;, 4, new_pv(type), 0);</span>
+<a name="321"><span class="lineNum">     321 </span>            : </a>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;connect_time&quot;, 12, newSViv(server-&gt;connect_time), 0);</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;real_connect_time&quot;, 17, newSViv(server-&gt;real_connect_time), 0);</span>
+<span class="lineNum">     324 </span>            : 
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;tag&quot;, 3, new_pv(server-&gt;tag), 0);</span></a>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;nick&quot;, 4, new_pv(server-&gt;nick), 0);</span>
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;connected&quot;, 9, newSViv(server-&gt;connected), 0);</span>
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;connection_lost&quot;, 15, newSViv(server-&gt;connection_lost), 0);</span></a>
+<span class="lineNum">     330 </span>            : 
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :         stash = gv_stashpv(&quot;Irssi::Rawlog&quot;, 0);</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;rawlog&quot;, 6, sv_bless(newRV_noinc(newSViv((IV)server-&gt;rawlog)), stash), 0);</span>
+<a name="333"><span class="lineNum">     333 </span>            : </a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;version&quot;, 7, new_pv(server-&gt;version), 0);</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;away_reason&quot;, 11, new_pv(server-&gt;away_reason), 0);</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;last_invite&quot;, 11, new_pv(server-&gt;last_invite), 0);</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;server_operator&quot;, 15, newSViv(server-&gt;server_operator), 0);</span></a>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;usermode_away&quot;, 13, newSViv(server-&gt;usermode_away), 0);</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;banned&quot;, 6, newSViv(server-&gt;banned), 0);</span>
+<span class="lineNum">     340 </span>            : 
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;lag&quot;, 3, newSViv(server-&gt;lag), 0);</span></a>
+<a name="342"><span class="lineNum">     342 </span>            : }</a>
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 : void perl_window_item_fill_hash(HV *hv, WI_ITEM_REC *item)</span>
+<a name="345"><span class="lineNum">     345 </span>            : {</a>
+<span class="lineNum">     346 </span>            :         char *type, *chat_type;
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :         g_return_if_fail(hv != NULL);</span>
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :         g_return_if_fail(item != NULL);</span></a>
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :         type = (char *) module_find_id_str(&quot;WINDOW ITEM TYPE&quot;, item-&gt;type);</span>
+<span class="lineNum">     352 </span>            : 
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;type&quot;, 4, new_pv(type), 0);</span></a>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :         if (item-&gt;chat_type) {</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :                 chat_type = (char *) chat_protocol_find_id(item-&gt;chat_type)-&gt;name;</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :                 (void) hv_store(hv, &quot;chat_type&quot;, 9, new_pv(chat_type), 0);</span>
+<a name="357"><span class="lineNum">     357 </span>            :         }</a>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :         if (item-&gt;server != NULL) {</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :                 (void) hv_store(hv, &quot;server&quot;, 6, iobject_bless(item-&gt;server), 0);</span>
+<a name="361"><span class="lineNum">     361 </span>            :         }</a>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;visible_name&quot;, 12, new_pv(item-&gt;visible_name), 0);</span>
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;createtime&quot;, 10, newSViv(item-&gt;createtime), 0);</span>
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;data_level&quot;, 10, newSViv(item-&gt;data_level), 0);</span></a>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;hilight_color&quot;, 13, new_pv(item-&gt;hilight_color), 0);</span>
+<a name="367"><span class="lineNum">     367 </span>            : }</a>
+<span class="lineNum">     368 </span>            : 
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 : void perl_channel_fill_hash(HV *hv, CHANNEL_REC *channel)</span></a>
+<span class="lineNum">     370 </span>            : {
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :         g_return_if_fail(hv != NULL);</span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :         g_return_if_fail(channel != NULL);</span>
+<a name="373"><span class="lineNum">     373 </span>            : </a>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :         perl_window_item_fill_hash(hv, (WI_ITEM_REC *) channel);</span>
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :         if (channel-&gt;ownnick != NULL)</span>
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 :                 (void) hv_store(hv, &quot;ownnick&quot;, 7, iobject_bless(channel-&gt;ownnick), 0);</span></a>
+<span class="lineNum">     378 </span>            : 
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;name&quot;, 4, new_pv(channel-&gt;name), 0);</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;topic&quot;, 5, new_pv(channel-&gt;topic), 0);</span>
+<a name="381"><span class="lineNum">     381 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;topic_by&quot;, 8, new_pv(channel-&gt;topic_by), 0);</span></a>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;topic_time&quot;, 10, newSViv(channel-&gt;topic_time), 0);</span>
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;no_modes&quot;, 8, newSViv(channel-&gt;no_modes), 0);</span>
+<a name="385"><span class="lineNum">     385 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;mode&quot;, 4, new_pv(channel-&gt;mode), 0);</span></a>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;limit&quot;, 5, newSViv(channel-&gt;limit), 0);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;key&quot;, 3, new_pv(channel-&gt;key), 0);</span>
+<span class="lineNum">     388 </span>            : 
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;chanop&quot;, 6, newSViv(channel-&gt;chanop), 0);</span></a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;names_got&quot;, 9, newSViv(channel-&gt;names_got), 0);</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;wholist&quot;, 7, newSViv(channel-&gt;wholist), 0);</span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;synced&quot;, 6, newSViv(channel-&gt;synced), 0);</span>
+<a name="393"><span class="lineNum">     393 </span>            : </a>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;joined&quot;, 6, newSViv(channel-&gt;joined), 0);</span>
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;left&quot;, 4, newSViv(channel-&gt;left), 0);</span>
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;kicked&quot;, 6, newSViv(channel-&gt;kicked), 0);</span>
+<a name="397"><span class="lineNum">     397 </span>            : }</a>
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 : void perl_query_fill_hash(HV *hv, QUERY_REC *query)</span>
+<span class="lineNum">     400 </span>            : {
+<a name="401"><span class="lineNum">     401 </span><span class="lineNoCov">          0 :         g_return_if_fail(hv != NULL);</span></a>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :         g_return_if_fail(query != NULL);</span>
+<span class="lineNum">     403 </span>            : 
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :         perl_window_item_fill_hash(hv, (WI_ITEM_REC *) query);</span>
+<a name="405"><span class="lineNum">     405 </span>            : </a>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;name&quot;, 4, new_pv(query-&gt;name), 0);</span>
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;last_unread_msg&quot;, 15, newSViv(query-&gt;last_unread_msg), 0);</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;address&quot;, 7, new_pv(query-&gt;address), 0);</span>
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;server_tag&quot;, 10, new_pv(query-&gt;server_tag), 0);</span></a>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;unwanted&quot;, 8, newSViv(query-&gt;unwanted), 0);</span>
+<a name="411"><span class="lineNum">     411 </span>            : }</a>
+<span class="lineNum">     412 </span>            : 
+<a name="413"><span class="lineNum">     413 </span><span class="lineNoCov">          0 : void perl_nick_fill_hash(HV *hv, NICK_REC *nick)</span></a>
+<span class="lineNum">     414 </span>            : {
+<span class="lineNum">     415 </span>            :         char *type, *chat_type;
+<span class="lineNum">     416 </span>            : 
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 :         g_return_if_fail(hv != NULL);</span></a>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :         g_return_if_fail(nick != NULL);</span>
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :         type = &quot;NICK&quot;;</span>
+<a name="421"><span class="lineNum">     421 </span><span class="lineNoCov">          0 :         chat_type = (char *) chat_protocol_find_id(nick-&gt;chat_type)-&gt;name;</span></a>
+<span class="lineNum">     422 </span>            : 
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;type&quot;, 4, new_pv(type), 0);</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;chat_type&quot;, 9, new_pv(chat_type), 0);</span>
+<a name="425"><span class="lineNum">     425 </span>            : </a>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;nick&quot;, 4, new_pv(nick-&gt;nick), 0);</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;host&quot;, 4, new_pv(nick-&gt;host), 0);</span>
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;realname&quot;, 8, new_pv(nick-&gt;realname), 0);</span>
+<a name="429"><span class="lineNum">     429 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;hops&quot;, 4, newSViv(nick-&gt;hops), 0);</span></a>
+<span class="lineNum">     430 </span>            : 
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;gone&quot;, 4, newSViv(nick-&gt;gone), 0);</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;serverop&quot;, 8, newSViv(nick-&gt;serverop), 0);</span>
+<a name="433"><span class="lineNum">     433 </span>            : </a>
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;op&quot;, 2, newSViv(nick-&gt;op), 0);</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;halfop&quot;, 6, newSViv(nick-&gt;halfop), 0);</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;voice&quot;, 5, newSViv(nick-&gt;voice), 0);</span>
+<a name="437"><span class="lineNum">     437 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;other&quot;, 5, newSViv(nick-&gt;prefixes[0]), 0);</span></a>
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;prefixes&quot;, 8, new_pv(nick-&gt;prefixes), 0);</span>
+<span class="lineNum">     439 </span>            : 
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;last_check&quot;, 10, newSViv(nick-&gt;last_check), 0);</span>
+<a name="441"><span class="lineNum">     441 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;send_massjoin&quot;, 13, newSViv(nick-&gt;send_massjoin), 0);</span></a>
+<a name="442"><span class="lineNum">     442 </span>            : }</a>
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 : static void perl_command_fill_hash(HV *hv, COMMAND_REC *cmd)</span>
+<a name="445"><span class="lineNum">     445 </span>            : {</a>
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;category&quot;, 8, new_pv(cmd-&gt;category), 0);</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;cmd&quot;, 3, new_pv(cmd-&gt;cmd), 0);</span>
+<a name="448"><span class="lineNum">     448 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="449"><span class="lineNum">     449 </span>            : </a>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 : static void perl_ignore_fill_hash(HV *hv, IGNORE_REC *ignore)</span>
+<span class="lineNum">     451 </span>            : {
+<span class="lineNum">     452 </span>            :         AV *av;
+<a name="453"><span class="lineNum">     453 </span>            :         char **tmp;</a>
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;mask&quot;, 4, new_pv(ignore-&gt;mask), 0);</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;servertag&quot;, 9, new_pv(ignore-&gt;servertag), 0);</span>
+<a name="457"><span class="lineNum">     457 </span><span class="lineNoCov">          0 :         av = newAV();</span></a>
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :         if (ignore-&gt;channels != NULL) {</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :                 for (tmp = ignore-&gt;channels; *tmp != NULL; tmp++) {</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                         av_push(av, new_pv(*tmp));</span>
+<a name="461"><span class="lineNum">     461 </span>            :                 }</a>
+<span class="lineNum">     462 </span>            :         }
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;channels&quot;, 8, newRV_noinc((SV*)av), 0);</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;pattern&quot;, 7, new_pv(ignore-&gt;pattern), 0);</span>
+<a name="465"><span class="lineNum">     465 </span>            : </a>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;level&quot;, 5, newSViv(ignore-&gt;level), 0);</span>
+<span class="lineNum">     467 </span>            : 
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;exception&quot;, 9, newSViv(ignore-&gt;exception), 0);</span>
+<a name="469"><span class="lineNum">     469 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;regexp&quot;, 6, newSViv(ignore-&gt;regexp), 0);</span></a>
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;fullword&quot;, 8, newSViv(ignore-&gt;fullword), 0);</span>
+<a name="471"><span class="lineNum">     471 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     472 </span>            : 
+<a name="473"><span class="lineNum">     473 </span><span class="lineNoCov">          0 : static void perl_log_fill_hash(HV *hv, LOG_REC *log)</span></a>
+<span class="lineNum">     474 </span>            : {
+<span class="lineNum">     475 </span>            :         AV *av;
+<span class="lineNum">     476 </span>            :         GSList *tmp;
+<a name="477"><span class="lineNum">     477 </span>            : </a>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;fname&quot;, 5, new_pv(log-&gt;fname), 0);</span>
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;real_fname&quot;, 10, new_pv(log-&gt;real_fname), 0);</span>
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;opened&quot;, 6, newSViv(log-&gt;opened), 0);</span>
+<a name="481"><span class="lineNum">     481 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;level&quot;, 5, newSViv(log-&gt;level), 0);</span></a>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;last&quot;, 4, newSViv(log-&gt;last), 0);</span>
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;autoopen&quot;, 8, newSViv(log-&gt;autoopen), 0);</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;failed&quot;, 6, newSViv(log-&gt;failed), 0);</span>
+<a name="485"><span class="lineNum">     485 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;temp&quot;, 4, newSViv(log-&gt;temp), 0);</span></a>
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span><span class="lineNoCov">          0 :         av = newAV();</span>
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :         for (tmp = log-&gt;items; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<a name="489"><span class="lineNum">     489 </span><span class="lineNoCov">          0 :                 av_push(av, plain_bless(tmp-&gt;data, &quot;Irssi::Logitem&quot;));</span></a>
+<span class="lineNum">     490 </span>            :         }
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;items&quot;, 5, newRV_noinc((SV*)av), 0);</span>
+<a name="492"><span class="lineNum">     492 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="493"><span class="lineNum">     493 </span>            : </a>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 : static void perl_log_item_fill_hash(HV *hv, LOG_ITEM_REC *item)</span>
+<span class="lineNum">     495 </span>            : {
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;type&quot;, 4, newSViv(item-&gt;type), 0);</span>
+<a name="497"><span class="lineNum">     497 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;name&quot;, 4, new_pv(item-&gt;name), 0);</span></a>
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;servertag&quot;, 9, new_pv(item-&gt;servertag), 0);</span>
+<a name="499"><span class="lineNum">     499 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     500 </span>            : 
+<a name="501"><span class="lineNum">     501 </span><span class="lineNoCov">          0 : static void perl_rawlog_fill_hash(HV *hv, RAWLOG_REC *rawlog)</span></a>
+<span class="lineNum">     502 </span>            : {
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;logging&quot;, 7, newSViv(rawlog-&gt;logging), 0);</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;nlines&quot;, 6, newSViv(rawlog-&gt;nlines), 0);</span>
+<a name="505"><span class="lineNum">     505 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineNoCov">          0 : static void perl_reconnect_fill_hash(HV *hv, RECONNECT_REC *reconnect)</span>
+<span class="lineNum">     508 </span>            : {
+<a name="509"><span class="lineNum">     509 </span>            :         char *type;</a>
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :         perl_connect_fill_hash(hv, reconnect-&gt;conn);</span>
+<span class="lineNum">     512 </span>            : 
+<a name="513"><span class="lineNum">     513 </span><span class="lineNoCov">          0 :         type = &quot;RECONNECT&quot;;</span></a>
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;type&quot;, 4, new_pv(type), 0);</span>
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;tag&quot;, 3, newSViv(reconnect-&gt;tag), 0);</span>
+<a name="517"><span class="lineNum">     517 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;next_connect&quot;, 12, newSViv(reconnect-&gt;next_connect), 0);</span></a>
+<a name="518"><span class="lineNum">     518 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     519 </span>            : 
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 : static void perl_script_fill_hash(HV *hv, PERL_SCRIPT_REC *script)</span>
+<a name="521"><span class="lineNum">     521 </span>            : {</a>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;name&quot;, 4, new_pv(script-&gt;name), 0);</span>
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;package&quot;, 7, new_pv(script-&gt;package), 0);</span>
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;path&quot;, 4, new_pv(script-&gt;path), 0);</span>
+<a name="525"><span class="lineNum">     525 </span><span class="lineNoCov">          0 :         (void) hv_store(hv, &quot;data&quot;, 4, new_pv(script-&gt;data), 0);</span></a>
+<a name="526"><span class="lineNum">     526 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     527 </span>            : 
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 : static void remove_newlines(char *str)</span>
+<a name="529"><span class="lineNum">     529 </span>            : {</a>
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :         char *writing = str;</span>
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :         for (;*str;str++)</span>
+<a name="533"><span class="lineNum">     533 </span><span class="lineNoCov">          0 :                 if (*str != '\n' &amp;&amp; *str != '\r')</span></a>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :                         *(writing++) = *str;</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :         *writing = '\0';</span>
+<a name="536"><span class="lineNum">     536 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="537"><span class="lineNum">     537 </span>            : </a>
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 : void perl_command(const char *cmd, SERVER_REC *server, WI_ITEM_REC *item)</span>
+<span class="lineNum">     539 </span>            : {
+<span class="lineNum">     540 </span>            :         const char *cmdchars;
+<a name="541"><span class="lineNum">     541 </span><span class="lineNoCov">          0 :         char *sendcmd = (char *) cmd;</span></a>
+<span class="lineNum">     542 </span>            : 
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :         if (*cmd == '\0')</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="545"><span class="lineNum">     545 </span>            : </a>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :         cmdchars = settings_get_str(&quot;cmdchars&quot;);</span>
+<span class="lineNum">     547 </span><span class="lineNoCov">          0 :         if (strchr(cmdchars, *cmd) == NULL) {</span>
+<span class="lineNum">     548 </span>            :                 /* no command char - let's put it there.. */
+<a name="549"><span class="lineNum">     549 </span><span class="lineNoCov">          0 :                 sendcmd = g_strdup_printf(&quot;%c%s&quot;, *cmdchars, cmd);</span></a>
+<span class="lineNum">     550 </span>            :         }
+<span class="lineNum">     551 </span>            : 
+<span class="lineNum">     552 </span>            :         /* remove \r and \n from commands,
+<a name="553"><span class="lineNum">     553 </span>            :            to make it harder to introduce a security bug in a script */</a>
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 :         if(strpbrk(sendcmd, &quot;\r\n&quot;)) {</span>
+<span class="lineNum">     555 </span><span class="lineNoCov">          0 :                 if (sendcmd == cmd)</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :                         sendcmd = strdup(cmd);</span>
+<a name="557"><span class="lineNum">     557 </span><span class="lineNoCov">          0 :                 remove_newlines(sendcmd);</span></a>
+<span class="lineNum">     558 </span>            :         }
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :         signal_emit(&quot;send command&quot;, 3, sendcmd, server, item);</span>
+<a name="561"><span class="lineNum">     561 </span><span class="lineNoCov">          0 :         if (sendcmd != cmd) g_free(sendcmd);</span></a>
+<a name="562"><span class="lineNum">     562 </span>            : }</a>
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span><span class="lineCov">          2 : static void perl_register_protocol(CHAT_PROTOCOL_REC *rec)</span>
+<a name="565"><span class="lineNum">     565 </span>            : {</a>
+<span class="lineNum">     566 </span>            :         static char *items[] = {
+<span class="lineNum">     567 </span>            :                 &quot;Chatnet&quot;,
+<span class="lineNum">     568 </span>            :                 &quot;Server&quot;, &quot;ServerConnect&quot;, &quot;ServerSetup&quot;,
+<a name="569"><span class="lineNum">     569 </span>            :                 &quot;Channel&quot;, &quot;Query&quot;,</a>
+<span class="lineNum">     570 </span>            :                 &quot;Nick&quot;
+<span class="lineNum">     571 </span>            :         };
+<span class="lineNum">     572 </span>            :         static char *find_use_code =
+<a name="573"><span class="lineNum">     573 </span>            :                 &quot;use lib qw(%s);\n&quot;</a>
+<span class="lineNum">     574 </span>            :                 &quot;my $pkg = Irssi::%s; $pkg =~ s/::/\\//;\n&quot;
+<span class="lineNum">     575 </span>            :                 &quot;foreach my $i (@INC) {\n&quot;
+<span class="lineNum">     576 </span>            :                 &quot;  return 1 if (-f \&quot;$i/$pkg.pm\&quot;);\n&quot;
+<a name="577"><span class="lineNum">     577 </span>            :                 &quot;}\n&quot;</a>
+<span class="lineNum">     578 </span>            :                 &quot;return 0;\n&quot;;
+<span class="lineNum">     579 </span>            : 
+<span class="lineNum">     580 </span>            :         char *name, stash[100], code[100], *pcode;
+<a name="581"><span class="lineNum">     581 </span>            :         int type, chat_type, n;</a>
+<span class="lineNum">     582 </span>            :         SV *sv;
+<span class="lineNum">     583 </span>            : 
+<span class="lineNum">     584 </span><span class="lineCov">          2 :         chat_type = chat_protocol_lookup(rec-&gt;name);</span>
+<a name="585"><span class="lineNum">     585 </span><span class="lineCov">          2 :         g_return_if_fail(chat_type &gt;= 0);</span></a>
+<span class="lineNum">     586 </span>            : 
+<span class="lineNum">     587 </span><span class="lineCov">          2 :         name = g_ascii_strdown(rec-&gt;name,-1);</span>
+<span class="lineNum">     588 </span><span class="lineCov">          2 :         *name = *(rec-&gt;name);</span>
+<a name="589"><span class="lineNum">     589 </span>            : </a>
+<span class="lineNum">     590 </span>            :         /* window items: channel, query */
+<span class="lineNum">     591 </span><span class="lineCov">          2 :         type = module_get_uniq_id_str(&quot;WINDOW ITEM TYPE&quot;, &quot;CHANNEL&quot;);</span>
+<span class="lineNum">     592 </span><span class="lineCov">          2 :         g_snprintf(stash, sizeof(stash), &quot;Irssi::%s::Channel&quot;, name);</span>
+<a name="593"><span class="lineNum">     593 </span><span class="lineCov">          2 :         irssi_add_object(type, chat_type, stash,</span></a>
+<span class="lineNum">     594 </span>            :                          (PERL_OBJECT_FUNC) perl_channel_fill_hash);
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span><span class="lineCov">          2 :         type = module_get_uniq_id_str(&quot;WINDOW ITEM TYPE&quot;, &quot;QUERY&quot;);</span>
+<a name="597"><span class="lineNum">     597 </span><span class="lineCov">          2 :         g_snprintf(stash, sizeof(stash), &quot;Irssi::%s::Query&quot;, name);</span></a>
+<span class="lineNum">     598 </span><span class="lineCov">          2 :         irssi_add_object(type, chat_type, stash,</span>
+<span class="lineNum">     599 </span>            :                          (PERL_OBJECT_FUNC) perl_query_fill_hash);
+<span class="lineNum">     600 </span>            : 
+<a name="601"><span class="lineNum">     601 </span>            :         /* channel nicks */</a>
+<span class="lineNum">     602 </span><span class="lineCov">          2 :         type = module_get_uniq_id(&quot;NICK&quot;, 0);</span>
+<span class="lineNum">     603 </span><span class="lineCov">          2 :         g_snprintf(stash, sizeof(stash), &quot;Irssi::%s::Nick&quot;, name);</span>
+<span class="lineNum">     604 </span><span class="lineCov">          2 :         irssi_add_object(type, chat_type, stash,</span>
+<a name="605"><span class="lineNum">     605 </span>            :                          (PERL_OBJECT_FUNC) perl_nick_fill_hash);</a>
+<span class="lineNum">     606 </span>            : 
+<span class="lineNum">     607 </span>            :         /* chatnets */
+<span class="lineNum">     608 </span><span class="lineCov">          2 :         type = module_get_uniq_id(&quot;CHATNET&quot;, 0);</span>
+<a name="609"><span class="lineNum">     609 </span><span class="lineCov">          2 :         g_snprintf(stash, sizeof(stash), &quot;Irssi::%s::Chatnet&quot;, name);</span></a>
+<span class="lineNum">     610 </span><span class="lineCov">          2 :         irssi_add_object(type, chat_type, stash,</span>
+<span class="lineNum">     611 </span>            :                          (PERL_OBJECT_FUNC) perl_chatnet_fill_hash);
+<span class="lineNum">     612 </span>            : 
+<a name="613"><span class="lineNum">     613 </span>            :         /* server specific */</a>
+<span class="lineNum">     614 </span><span class="lineCov">          2 :         type = module_get_uniq_id(&quot;SERVER&quot;, 0);</span>
+<span class="lineNum">     615 </span><span class="lineCov">          2 :         g_snprintf(stash, sizeof(stash), &quot;Irssi::%s::Server&quot;, name);</span>
+<span class="lineNum">     616 </span><span class="lineCov">          2 :         irssi_add_object(type, chat_type, stash,</span>
+<a name="617"><span class="lineNum">     617 </span>            :                          (PERL_OBJECT_FUNC) perl_server_fill_hash);</a>
+<span class="lineNum">     618 </span>            : 
+<span class="lineNum">     619 </span><span class="lineCov">          2 :         type = module_get_uniq_id(&quot;SERVER CONNECT&quot;, 0);</span>
+<span class="lineNum">     620 </span><span class="lineCov">          2 :         g_snprintf(stash, sizeof(stash), &quot;Irssi::%s::Connect&quot;, name);</span>
+<a name="621"><span class="lineNum">     621 </span><span class="lineCov">          2 :         irssi_add_object(type, chat_type, stash,</span></a>
+<span class="lineNum">     622 </span>            :                          (PERL_OBJECT_FUNC) perl_connect_fill_hash);
+<span class="lineNum">     623 </span>            : 
+<span class="lineNum">     624 </span>            :         /* register ISAs */
+<a name="625"><span class="lineNum">     625 </span><span class="lineCov">         16 :         for (n = 0; n &lt; sizeof(items)/sizeof(items[0]); n++) {</span></a>
+<span class="lineNum">     626 </span><span class="lineCov">         14 :                 g_snprintf(code, sizeof(code),</span>
+<span class="lineNum">     627 </span>            :                            &quot;@Irssi::%s::%s::ISA = qw(Irssi::%s);&quot;,
+<span class="lineNum">     628 </span>            :                            name, items[n], items[n]);
+<a name="629"><span class="lineNum">     629 </span><span class="lineCov">         14 :                 perl_eval_pv(code, TRUE);</span></a>
+<span class="lineNum">     630 </span>            :         }
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span><span class="lineCov">          2 :         pcode = g_strdup_printf(find_use_code,</span>
+<a name="633"><span class="lineNum">     633 </span>            :                                 settings_get_str(&quot;perl_use_lib&quot;), name);</a>
+<span class="lineNum">     634 </span><span class="lineCov">          2 :         sv = perl_eval_pv(pcode, TRUE);</span>
+<span class="lineNum">     635 </span><span class="lineCov">          2 :         g_free(pcode);</span>
+<span class="lineNum">     636 </span>            : 
+<a name="637"><span class="lineNum">     637 </span><span class="lineCov">          2 :         if (SvIV(sv)) {</span></a>
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :                 use_protocols =</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">          0 :                         g_slist_append(use_protocols, g_strdup(name));</span>
+<span class="lineNum">     640 </span>            :         }
+<a name="641"><span class="lineNum">     641 </span>            : </a>
+<span class="lineNum">     642 </span><span class="lineCov">          2 :         g_free(name);</span>
+<a name="643"><span class="lineNum">     643 </span>            : }</a>
+<span class="lineNum">     644 </span>            : 
+<a name="645"><span class="lineNum">     645 </span><span class="lineCov">         12 : static void free_iobject_hash(void *key, PERL_OBJECT_REC *rec)</span></a>
+<span class="lineNum">     646 </span>            : {
+<span class="lineNum">     647 </span><span class="lineCov">         12 :         g_free(rec-&gt;stash);</span>
+<span class="lineNum">     648 </span><span class="lineCov">         12 :         g_free(rec);</span>
+<a name="649"><span class="lineNum">     649 </span><span class="lineCov">         12 : }</span></a>
+<span class="lineNum">     650 </span>            : 
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 : static int free_iobject_proto(void *key, void *value, void *chat_type)</span>
+<span class="lineNum">     652 </span>            : {
+<a name="653"><span class="lineNum">     653 </span><span class="lineNoCov">          0 :         if ((GPOINTER_TO_INT(key) &gt;&gt; 16) == GPOINTER_TO_INT(chat_type)) {</span></a>
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :                 free_iobject_hash(key, value);</span>
+<span class="lineNum">     655 </span><span class="lineNoCov">          0 :                 return TRUE;</span>
+<span class="lineNum">     656 </span>            :         }
+<a name="657"><span class="lineNum">     657 </span>            : </a>
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :         return FALSE;</span>
+<a name="659"><span class="lineNum">     659 </span>            : }</a>
+<span class="lineNum">     660 </span>            : 
+<a name="661"><span class="lineNum">     661 </span><span class="lineNoCov">          0 : static void perl_unregister_protocol(CHAT_PROTOCOL_REC *rec)</span></a>
+<span class="lineNum">     662 </span>            : {
+<span class="lineNum">     663 </span>            :         GSList *item;
+<span class="lineNum">     664 </span>            :         void *data;
+<a name="665"><span class="lineNum">     665 </span>            : </a>
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :         item = gslist_find_icase_string(use_protocols, rec-&gt;name);</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :         if (item != NULL) {</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :                 data = item-&gt;data;</span>
+<a name="669"><span class="lineNum">     669 </span><span class="lineNoCov">          0 :                 use_protocols = g_slist_remove(use_protocols, data);</span></a>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :                 g_free(data);</span>
+<span class="lineNum">     671 </span>            :         }
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :         g_hash_table_foreach_remove(iobject_stashes,</span>
+<a name="673"><span class="lineNum">     673 </span>            :                                     (GHRFunc) free_iobject_proto,</a>
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :                                     GINT_TO_POINTER(rec-&gt;id));</span>
+<a name="675"><span class="lineNum">     675 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     676 </span>            : 
+<a name="677"><span class="lineNum">     677 </span><span class="lineCov">          1 : void perl_common_start(void)</span></a>
+<span class="lineNum">     678 </span>            : {
+<span class="lineNum">     679 </span>            :         static PLAIN_OBJECT_INIT_REC core_plains[] = {
+<span class="lineNum">     680 </span>            :                 { &quot;Irssi::Command&quot;, (PERL_OBJECT_FUNC) perl_command_fill_hash },
+<a name="681"><span class="lineNum">     681 </span>            :                 { &quot;Irssi::Ignore&quot;, (PERL_OBJECT_FUNC) perl_ignore_fill_hash },</a>
+<span class="lineNum">     682 </span>            :                 { &quot;Irssi::Log&quot;, (PERL_OBJECT_FUNC) perl_log_fill_hash },
+<span class="lineNum">     683 </span>            :                 { &quot;Irssi::Logitem&quot;, (PERL_OBJECT_FUNC) perl_log_item_fill_hash },
+<span class="lineNum">     684 </span>            :                 { &quot;Irssi::Rawlog&quot;, (PERL_OBJECT_FUNC) perl_rawlog_fill_hash },
+<a name="685"><span class="lineNum">     685 </span>            :                 { &quot;Irssi::Reconnect&quot;, (PERL_OBJECT_FUNC) perl_reconnect_fill_hash },</a>
+<span class="lineNum">     686 </span>            :                 { &quot;Irssi::Script&quot;, (PERL_OBJECT_FUNC) perl_script_fill_hash },
+<span class="lineNum">     687 </span>            : 
+<span class="lineNum">     688 </span>            :                 { NULL, NULL }
+<a name="689"><span class="lineNum">     689 </span>            :         };</a>
+<span class="lineNum">     690 </span>            : 
+<span class="lineNum">     691 </span><span class="lineCov">          1 :         iobject_stashes = g_hash_table_new((GHashFunc) g_direct_hash,</span>
+<span class="lineNum">     692 </span>            :                                         (GCompareFunc) g_direct_equal);
+<a name="693"><span class="lineNum">     693 </span><span class="lineCov">          1 :         plain_stashes = g_hash_table_new((GHashFunc) g_str_hash,</span></a>
+<span class="lineNum">     694 </span>            :                                          (GCompareFunc) g_str_equal);
+<span class="lineNum">     695 </span><span class="lineCov">          1 :         irssi_add_plains(core_plains);</span>
+<span class="lineNum">     696 </span>            : 
+<a name="697"><span class="lineNum">     697 </span><span class="lineCov">          1 :         use_protocols = NULL;</span></a>
+<span class="lineNum">     698 </span><span class="lineCov">          1 :         g_slist_foreach(chat_protocols, (GFunc) perl_register_protocol, NULL);</span>
+<span class="lineNum">     699 </span>            : 
+<span class="lineNum">     700 </span><span class="lineCov">          1 :         signal_add(&quot;chat protocol created&quot;, (SIGNAL_FUNC) perl_register_protocol);</span>
+<a name="701"><span class="lineNum">     701 </span><span class="lineCov">          1 :         signal_add(&quot;chat protocol destroyed&quot;, (SIGNAL_FUNC) perl_unregister_protocol);</span></a>
+<a name="702"><span class="lineNum">     702 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     703 </span>            : 
+<span class="lineNum">     704 </span><span class="lineCov">          1 : void perl_common_stop(void)</span>
+<a name="705"><span class="lineNum">     705 </span>            : {</a>
+<span class="lineNum">     706 </span><span class="lineCov">          1 :         g_hash_table_foreach(iobject_stashes, (GHFunc) free_iobject_hash, NULL);</span>
+<span class="lineNum">     707 </span><span class="lineCov">          1 :         g_hash_table_destroy(iobject_stashes);</span>
+<span class="lineNum">     708 </span><span class="lineCov">          1 :         iobject_stashes = NULL;</span>
+<a name="709"><span class="lineNum">     709 </span>            : </a>
+<span class="lineNum">     710 </span><span class="lineCov">          1 :         g_hash_table_foreach(plain_stashes, (GHFunc) g_free, NULL);</span>
+<span class="lineNum">     711 </span><span class="lineCov">          1 :         g_hash_table_destroy(plain_stashes);</span>
+<span class="lineNum">     712 </span><span class="lineCov">          1 :         plain_stashes = NULL;</span>
+<a name="713"><span class="lineNum">     713 </span>            : </a>
+<span class="lineNum">     714 </span><span class="lineCov">          1 :         g_slist_foreach(use_protocols, (GFunc) g_free, NULL);</span>
+<span class="lineNum">     715 </span><span class="lineCov">          1 :         g_slist_free(use_protocols);</span>
+<span class="lineNum">     716 </span><span class="lineCov">          1 :         use_protocols = NULL;</span>
+<a name="717"><span class="lineNum">     717 </span>            : </a>
+<span class="lineNum">     718 </span><span class="lineCov">          1 :         signal_remove(&quot;chat protocol created&quot;, (SIGNAL_FUNC) perl_register_protocol);</span>
+<span class="lineNum">     719 </span><span class="lineCov">          1 :         signal_remove(&quot;chat protocol destroyed&quot;, (SIGNAL_FUNC) perl_unregister_protocol);</span>
+<span class="lineNum">     720 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/irc/notifylist/notify-whois.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/irc/notifylist</a> - notify-whois.c<span style="font-size: 80%;"> (source / <a href="notify-whois.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntry">68</td>
+            <td class="headerCovTableEntryLo">20.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntryLo">33.3 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  notify-whois.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999-2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;expandos.h&quot;
+<span class="lineNum">      24 </span>            : 
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;irc.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;irc-servers.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;masks.h&quot;
+<span class="lineNum">      28 </span>            : 
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;notifylist.h&quot;</a>
+<span class="lineNum">      30 </span>            : 
+<a name="31"><span class="lineNum">      31 </span>            : static char *last_notify_nick;</a>
+<span class="lineNum">      32 </span>            : 
+<a name="33"><span class="lineNum">      33 </span><span class="lineNoCov">          0 : static void event_whois(IRC_SERVER_REC *server, const char *data)</span></a>
+<span class="lineNum">      34 </span>            : {
+<span class="lineNum">      35 </span>            :         char *params, *nick, *user, *host, *realname;
+<span class="lineNum">      36 </span>            :         NOTIFY_NICK_REC *nickrec;
+<a name="37"><span class="lineNum">      37 </span>            :         NOTIFYLIST_REC *notify;</a>
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">      40 </span><span class="lineNoCov">          0 :         g_return_if_fail(server != NULL);</span>
+<a name="41"><span class="lineNum">      41 </span>            : </a>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 6, NULL, &amp;nick, &amp;user, &amp;host, NULL, &amp;realname);</span>
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :         notify = notifylist_find(nick, server-&gt;connrec-&gt;chatnet);</span>
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :         if (notify != NULL &amp;&amp; !mask_match(SERVER(server), notify-&gt;mask, nick, user, host)) {</span></a>
+<span class="lineNum">      46 </span>            :                 /* user or host didn't match */
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :                 g_free(params);</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="49"><span class="lineNum">      49 </span>            :         }</a>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :         nickrec = notify_nick_find(server, nick);</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :         if (nickrec != NULL) {</span>
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 :                 g_free_not_null(last_notify_nick);</span></a>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :                 last_notify_nick = g_strdup(nick);</span>
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :                 g_free_not_null(nickrec-&gt;user);</span>
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :                 g_free_not_null(nickrec-&gt;host);</span></a>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :                 g_free_not_null(nickrec-&gt;realname);</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :                 g_free_and_null(nickrec-&gt;awaymsg);</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :                 nickrec-&gt;user = g_strdup(user);</span>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :                 nickrec-&gt;host = g_strdup(host);</span></a>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :                 nickrec-&gt;realname = g_strdup(realname);</span>
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :                 nickrec-&gt;away = FALSE;</span>
+<a name="65"><span class="lineNum">      65 </span><span class="lineNoCov">          0 :                 nickrec-&gt;host_ok = TRUE;</span></a>
+<span class="lineNum">      66 </span>            :         }
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :         g_free(params);</span>
+<a name="68"><span class="lineNum">      68 </span>            : }</a>
+<a name="69"><span class="lineNum">      69 </span>            : </a>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 : static void event_whois_away(IRC_SERVER_REC *server, const char *data)</span>
+<span class="lineNum">      71 </span>            : {
+<span class="lineNum">      72 </span>            :         NOTIFY_NICK_REC *nickrec;
+<a name="73"><span class="lineNum">      73 </span>            :         char *params, *nick, *awaymsg;</a>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         g_return_if_fail(data != NULL);</span>
+<span class="lineNum">      76 </span>            : 
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :         params = event_get_params(data, 3, NULL, &amp;nick, &amp;awaymsg);</span></a>
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         nickrec = notify_nick_find(server, nick);</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :         if (nickrec != NULL) {</span>
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :                 nickrec-&gt;awaymsg = g_strdup(awaymsg);</span></a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :                 nickrec-&gt;away = TRUE;</span>
+<span class="lineNum">      83 </span>            :         }
+<span class="lineNum">      84 </span>            : 
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :         g_free(params);</span></a>
+<span class="lineNum">      86 </span>            : }
+<a name="87"><span class="lineNum">      87 </span>            : </a>
+<span class="lineNum">      88 </span>            : /* All WHOIS replies got, now announce all the changes at once. */
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 : static void event_whois_end(IRC_SERVER_REC *server, const char *data)</span></a>
+<span class="lineNum">      90 </span>            : {
+<span class="lineNum">      91 </span>            :         MODULE_SERVER_REC *mserver;
+<span class="lineNum">      92 </span>            :         NOTIFYLIST_REC *notify;
+<a name="93"><span class="lineNum">      93 </span>            :         NOTIFY_NICK_REC *rec;</a>
+<span class="lineNum">      94 </span>            :         GSList *tmp;
+<span class="lineNum">      95 </span>            :         const char *event;
+<span class="lineNum">      96 </span>            :         int away_ok;
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         mserver = MODULE_DATA(server);</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         for (tmp = mserver-&gt;notify_users; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :                 rec = tmp-&gt;data;</span>
+<a name="101"><span class="lineNum">     101 </span>            : </a>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                 if (rec-&gt;realname == NULL)</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :                         continue;</span>
+<span class="lineNum">     104 </span>            : 
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :                 notify = notifylist_find(rec-&gt;nick, server-&gt;connrec-&gt;chatnet);</span></a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :                 if (notify == NULL) continue;</span>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 away_ok = !notify-&gt;away_check || !rec-&gt;away;</span>
+<a name="109"><span class="lineNum">     109 </span>            : </a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :                 event = NULL;</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 if (!rec-&gt;join_announced) {</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :                         rec-&gt;join_announced = TRUE;</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :                         if (away_ok) event = &quot;notifylist joined&quot;;</span></a>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :                 } else if (notify-&gt;away_check &amp;&amp; rec-&gt;away_ok == rec-&gt;away)</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :                         event = &quot;notifylist away changed&quot;;</span>
+<span class="lineNum">     116 </span>            : 
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :                 if (event != NULL) {</span></a>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :                         signal_emit(event, 6, server, rec-&gt;nick,</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :                                     rec-&gt;user != NULL ? rec-&gt;user : &quot;??&quot;,</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :                                     rec-&gt;host != NULL ? rec-&gt;host : &quot;??&quot;,</span>
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :                                     rec-&gt;realname != NULL ? rec-&gt;realname : &quot;??&quot;,</span></a>
+<span class="lineNum">     122 </span>            :                                     rec-&gt;awaymsg);
+<span class="lineNum">     123 </span>            :                 }
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :                 rec-&gt;away_ok = away_ok;</span>
+<a name="125"><span class="lineNum">     125 </span>            :         }</a>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 : }</span>
+<a name="127"><span class="lineNum">     127 </span>            : </a>
+<span class="lineNum">     128 </span>            : /* last person that NOTIFY detected a signon for */
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 : static char *expando_lastnotify(SERVER_REC *server, void *item, int *free_ret)</span></a>
+<span class="lineNum">     130 </span>            : {
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :         return last_notify_nick;</span>
+<a name="132"><span class="lineNum">     132 </span>            : }</a>
+<a name="133"><span class="lineNum">     133 </span>            : </a>
+<span class="lineNum">     134 </span><span class="lineCov">          1 : void notifylist_whois_init(void)</span>
+<span class="lineNum">     135 </span>            : {
+<span class="lineNum">     136 </span><span class="lineCov">          1 :         last_notify_nick = NULL;</span>
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<span class="lineNum">     138 </span><span class="lineCov">          1 :         signal_add(&quot;notifylist event whois&quot;, (SIGNAL_FUNC) event_whois);</span>
+<span class="lineNum">     139 </span><span class="lineCov">          1 :         signal_add(&quot;notifylist event whois away&quot;, (SIGNAL_FUNC) event_whois_away);</span>
+<span class="lineNum">     140 </span><span class="lineCov">          1 :         signal_add(&quot;notifylist event whois end&quot;, (SIGNAL_FUNC) event_whois_end);</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineCov">          1 :         expando_create(&quot;D&quot;, expando_lastnotify,</span></a>
+<span class="lineNum">     142 </span>            :                        &quot;notifylist event whois&quot;, EXPANDO_ARG_SERVER, NULL);
+<a name="143"><span class="lineNum">     143 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     144 </span>            : 
+<a name="145"><span class="lineNum">     145 </span><span class="lineCov">          1 : void notifylist_whois_deinit(void)</span></a>
+<span class="lineNum">     146 </span>            : {
+<span class="lineNum">     147 </span><span class="lineCov">          1 :         g_free_not_null(last_notify_nick);</span>
+<span class="lineNum">     148 </span>            : 
+<a name="149"><span class="lineNum">     149 </span><span class="lineCov">          1 :         signal_remove(&quot;notifylist event whois&quot;, (SIGNAL_FUNC) event_whois);</span></a>
+<span class="lineNum">     150 </span><span class="lineCov">          1 :         signal_remove(&quot;notifylist event whois away&quot;, (SIGNAL_FUNC) event_whois_away);</span>
+<span class="lineNum">     151 </span><span class="lineCov">          1 :         signal_remove(&quot;notifylist event whois end&quot;, (SIGNAL_FUNC) event_whois_end);</span>
+<span class="lineNum">     152 </span><span class="lineCov">          1 :         expando_destroy(&quot;D&quot;, expando_lastnotify);</span>
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">          1 : }</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

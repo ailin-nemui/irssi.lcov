@@ -1,0 +1,315 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/core/chat-protocols.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/core</a> - chat-protocols.c<span style="font-size: 80%;"> (source / <a href="chat-protocols.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">85</td>
+            <td class="headerCovTableEntry">101</td>
+            <td class="headerCovTableEntryMed">84.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntryMed">83.3 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  chat-protocol.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 2000 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;modules.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;chat-protocols.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : </a>
+<span class="lineNum">      26 </span>            : #include &quot;chatnets.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;servers.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;servers-setup.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;channels-setup.h&quot;</a>
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : GSList *chat_protocols;
+<span class="lineNum">      32 </span>            : 
+<a name="33"><span class="lineNum">      33 </span>            : static CHAT_PROTOCOL_REC *default_proto;</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span><span class="lineCov">         73 : void *chat_protocol_check_cast(void *object, int type_pos, const char *id)</span>
+<span class="lineNum">      36 </span>            : {
+<a name="37"><span class="lineNum">      37 </span><span class="lineCov">         57 :         return object == NULL ||</span></a>
+<span class="lineNum">      38 </span><span class="lineCov">         57 :                 chat_protocol_lookup(id) !=</span>
+<span class="lineNum">      39 </span><span class="lineCov">        184 :                 G_STRUCT_MEMBER(int, object, type_pos) ? NULL : object;</span>
+<span class="lineNum">      40 </span>            : }
+<a name="41"><span class="lineNum">      41 </span>            : </a>
+<span class="lineNum">      42 </span>            : /* Return the ID for the specified chat protocol. */
+<span class="lineNum">      43 </span><span class="lineCov">        128 : int chat_protocol_lookup(const char *name)</span>
+<span class="lineNum">      44 </span>            : {
+<a name="45"><span class="lineNum">      45 </span>            :         CHAT_PROTOCOL_REC *rec;</a>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span><span class="lineCov">        128 :         g_return_val_if_fail(name != NULL, -1);</span>
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span><span class="lineCov">        128 :         rec = chat_protocol_find(name);</span></a>
+<span class="lineNum">      50 </span><span class="lineCov">        128 :         return rec == NULL ? -1 : rec-&gt;id;</span>
+<a name="51"><span class="lineNum">      51 </span>            : }</a>
+<span class="lineNum">      52 </span>            : 
+<a name="53"><span class="lineNum">      53 </span><span class="lineCov">        149 : CHAT_PROTOCOL_REC *chat_protocol_find(const char *name)</span></a>
+<span class="lineNum">      54 </span>            : {
+<span class="lineNum">      55 </span>            :         GSList *tmp;
+<span class="lineNum">      56 </span>            : 
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">        149 :         g_return_val_if_fail(name != NULL, NULL);</span></a>
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span><span class="lineCov">        155 :         for (tmp = chat_protocols; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">      60 </span><span class="lineCov">        149 :                 CHAT_PROTOCOL_REC *rec = tmp-&gt;data;</span>
+<a name="61"><span class="lineNum">      61 </span>            : </a>
+<span class="lineNum">      62 </span><span class="lineCov">        149 :                 if (g_ascii_strcasecmp(rec-&gt;name, name) == 0)</span>
+<span class="lineNum">      63 </span><span class="lineCov">        143 :                         return rec;</span>
+<span class="lineNum">      64 </span>            :         }
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<span class="lineNum">      66 </span><span class="lineCov">          6 :         return NULL;</span>
+<a name="67"><span class="lineNum">      67 </span>            : }</a>
+<span class="lineNum">      68 </span>            : 
+<a name="69"><span class="lineNum">      69 </span><span class="lineCov">         48 : CHAT_PROTOCOL_REC *chat_protocol_find_id(int id)</span></a>
+<span class="lineNum">      70 </span>            : {
+<span class="lineNum">      71 </span>            :         GSList *tmp;
+<span class="lineNum">      72 </span>            : 
+<a name="73"><span class="lineNum">      73 </span><span class="lineCov">         48 :         g_return_val_if_fail(id &gt; 0, NULL);</span></a>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineCov">         52 :         for (tmp = chat_protocols; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">      76 </span><span class="lineCov">         52 :                 CHAT_PROTOCOL_REC *rec = tmp-&gt;data;</span>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span><span class="lineCov">         52 :                 if (rec-&gt;id == id)</span>
+<span class="lineNum">      79 </span><span class="lineCov">         48 :                         return rec;</span>
+<span class="lineNum">      80 </span>            :         }
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<a name="83"><span class="lineNum">      83 </span>            : }</a>
+<span class="lineNum">      84 </span>            : 
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 : CHAT_PROTOCOL_REC *chat_protocol_find_net(GHashTable *optlist)</span></a>
+<span class="lineNum">      86 </span>            : {
+<span class="lineNum">      87 </span>            :         GSList *tmp;
+<span class="lineNum">      88 </span>            : 
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :         g_return_val_if_fail(optlist != NULL, NULL);</span></a>
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :         for (tmp = chat_protocols; tmp != NULL; tmp = tmp-&gt;next) {</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :                 CHAT_PROTOCOL_REC *rec = tmp-&gt;data;</span>
+<a name="93"><span class="lineNum">      93 </span>            : </a>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :                 if (rec-&gt;chatnet != NULL &amp;&amp;</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :                     g_hash_table_lookup(optlist, rec-&gt;chatnet) != NULL)</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :                         return rec;</span>
+<a name="97"><span class="lineNum">      97 </span>            :         }</a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         return NULL;</span>
+<span class="lineNum">     100 </span>            : }
+<a name="101"><span class="lineNum">     101 </span>            : </a>
+<span class="lineNum">     102 </span>            : /* Register new chat protocol. */
+<span class="lineNum">     103 </span><span class="lineCov">          3 : CHAT_PROTOCOL_REC *chat_protocol_register(CHAT_PROTOCOL_REC *rec)</span>
+<span class="lineNum">     104 </span>            : {
+<a name="105"><span class="lineNum">     105 </span>            :         CHAT_PROTOCOL_REC *newrec;</a>
+<span class="lineNum">     106 </span>            :         int created;
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineCov">          3 :         g_return_val_if_fail(rec != NULL, NULL);</span>
+<a name="109"><span class="lineNum">     109 </span>            : </a>
+<span class="lineNum">     110 </span><span class="lineCov">          3 :         newrec = chat_protocol_find(rec-&gt;name);</span>
+<span class="lineNum">     111 </span><span class="lineCov">          3 :         created = newrec == NULL;</span>
+<span class="lineNum">     112 </span><span class="lineCov">          3 :         if (newrec == NULL) {</span>
+<a name="113"><span class="lineNum">     113 </span><span class="lineCov">          3 :                 newrec = g_new0(CHAT_PROTOCOL_REC, 1);</span></a>
+<span class="lineNum">     114 </span><span class="lineCov">          3 :                 chat_protocols = g_slist_append(chat_protocols, newrec);</span>
+<span class="lineNum">     115 </span>            :         } else {
+<span class="lineNum">     116 </span>            :                 /* updating existing protocol */
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :                 g_free(newrec-&gt;name);</span></a>
+<span class="lineNum">     118 </span>            :         }
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span><span class="lineCov">          3 :         memcpy(newrec, rec, sizeof(CHAT_PROTOCOL_REC));</span>
+<a name="121"><span class="lineNum">     121 </span><span class="lineCov">          3 :         newrec-&gt;id = module_get_uniq_id_str(&quot;PROTOCOL&quot;, rec-&gt;name);</span></a>
+<span class="lineNum">     122 </span><span class="lineCov">          3 :         newrec-&gt;name = g_strdup(rec-&gt;name);</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span><span class="lineCov">          3 :         if (default_proto == NULL)</span>
+<a name="125"><span class="lineNum">     125 </span><span class="lineCov">          1 :                 chat_protocol_set_default(newrec);</span></a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineCov">          3 :         if (created)</span>
+<span class="lineNum">     128 </span><span class="lineCov">          3 :                 signal_emit(&quot;chat protocol created&quot;, 1, newrec);</span>
+<a name="129"><span class="lineNum">     129 </span>            :         else</a>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;chat protocol updated&quot;, 1, newrec);</span>
+<span class="lineNum">     131 </span><span class="lineCov">          3 :         return newrec;</span>
+<a name="132"><span class="lineNum">     132 </span>            : }</a>
+<a name="133"><span class="lineNum">     133 </span>            : </a>
+<span class="lineNum">     134 </span><span class="lineCov">          3 : static void chat_protocol_destroy(CHAT_PROTOCOL_REC *rec)</span>
+<span class="lineNum">     135 </span>            : {
+<span class="lineNum">     136 </span><span class="lineCov">          3 :         g_return_if_fail(rec != NULL);</span>
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<span class="lineNum">     138 </span><span class="lineCov">          3 :         chat_protocols = g_slist_remove(chat_protocols, rec);</span>
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineCov">          3 :         if (default_proto == rec) {</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineCov">          5 :                 chat_protocol_set_default(chat_protocols == NULL ? NULL :</span></a>
+<span class="lineNum">     142 </span><span class="lineCov">          2 :                                           chat_protocols-&gt;data);</span>
+<span class="lineNum">     143 </span>            :         }
+<span class="lineNum">     144 </span>            : 
+<a name="145"><span class="lineNum">     145 </span><span class="lineCov">          3 :         signal_emit(&quot;chat protocol destroyed&quot;, 1, rec);</span></a>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineCov">          3 :         g_free(rec-&gt;name);</span>
+<span class="lineNum">     148 </span><span class="lineCov">          3 :         g_free(rec);</span>
+<a name="149"><span class="lineNum">     149 </span>            : }</a>
+<a name="150"><span class="lineNum">     150 </span>            : </a>
+<span class="lineNum">     151 </span>            : /* Unregister chat protocol. */
+<span class="lineNum">     152 </span><span class="lineCov">          1 : void chat_protocol_unregister(const char *name)</span>
+<a name="153"><span class="lineNum">     153 </span>            : {</a>
+<span class="lineNum">     154 </span>            :         CHAT_PROTOCOL_REC *rec;
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineCov">          1 :         g_return_if_fail(name != NULL);</span>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span><span class="lineCov">          1 :         rec = chat_protocol_find(name);</span>
+<span class="lineNum">     159 </span><span class="lineCov">          1 :         if (rec != NULL) {</span>
+<span class="lineNum">     160 </span><span class="lineCov">          1 :                 chat_protocol_destroy(rec);</span>
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<span class="lineNum">     162 </span>            :                 /* there might still be references to this chat protocol -
+<span class="lineNum">     163 </span>            :                    recreate it as a dummy protocol */
+<span class="lineNum">     164 </span><span class="lineCov">          1 :                 chat_protocol_get_unknown(name);</span>
+<a name="165"><span class="lineNum">     165 </span>            :         }</a>
+<span class="lineNum">     166 </span>            : }
+<a name="167"><span class="lineNum">     167 </span>            : </a>
+<span class="lineNum">     168 </span>            : /* Default chat protocol to use */
+<a name="169"><span class="lineNum">     169 </span><span class="lineCov">          4 : void chat_protocol_set_default(CHAT_PROTOCOL_REC *rec)</span></a>
+<span class="lineNum">     170 </span>            : {
+<span class="lineNum">     171 </span><span class="lineCov">          4 :         default_proto = rec;</span>
+<a name="172"><span class="lineNum">     172 </span><span class="lineCov">          4 : }</span></a>
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<span class="lineNum">     174 </span><span class="lineCov">          2 : CHAT_PROTOCOL_REC *chat_protocol_get_default(void)</span>
+<span class="lineNum">     175 </span>            : {
+<span class="lineNum">     176 </span><span class="lineCov">          2 :         return default_proto;</span>
+<a name="177"><span class="lineNum">     177 </span>            : }</a>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineCov">          1 : static CHATNET_REC *create_chatnet(void)</span>
+<span class="lineNum">     180 </span>            : {
+<a name="181"><span class="lineNum">     181 </span><span class="lineCov">          1 :         return g_new0(CHATNET_REC, 1);</span></a>
+<a name="182"><span class="lineNum">     182 </span>            : }</a>
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineCov">          1 : static SERVER_SETUP_REC *create_server_setup(void)</span>
+<a name="185"><span class="lineNum">     185 </span>            : {</a>
+<span class="lineNum">     186 </span><span class="lineCov">          1 :         return g_new0(SERVER_SETUP_REC, 1);</span>
+<a name="187"><span class="lineNum">     187 </span>            : }</a>
+<span class="lineNum">     188 </span>            : 
+<a name="189"><span class="lineNum">     189 </span><span class="lineCov">          1 : static CHANNEL_SETUP_REC *create_channel_setup(void)</span></a>
+<span class="lineNum">     190 </span>            : {
+<span class="lineNum">     191 </span><span class="lineCov">          1 :         return g_new0(CHANNEL_SETUP_REC, 1);</span>
+<a name="192"><span class="lineNum">     192 </span>            : }</a>
+<a name="193"><span class="lineNum">     193 </span>            : </a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 : static SERVER_CONNECT_REC *create_server_connect(void)</span>
+<span class="lineNum">     195 </span>            : {
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         return g_new0(SERVER_CONNECT_REC, 1);</span>
+<a name="197"><span class="lineNum">     197 </span>            : }</a>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 : static void destroy_server_connect(SERVER_CONNECT_REC *conn)</span>
+<span class="lineNum">     200 </span>            : {
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     202 </span>            : 
+<a name="203"><span class="lineNum">     203 </span>            : /* Return &quot;unknown chat protocol&quot; record. Used when protocol name is</a>
+<span class="lineNum">     204 </span>            :    specified but it isn't registered yet. */
+<a name="205"><span class="lineNum">     205 </span><span class="lineCov">          2 : CHAT_PROTOCOL_REC *chat_protocol_get_unknown(const char *name)</span></a>
+<span class="lineNum">     206 </span>            : {
+<span class="lineNum">     207 </span>            :         CHAT_PROTOCOL_REC *rec, *newrec;
+<span class="lineNum">     208 </span>            : 
+<a name="209"><span class="lineNum">     209 </span><span class="lineCov">          2 :         g_return_val_if_fail(name != NULL, NULL);</span></a>
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineCov">          2 :         rec = chat_protocol_find(name);</span>
+<span class="lineNum">     212 </span><span class="lineCov">          2 :         if (rec != NULL)</span>
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :                 return rec;</span></a>
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span><span class="lineCov">          2 :         rec = g_new0(CHAT_PROTOCOL_REC, 1);</span>
+<span class="lineNum">     216 </span><span class="lineCov">          2 :         rec-&gt;not_initialized = TRUE;</span>
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">          2 :         rec-&gt;name = (char *) name;</span></a>
+<span class="lineNum">     218 </span><span class="lineCov">          2 :         rec-&gt;create_chatnet = create_chatnet;</span>
+<span class="lineNum">     219 </span><span class="lineCov">          2 :         rec-&gt;create_server_setup = create_server_setup;</span>
+<span class="lineNum">     220 </span><span class="lineCov">          2 :         rec-&gt;create_channel_setup = create_channel_setup;</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineCov">          2 :         rec-&gt;create_server_connect = create_server_connect;</span></a>
+<span class="lineNum">     222 </span><span class="lineCov">          2 :         rec-&gt;destroy_server_connect = destroy_server_connect;</span>
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span><span class="lineCov">          2 :         newrec = chat_protocol_register(rec);</span>
+<a name="225"><span class="lineNum">     225 </span><span class="lineCov">          2 :         g_free(rec);</span></a>
+<span class="lineNum">     226 </span><span class="lineCov">          2 :         return newrec;</span>
+<a name="227"><span class="lineNum">     227 </span>            : }</a>
+<span class="lineNum">     228 </span>            : 
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">          1 : void chat_protocols_init(void)</span></a>
+<span class="lineNum">     230 </span>            : {
+<span class="lineNum">     231 </span><span class="lineCov">          1 :         default_proto = NULL;</span>
+<span class="lineNum">     232 </span><span class="lineCov">          1 :         chat_protocols = NULL;</span>
+<a name="233"><span class="lineNum">     233 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineCov">          1 : void chat_protocols_deinit(void)</span>
+<span class="lineNum">     236 </span>            : {
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">          4 :         while (chat_protocols != NULL)</span></a>
+<span class="lineNum">     238 </span><span class="lineCov">          2 :                 chat_protocol_destroy(chat_protocols-&gt;data);</span>
+<span class="lineNum">     239 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

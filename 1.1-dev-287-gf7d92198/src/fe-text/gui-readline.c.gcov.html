@@ -1,0 +1,1486 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - app.info - src/fe-text/gui-readline.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html" target="_parent">top level</a> - <a href="index.html" target="_parent">src/fe-text</a> - gui-readline.c<span style="font-size: 80%;"> (source / <a href="gui-readline.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">app.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">304</td>
+            <td class="headerCovTableEntry">797</td>
+            <td class="headerCovTableEntryLo">38.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2017-11-29 11:05:41</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntry">80</td>
+            <td class="headerCovTableEntryLo">13.8 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  gui-readline.c : irssi
+<span class="lineNum">       3 </span>            : 
+<span class="lineNum">       4 </span>            :     Copyright (C) 1999 Timo Sirainen
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<span class="lineNum">       6 </span>            :     This program is free software; you can redistribute it and/or modify
+<span class="lineNum">       7 </span>            :     it under the terms of the GNU General Public License as published by
+<span class="lineNum">       8 </span>            :     the Free Software Foundation; either version 2 of the License, or
+<a name="9"><span class="lineNum">       9 </span>            :     (at your option) any later version.</a>
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            :     This program is distributed in the hope that it will be useful,
+<span class="lineNum">      12 </span>            :     but WITHOUT ANY WARRANTY; without even the implied warranty of
+<a name="13"><span class="lineNum">      13 </span>            :     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</a>
+<span class="lineNum">      14 </span>            :     GNU General Public License for more details.
+<span class="lineNum">      15 </span>            : 
+<span class="lineNum">      16 </span>            :     You should have received a copy of the GNU General Public License along
+<a name="17"><span class="lineNum">      17 </span>            :     with this program; if not, write to the Free Software Foundation, Inc.,</a>
+<span class="lineNum">      18 </span>            :     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+<span class="lineNum">      19 </span>            : */
+<span class="lineNum">      20 </span>            : 
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;module.h&quot;</a>
+<span class="lineNum">      22 </span>            : #include &quot;module-formats.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;signals.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;misc.h&quot;
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;settings.h&quot;</a>
+<span class="lineNum">      26 </span>            : #include &quot;special-vars.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;levels.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;servers.h&quot;
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<span class="lineNum">      30 </span>            : #include &quot;completion.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;command-history.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;keyboard.h&quot;
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;printtext.h&quot;</a>
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #include &quot;term.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;gui-entry.h&quot;
+<a name="37"><span class="lineNum">      37 </span>            : #include &quot;gui-windows.h&quot;</a>
+<span class="lineNum">      38 </span>            : #include &quot;utf8.h&quot;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : #include &lt;string.h&gt;
+<a name="41"><span class="lineNum">      41 </span>            : #include &lt;signal.h&gt;</a>
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : /* After LINE_SPLIT_LIMIT characters, the message will be split into multiple lines */
+<span class="lineNum">      44 </span>            : #define LINE_SPLIT_LIMIT 400
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<span class="lineNum">      46 </span>            : typedef void (*ENTRY_REDIRECT_KEY_FUNC) (int key, void *data, SERVER_REC *server, WI_ITEM_REC *item);
+<span class="lineNum">      47 </span>            : typedef void (*ENTRY_REDIRECT_ENTRY_FUNC) (const char *line, void *data, SERVER_REC *server, WI_ITEM_REC *item);
+<span class="lineNum">      48 </span>            : 
+<a name="49"><span class="lineNum">      49 </span>            : typedef struct {</a>
+<span class="lineNum">      50 </span>            :         SIGNAL_FUNC func;
+<span class="lineNum">      51 </span>            :         int flags;
+<span class="lineNum">      52 </span>            :         void *data;
+<a name="53"><span class="lineNum">      53 </span>            : } ENTRY_REDIRECT_REC;</a>
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            : static KEYBOARD_REC *keyboard;
+<span class="lineNum">      56 </span>            : static ENTRY_REDIRECT_REC *redir;
+<a name="57"><span class="lineNum">      57 </span>            : static int escape_next_key;</a>
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            : static int readtag;
+<span class="lineNum">      60 </span>            : static unichar prev_key;
+<a name="61"><span class="lineNum">      61 </span>            : static GTimeVal last_keypress;</a>
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : static int paste_detect_time, paste_verify_line_count;
+<span class="lineNum">      64 </span>            : static char *paste_entry;
+<a name="65"><span class="lineNum">      65 </span>            : static int paste_entry_pos;</a>
+<span class="lineNum">      66 </span>            : static GArray *paste_buffer;
+<span class="lineNum">      67 </span>            : static GArray *paste_buffer_rest;
+<span class="lineNum">      68 </span>            : 
+<a name="69"><span class="lineNum">      69 </span>            : static char *paste_old_prompt;</a>
+<span class="lineNum">      70 </span>            : static int paste_prompt, paste_line_count;
+<span class="lineNum">      71 </span>            : static int paste_join_multiline;
+<span class="lineNum">      72 </span>            : static int paste_timeout_id;
+<a name="73"><span class="lineNum">      73 </span>            : static int paste_use_bracketed_mode;</a>
+<span class="lineNum">      74 </span>            : static int paste_bracketed_mode;
+<span class="lineNum">      75 </span>            : static int paste_was_bracketed_mode;
+<span class="lineNum">      76 </span>            : static int previous_yank_preceded;
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<span class="lineNum">      78 </span>            : /* Terminal sequences that surround the input when the terminal has the
+<span class="lineNum">      79 </span>            :  * bracketed paste mode active. Fror more details see
+<span class="lineNum">      80 </span>            :  * https://cirw.in/blog/bracketed-paste */
+<a name="81"><span class="lineNum">      81 </span>            : static const unichar bp_start[] = { 0x1b, '[', '2', '0', '0', '~' };</a>
+<span class="lineNum">      82 </span>            : static const unichar bp_end[]   = { 0x1b, '[', '2', '0', '1', '~' };
+<span class="lineNum">      83 </span>            : 
+<a name="84"><span class="lineNum">      84 </span>            : static void sig_input(void);</a>
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<span class="lineNum">      86 </span><span class="lineCov">          1 : void input_listen_init(int handle)</span>
+<span class="lineNum">      87 </span>            : {
+<span class="lineNum">      88 </span><span class="lineCov">          1 :         readtag = g_input_add_poll(handle,</span>
+<a name="89"><span class="lineNum">      89 </span>            :                                    G_PRIORITY_HIGH, G_INPUT_READ,</a>
+<span class="lineNum">      90 </span>            :                                    (GInputFunction) sig_input, NULL);
+<a name="91"><span class="lineNum">      91 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">      92 </span>            : 
+<a name="93"><span class="lineNum">      93 </span><span class="lineCov">          1 : void input_listen_deinit(void)</span></a>
+<span class="lineNum">      94 </span>            : {
+<span class="lineNum">      95 </span><span class="lineCov">          1 :         g_source_remove(readtag);</span>
+<span class="lineNum">      96 </span><span class="lineCov">          1 :         readtag = -1;</span>
+<a name="97"><span class="lineNum">      97 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 : static void handle_key_redirect(int key)</span>
+<span class="lineNum">     100 </span>            : {
+<a name="101"><span class="lineNum">     101 </span>            :         ENTRY_REDIRECT_KEY_FUNC func;</a>
+<span class="lineNum">     102 </span>            :         void *data;
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :         func = (ENTRY_REDIRECT_KEY_FUNC) redir-&gt;func;</span>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :         data = redir-&gt;data;</span></a>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :         g_free_and_null(redir);</span>
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         gui_entry_set_prompt(active_entry, &quot;&quot;);</span>
+<a name="109"><span class="lineNum">     109 </span>            : </a>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :         if (func != NULL)</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 func(key, data, active_win-&gt;active_server, active_win-&gt;active);</span>
+<a name="112"><span class="lineNum">     112 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="113"><span class="lineNum">     113 </span>            : </a>
+<span class="lineNum">     114 </span><span class="lineCov">          1 : static void handle_entry_redirect(const char *line)</span>
+<span class="lineNum">     115 </span>            : {
+<span class="lineNum">     116 </span>            :         ENTRY_REDIRECT_ENTRY_FUNC func;
+<a name="117"><span class="lineNum">     117 </span>            :         void *data;</a>
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineCov">          1 :         gui_entry_set_hidden(active_entry, FALSE);</span>
+<span class="lineNum">     120 </span>            : 
+<a name="121"><span class="lineNum">     121 </span><span class="lineCov">          1 :         func = (ENTRY_REDIRECT_ENTRY_FUNC) redir-&gt;func;</span></a>
+<span class="lineNum">     122 </span><span class="lineCov">          1 :         data = redir-&gt;data;</span>
+<span class="lineNum">     123 </span><span class="lineCov">          1 :         g_free_and_null(redir);</span>
+<span class="lineNum">     124 </span>            : 
+<a name="125"><span class="lineNum">     125 </span><span class="lineCov">          1 :         gui_entry_set_prompt(active_entry, &quot;&quot;);</span></a>
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span><span class="lineCov">          1 :         if (func != NULL) {</span>
+<span class="lineNum">     128 </span><span class="lineCov">          1 :                 func(line, data, active_win-&gt;active_server,</span>
+<a name="129"><span class="lineNum">     129 </span><span class="lineCov">          1 :                      active_win-&gt;active);</span></a>
+<span class="lineNum">     130 </span>            :         }
+<a name="131"><span class="lineNum">     131 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">     132 </span>            : 
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 : static int get_scroll_count(void)</span></a>
+<span class="lineNum">     134 </span>            : {
+<span class="lineNum">     135 </span>            :         const char *str;
+<span class="lineNum">     136 </span>            :         double count;
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :         str = settings_get_str(&quot;scroll_page_count&quot;);</span>
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :         count = atof(str + (*str == '/'));</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :         if (count == 0)</span>
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :                 count = 1;</span></a>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :         else if (count &lt; 0)</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                 count = active_mainwin-&gt;height-active_mainwin-&gt;statusbar_lines+count;</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :         else if (count &lt; 1)</span>
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 :                 count = 1.0/count;</span></a>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :         if (*str == '/') {</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                 count = (active_mainwin-&gt;height-active_mainwin-&gt;statusbar_lines)/count;</span>
+<a name="149"><span class="lineNum">     149 </span>            :         }</a>
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :         return (int)count;</span>
+<a name="151"><span class="lineNum">     151 </span>            : }</a>
+<span class="lineNum">     152 </span>            : 
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">          0 : static void window_prev_page(void)</span></a>
+<span class="lineNum">     154 </span>            : {
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :         gui_window_scroll(active_win, -get_scroll_count());</span>
+<a name="156"><span class="lineNum">     156 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 : static void window_next_page(void)</span>
+<span class="lineNum">     159 </span>            : {
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :         gui_window_scroll(active_win, get_scroll_count());</span>
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 : static void paste_buffer_join_lines(GArray *buf)</span>
+<span class="lineNum">     164 </span>            : {
+<a name="165"><span class="lineNum">     165 </span>            :         unsigned int i, count, indent, line_len;</a>
+<span class="lineNum">     166 </span>            :         unichar *arr, *dest, *last_lf_pos;
+<span class="lineNum">     167 </span>            :         int last_lf;
+<span class="lineNum">     168 </span>            : 
+<a name="169"><span class="lineNum">     169 </span>            :         /* first check if we actually want to join anything. This is assuming</a>
+<span class="lineNum">     170 </span>            :            that we only want to join lines if
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span>            :            a) first line doesn't begin with whitespace
+<a name="173"><span class="lineNum">     173 </span>            :            b) subsequent lines begin with same amount of whitespace</a>
+<span class="lineNum">     174 </span>            :            c) whenever there's no whitespace, goto a)
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span>            :            For example:
+<a name="177"><span class="lineNum">     177 </span>            : </a>
+<span class="lineNum">     178 </span>            :            line 1
+<span class="lineNum">     179 </span>            :              line 2
+<span class="lineNum">     180 </span>            :              line 3
+<a name="181"><span class="lineNum">     181 </span>            :            line 4</a>
+<span class="lineNum">     182 </span>            :            line 5
+<span class="lineNum">     183 </span>            :              line 6
+<span class="lineNum">     184 </span>            : 
+<a name="185"><span class="lineNum">     185 </span>            :            -&gt;</a>
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span>            :            line1 line2 line 3
+<span class="lineNum">     188 </span>            :            line4
+<a name="189"><span class="lineNum">     189 </span>            :            line5 line 6</a>
+<span class="lineNum">     190 </span>            :         */
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :         if (buf-&gt;len == 0)</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="193"><span class="lineNum">     193 </span>            : </a>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :         arr = (unichar *)buf-&gt;data;</span>
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span>            :         /* first line */
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :         if (isblank(arr[0]))</span></a>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span>            :         /* find the first beginning of indented line */
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :         for (i = 1; i &lt; buf-&gt;len; i++) {</span></a>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :                 if (arr[i-1] == '\n' &amp;&amp; isblank(arr[i]))</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     204 </span>            :         }
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :         if (i == buf-&gt;len)</span></a>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span>            :         /* get how much indentation we have.. */
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :         for (indent = 0; i &lt; buf-&gt;len; i++, indent++) {</span></a>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                 if (!isblank(arr[i]))</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :                         break;</span>
+<span class="lineNum">     212 </span>            :         }
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :         if (i == buf-&gt;len)</span></a>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span>            :         /* now, enforce these to all subsequent lines */
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :         count = indent; last_lf = TRUE;</span></a>
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :         for (; i &lt; buf-&gt;len; i++) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                 if (last_lf) {</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 :                         if (isblank(arr[i]))</span>
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :                                 count++;</span></a>
+<span class="lineNum">     222 </span>            :                         else {
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :                                 last_lf = FALSE;</span>
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 :                                 if (count != 0 &amp;&amp; count != indent)</span>
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :                                         return;</span></a>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :                                 count = 0;</span>
+<span class="lineNum">     227 </span>            :                         }
+<span class="lineNum">     228 </span>            :                 }
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :                 if (arr[i] == '\n')</span></a>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :                         last_lf = TRUE;</span>
+<span class="lineNum">     231 </span>            :         }
+<span class="lineNum">     232 </span>            : 
+<a name="233"><span class="lineNum">     233 </span>            :         /* all looks fine - now remove the whitespace, but don't let lines</a>
+<span class="lineNum">     234 </span>            :            get longer than LINE_SPLIT_LIMIT chars */
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :         dest = arr; last_lf = TRUE; last_lf_pos = NULL; line_len = 0;</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; buf-&gt;len; i++) {</span>
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 :                 if (last_lf &amp;&amp; isblank(arr[i])) {</span></a>
+<span class="lineNum">     238 </span>            :                         /* whitespace, ignore */
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :                 } else if (arr[i] == '\n') {</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :                         if (!last_lf &amp;&amp; i+1 != buf-&gt;len &amp;&amp;</span>
+<a name="241"><span class="lineNum">     241 </span><span class="lineNoCov">          0 :                             isblank(arr[i+1])) {</span></a>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :                                 last_lf_pos = dest;</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :                                 *dest++ = ' ';</span>
+<span class="lineNum">     244 </span>            :                         } else {
+<a name="245"><span class="lineNum">     245 </span><span class="lineNoCov">          0 :                                 *dest++ = '\n'; /* double-LF */</span></a>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :                                 line_len = 0;</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :                                 last_lf_pos = NULL;</span>
+<span class="lineNum">     248 </span>            :                         }
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :                         last_lf = TRUE;</span></a>
+<span class="lineNum">     250 </span>            :                 } else {
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                         last_lf = FALSE;</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :                         if (++line_len &gt;= LINE_SPLIT_LIMIT &amp;&amp; last_lf_pos != NULL) {</span>
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :                                 memmove(last_lf_pos+1, last_lf_pos,</span></a>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :                                         (dest - last_lf_pos) * sizeof(unichar));</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :                                 *last_lf_pos = '\n'; last_lf_pos = NULL;</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :                                 line_len = 0;</span>
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :                                 dest++;</span></a>
+<span class="lineNum">     258 </span>            :                         }
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :                         *dest++ = arr[i];</span>
+<span class="lineNum">     260 </span>            :                 }
+<a name="261"><span class="lineNum">     261 </span>            :         }</a>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :         g_array_set_size(buf, dest - arr);</span>
+<a name="263"><span class="lineNum">     263 </span>            : }</a>
+<span class="lineNum">     264 </span>            : 
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 : static void paste_send_line(char *text)</span></a>
+<span class="lineNum">     266 </span>            : {
+<span class="lineNum">     267 </span>            :         /* we need to get the current history every time because it might change between calls */
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :         command_history_add(command_history_current(active_win), text);</span>
+<a name="269"><span class="lineNum">     269 </span>            : </a>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :         signal_emit(&quot;send command&quot;, 3, text, active_win-&gt;active_server, active_win-&gt;active);</span>
+<a name="271"><span class="lineNum">     271 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     272 </span>            : 
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 : static void paste_send(void)</span></a>
+<span class="lineNum">     274 </span>            : {
+<span class="lineNum">     275 </span>            :         unichar *arr;
+<span class="lineNum">     276 </span>            :         GString *str;
+<a name="277"><span class="lineNum">     277 </span>            :         char out[10], *text;</a>
+<span class="lineNum">     278 </span>            :         unsigned int i;
+<span class="lineNum">     279 </span>            : 
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :         if (paste_join_multiline)</span>
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :                 paste_buffer_join_lines(paste_buffer);</span></a>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         arr = (unichar *) paste_buffer-&gt;data;</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :         if (active_entry-&gt;text_len == 0)</span>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 i = 0;</span></a>
+<span class="lineNum">     286 </span>            :         else {
+<span class="lineNum">     287 </span>            :                 /* first line has to be kludged kind of to get pasting in the
+<span class="lineNum">     288 </span>            :                    middle of line right.. */
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; paste_buffer-&gt;len; i++) {</span></a>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :                         if (arr[i] == '\r' || arr[i] == '\n') {</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                                 i++;</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :                                 break;</span>
+<a name="293"><span class="lineNum">     293 </span>            :                         }</a>
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :                         gui_entry_insert_char(active_entry, arr[i]);</span>
+<span class="lineNum">     296 </span>            :                 }
+<a name="297"><span class="lineNum">     297 </span>            : </a>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :                 text = gui_entry_get_text(active_entry);</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :                 paste_send_line(text);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :                 g_free(text);</span>
+<a name="301"><span class="lineNum">     301 </span>            :         }</a>
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span>            :         /* rest of the lines */
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :         str = g_string_new(NULL);</span>
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :         for (; i &lt; paste_buffer-&gt;len; i++) {</span></a>
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :                 if (arr[i] == '\r' || arr[i] == '\n') {</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :                         paste_send_line(str-&gt;str);</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :                         g_string_truncate(str, 0);</span>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :                 } else if (active_entry-&gt;utf8) {</span></a>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                         out[g_unichar_to_utf8(arr[i], out)] = '\0';</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :                         g_string_append(str, out);</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :                 } else if (term_type == TERM_TYPE_BIG5) {</span>
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :                         if (arr[i] &gt; 0xff)</span></a>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                                 g_string_append_c(str, (arr[i] &gt;&gt; 8) &amp; 0xff);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :                         g_string_append_c(str, arr[i] &amp; 0xff);</span>
+<span class="lineNum">     316 </span>            :                 } else {
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :                         g_string_append_c(str, arr[i]);</span></a>
+<span class="lineNum">     318 </span>            :                 }
+<span class="lineNum">     319 </span>            :         }
+<span class="lineNum">     320 </span>            : 
+<a name="321"><span class="lineNum">     321 </span><span class="lineNoCov">          0 :         if (paste_was_bracketed_mode) {</span></a>
+<span class="lineNum">     322 </span>            :                 /* the text before the bracket end should be sent along with the rest */
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :                 paste_send_line(str-&gt;str);</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :                 gui_entry_set_text(active_entry, &quot;&quot;);</span>
+<a name="325"><span class="lineNum">     325 </span>            :         } else {</a>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :                 gui_entry_set_text(active_entry, str-&gt;str);</span>
+<span class="lineNum">     327 </span>            :         }
+<span class="lineNum">     328 </span>            : 
+<a name="329"><span class="lineNum">     329 </span><span class="lineNoCov">          0 :         g_string_free(str, TRUE);</span></a>
+<a name="330"><span class="lineNum">     330 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 : static void paste_flush(int send)</span>
+<a name="333"><span class="lineNum">     333 </span>            : {</a>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :         if (paste_prompt) {</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :                 gui_entry_set_text(active_entry, paste_entry);</span>
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :                 gui_entry_set_pos(active_entry, paste_entry_pos);</span>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :                 g_free_and_null(paste_entry);</span></a>
+<span class="lineNum">     338 </span>            :         }
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :         if (send)</span>
+<a name="341"><span class="lineNum">     341 </span><span class="lineNoCov">          0 :                 paste_send();</span></a>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :         g_array_set_size(paste_buffer, 0);</span>
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span>            :         /* re-add anything that may have been after the bracketed paste end */
+<a name="345"><span class="lineNum">     345 </span><span class="lineNoCov">          0 :         if (paste_buffer_rest-&gt;len &gt; 0) {</span></a>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :                 g_array_append_vals(paste_buffer, paste_buffer_rest-&gt;data, paste_buffer_rest-&gt;len);</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :                 g_array_set_size(paste_buffer_rest, 0);</span>
+<span class="lineNum">     348 </span>            :         }
+<a name="349"><span class="lineNum">     349 </span>            : </a>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :         gui_entry_set_prompt(active_entry,</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :                              paste_old_prompt == NULL ? &quot;&quot; : paste_old_prompt);</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :         g_free(paste_old_prompt); paste_old_prompt = NULL;</span>
+<a name="353"><span class="lineNum">     353 </span><span class="lineNoCov">          0 :         paste_prompt = FALSE;</span></a>
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :         paste_line_count = 0;</span>
+<span class="lineNum">     356 </span>            : 
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 :         gui_entry_redraw(active_entry);</span></a>
+<a name="358"><span class="lineNum">     358 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 : static void insert_paste_prompt(void)</span>
+<a name="361"><span class="lineNum">     361 </span>            : {</a>
+<span class="lineNum">     362 </span>            :         char *str;
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span>            :         /* The actual number of lines that will show up post-line-split */
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :         int actual_line_count = paste_line_count;</span></a>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :         int split_lines = paste_buffer-&gt;len / LINE_SPLIT_LIMIT;</span>
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span>            :         /* in case this prompt is happening due to line-splitting, calculate the
+<a name="369"><span class="lineNum">     369 </span>            :            number of lines obtained from this. The number isn't entirely accurate;</a>
+<span class="lineNum">     370 </span>            :            we just choose the greater of the two since the exact value isn't
+<span class="lineNum">     371 </span>            :            important */
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :         if (split_lines &gt; paste_verify_line_count &amp;&amp;</span>
+<a name="373"><span class="lineNum">     373 </span><span class="lineNoCov">          0 :                 split_lines &gt; paste_line_count) {</span></a>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :                 actual_line_count = split_lines;</span>
+<span class="lineNum">     375 </span>            :         }
+<span class="lineNum">     376 </span>            : 
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 :         paste_prompt = TRUE;</span></a>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :         paste_old_prompt = g_strdup(active_entry-&gt;prompt);</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         printformat_window(active_win, MSGLEVEL_CLIENTNOTICE,</span>
+<span class="lineNum">     380 </span>            :                            TXT_PASTE_WARNING,
+<a name="381"><span class="lineNum">     381 </span>            :                            actual_line_count,</a>
+<span class="lineNum">     382 </span>            :                            active_win-&gt;active == NULL ? &quot;window&quot; :
+<span class="lineNum">     383 </span>            :                            active_win-&gt;active-&gt;visible_name);
+<span class="lineNum">     384 </span>            : 
+<a name="385"><span class="lineNum">     385 </span><span class="lineNoCov">          0 :         str = format_get_text(MODULE_NAME, active_win, NULL, NULL,</span></a>
+<span class="lineNum">     386 </span>            :                               TXT_PASTE_PROMPT, 0, 0);
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :         gui_entry_set_prompt(active_entry, str);</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :         paste_entry = gui_entry_get_text(active_entry);</span>
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 :         paste_entry_pos = gui_entry_get_pos(active_entry);</span></a>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :         gui_entry_set_text(active_entry, &quot;&quot;);</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :         g_free(str);</span>
+<a name="392"><span class="lineNum">     392 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="393"><span class="lineNum">     393 </span>            : </a>
+<span class="lineNum">     394 </span><span class="lineCov">          8 : static void sig_gui_key_pressed(gpointer keyp)</span>
+<span class="lineNum">     395 </span>            : {
+<span class="lineNum">     396 </span>            :         GTimeVal now;
+<a name="397"><span class="lineNum">     397 </span>            :         unichar key;</a>
+<span class="lineNum">     398 </span>            :         char str[20];
+<span class="lineNum">     399 </span>            :         int ret;
+<span class="lineNum">     400 </span>            : 
+<a name="401"><span class="lineNum">     401 </span><span class="lineCov">          8 :         key = GPOINTER_TO_INT(keyp);</span></a>
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span><span class="lineCov">          8 :         if (redir != NULL &amp;&amp; redir-&gt;flags &amp; ENTRY_REDIRECT_FLAG_HOTKEY) {</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :                 handle_key_redirect(key);</span>
+<a name="405"><span class="lineNum">     405 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<span class="lineNum">     406 </span>            :         }
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span><span class="lineCov">          8 :         g_get_current_time(&amp;now);</span>
+<a name="409"><span class="lineNum">     409 </span>            : </a>
+<span class="lineNum">     410 </span><span class="lineCov">          8 :         if (key &lt; 32) {</span>
+<span class="lineNum">     411 </span>            :                 /* control key */
+<span class="lineNum">     412 </span><span class="lineCov">          2 :                 str[0] = '^';</span>
+<a name="413"><span class="lineNum">     413 </span><span class="lineCov">          2 :                 str[1] = (char)key+'@';</span></a>
+<span class="lineNum">     414 </span><span class="lineCov">          2 :                 str[2] = '\0';</span>
+<span class="lineNum">     415 </span><span class="lineCov">          6 :         } else if (key == 127) {</span>
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :                 str[0] = '^';</span>
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 :                 str[1] = '?';</span></a>
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :                 str[2] = '\0';</span>
+<span class="lineNum">     419 </span><span class="lineCov">          6 :         } else if (!active_entry-&gt;utf8) {</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :                 if (key &lt;= 0xff) {</span>
+<a name="421"><span class="lineNum">     421 </span><span class="lineNoCov">          0 :                         str[0] = (char)key;</span></a>
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :                         str[1] = '\0';</span>
+<span class="lineNum">     423 </span>            :                 } else {
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :                         str[0] = (char) (key &gt;&gt; 8);</span>
+<a name="425"><span class="lineNum">     425 </span><span class="lineNoCov">          0 :                         str[1] = (char) (key &amp; 0xff);</span></a>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :                         str[2] = '\0';</span>
+<span class="lineNum">     427 </span>            :                 }
+<span class="lineNum">     428 </span>            :         } else {
+<a name="429"><span class="lineNum">     429 </span>            :                 /* need to convert to utf8 */</a>
+<span class="lineNum">     430 </span><span class="lineCov">          6 :                 str[g_unichar_to_utf8(key, str)] = '\0';</span>
+<span class="lineNum">     431 </span>            :         }
+<span class="lineNum">     432 </span>            : 
+<a name="433"><span class="lineNum">     433 </span><span class="lineCov">          8 :         if (g_strcmp0(str, &quot;^&quot;) == 0) {</span></a>
+<span class="lineNum">     434 </span>            :                 /* change it as ^-, that is an invalid control char */
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :                 str[1] = '-';</span>
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :                 str[2] = '\0';</span>
+<a name="437"><span class="lineNum">     437 </span>            :         }</a>
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span><span class="lineCov">          8 :         if (escape_next_key) {</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :                 escape_next_key = FALSE;</span>
+<a name="441"><span class="lineNum">     441 </span><span class="lineNoCov">          0 :                 gui_entry_insert_char(active_entry, key);</span></a>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                 ret = 1;</span>
+<span class="lineNum">     443 </span>            :         } else {
+<span class="lineNum">     444 </span><span class="lineCov">          8 :                 previous_yank_preceded = active_entry-&gt;yank_preceded;</span>
+<a name="445"><span class="lineNum">     445 </span><span class="lineCov">          8 :                 active_entry-&gt;yank_preceded = FALSE;</span></a>
+<span class="lineNum">     446 </span><span class="lineCov">          8 :                 active_entry-&gt;previous_append_next_kill = active_entry-&gt;append_next_kill;</span>
+<span class="lineNum">     447 </span><span class="lineCov">          8 :                 active_entry-&gt;append_next_kill = FALSE;</span>
+<span class="lineNum">     448 </span><span class="lineCov">          8 :                 ret = key_pressed(keyboard, str);</span>
+<a name="449"><span class="lineNum">     449 </span><span class="lineCov">          8 :                 if (ret &lt; 0) {</span></a>
+<span class="lineNum">     450 </span>            :                         /* key wasn't used for anything, print it */
+<span class="lineNum">     451 </span><span class="lineCov">          6 :                         gui_entry_insert_char(active_entry, key);</span>
+<span class="lineNum">     452 </span>            :                 }
+<a name="453"><span class="lineNum">     453 </span><span class="lineCov">          8 :                 if (ret == 0) {</span></a>
+<span class="lineNum">     454 </span>            :                         /* combo not complete, ignore append_next_kill and yank_preceded */
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :                         active_entry-&gt;append_next_kill = active_entry-&gt;previous_append_next_kill;</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :                         active_entry-&gt;yank_preceded = previous_yank_preceded;</span>
+<a name="457"><span class="lineNum">     457 </span>            :                 }</a>
+<span class="lineNum">     458 </span>            :         }
+<span class="lineNum">     459 </span>            : 
+<span class="lineNum">     460 </span>            :         /* ret = 0 : some key create multiple characters - we're in the middle
+<a name="461"><span class="lineNum">     461 </span>            :            of one. try to detect the keycombo as a single keypress rather than</a>
+<span class="lineNum">     462 </span>            :            multiple small onces to avoid incorrect paste detection.
+<span class="lineNum">     463 </span>            : 
+<span class="lineNum">     464 </span>            :            don't count repeated keys so paste detection won't go on when
+<a name="465"><span class="lineNum">     465 </span>            :            you're holding some key down */</a>
+<span class="lineNum">     466 </span><span class="lineCov">          8 :         if (ret != 0 &amp;&amp; key != prev_key) {</span>
+<span class="lineNum">     467 </span><span class="lineCov">          8 :                 last_keypress = now;</span>
+<span class="lineNum">     468 </span>            :         }
+<a name="469"><span class="lineNum">     469 </span><span class="lineCov">          8 :         prev_key = key;</span></a>
+<a name="470"><span class="lineNum">     470 </span>            : }</a>
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span><span class="lineCov">          2 : static void key_send_line(void)</span>
+<a name="473"><span class="lineNum">     473 </span>            : {</a>
+<span class="lineNum">     474 </span>            :         HISTORY_REC *history;
+<span class="lineNum">     475 </span>            :         char *str;
+<span class="lineNum">     476 </span>            :         int add_history;
+<a name="477"><span class="lineNum">     477 </span>            : </a>
+<span class="lineNum">     478 </span><span class="lineCov">          2 :         str = gui_entry_get_text(active_entry);</span>
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span>            :         /* we can't use gui_entry_get_text() later, since the entry might
+<a name="481"><span class="lineNum">     481 </span>            :            have been destroyed after we get back */</a>
+<span class="lineNum">     482 </span><span class="lineCov">          2 :         add_history = *str != '\0';</span>
+<span class="lineNum">     483 </span><span class="lineCov">          2 :         history = command_history_current(active_win);</span>
+<span class="lineNum">     484 </span>            : 
+<a name="485"><span class="lineNum">     485 </span><span class="lineCov">          2 :         if (redir != NULL &amp;&amp; redir-&gt;flags &amp; ENTRY_REDIRECT_FLAG_HIDDEN)</span></a>
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :                 add_history = 0;</span>
+<span class="lineNum">     487 </span>            : 
+<span class="lineNum">     488 </span><span class="lineCov">          2 :         if (add_history &amp;&amp; history != NULL) {</span>
+<a name="489"><span class="lineNum">     489 </span><span class="lineCov">          2 :                 command_history_add(history, str);</span></a>
+<span class="lineNum">     490 </span>            :         }
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span><span class="lineCov">          2 :         if (redir == NULL) {</span>
+<a name="493"><span class="lineNum">     493 </span><span class="lineCov">          2 :                 signal_emit(&quot;send command&quot;, 3, str,</span></a>
+<span class="lineNum">     494 </span><span class="lineCov">          1 :                             active_win-&gt;active_server,</span>
+<span class="lineNum">     495 </span><span class="lineCov">          1 :                             active_win-&gt;active);</span>
+<span class="lineNum">     496 </span>            :         } else {
+<a name="497"><span class="lineNum">     497 </span><span class="lineCov">          1 :                 handle_entry_redirect(str);</span></a>
+<span class="lineNum">     498 </span>            :         }
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span><span class="lineCov">          2 :         if (active_entry != NULL)</span>
+<a name="501"><span class="lineNum">     501 </span><span class="lineCov">          2 :                 gui_entry_set_text(active_entry, &quot;&quot;);</span></a>
+<span class="lineNum">     502 </span><span class="lineCov">          2 :         command_history_clear_pos(active_win);</span>
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span><span class="lineCov">          2 :         g_free(str);</span>
+<a name="505"><span class="lineNum">     505 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span><span class="lineNoCov">          0 : static void key_combo(void)</span>
+<span class="lineNum">     508 </span>            : {
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 : static void key_backward_history(void)</span>
+<span class="lineNum">     512 </span>            : {
+<a name="513"><span class="lineNum">     513 </span>            :         const char *text;</a>
+<span class="lineNum">     514 </span>            :         char *line;
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :         line = gui_entry_get_text(active_entry);</span>
+<a name="517"><span class="lineNum">     517 </span><span class="lineNoCov">          0 :         text = command_history_prev(active_win, line);</span></a>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :         gui_entry_set_text(active_entry, text);</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :         g_free(line);</span>
+<a name="520"><span class="lineNum">     520 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="521"><span class="lineNum">     521 </span>            : </a>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 : static void key_forward_history(void)</span>
+<span class="lineNum">     523 </span>            : {
+<span class="lineNum">     524 </span>            :         const char *text;
+<a name="525"><span class="lineNum">     525 </span>            :         char *line;</a>
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :         line = gui_entry_get_text(active_entry);</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :         text = command_history_next(active_win, line);</span>
+<a name="529"><span class="lineNum">     529 </span><span class="lineNoCov">          0 :         gui_entry_set_text(active_entry, text);</span></a>
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :         g_free(line);</span>
+<a name="531"><span class="lineNum">     531 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     532 </span>            : 
+<a name="533"><span class="lineNum">     533 </span><span class="lineNoCov">          0 : static void key_backward_global_history(void)</span></a>
+<span class="lineNum">     534 </span>            : {
+<span class="lineNum">     535 </span>            :         const char *text;
+<span class="lineNum">     536 </span>            :         char *line;
+<a name="537"><span class="lineNum">     537 </span>            : </a>
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :         line = gui_entry_get_text(active_entry);</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :         text = command_global_history_prev(active_win, line);</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :         gui_entry_set_text(active_entry, text);</span>
+<a name="541"><span class="lineNum">     541 </span><span class="lineNoCov">          0 :         g_free(line);</span></a>
+<a name="542"><span class="lineNum">     542 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 : static void key_forward_global_history(void)</span>
+<a name="545"><span class="lineNum">     545 </span>            : {</a>
+<span class="lineNum">     546 </span>            :         const char *text;
+<span class="lineNum">     547 </span>            :         char *line;
+<span class="lineNum">     548 </span>            : 
+<a name="549"><span class="lineNum">     549 </span><span class="lineNoCov">          0 :         line = gui_entry_get_text(active_entry);</span></a>
+<span class="lineNum">     550 </span><span class="lineNoCov">          0 :         text = command_global_history_next(active_win, line);</span>
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 :         gui_entry_set_text(active_entry, text);</span>
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :         g_free(line);</span>
+<a name="553"><span class="lineNum">     553 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     554 </span>            : 
+<span class="lineNum">     555 </span><span class="lineNoCov">          0 : static void key_erase_history_entry(void)</span>
+<span class="lineNum">     556 </span>            : {
+<a name="557"><span class="lineNum">     557 </span>            :         const char *text;</a>
+<span class="lineNum">     558 </span>            :         char *line;
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :         line = gui_entry_get_text(active_entry);</span>
+<a name="561"><span class="lineNum">     561 </span><span class="lineNoCov">          0 :         text = command_history_delete_current(active_win, line);</span></a>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :         gui_entry_set_text(active_entry, text);</span>
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :         g_free(line);</span>
+<a name="564"><span class="lineNum">     564 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="565"><span class="lineNum">     565 </span>            : </a>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 : static void key_beginning_of_line(void)</span>
+<span class="lineNum">     567 </span>            : {
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :         gui_entry_set_pos(active_entry, 0);</span>
+<a name="569"><span class="lineNum">     569 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span><span class="lineNoCov">          0 : static void key_end_of_line(void)</span>
+<span class="lineNum">     572 </span>            : {
+<a name="573"><span class="lineNum">     573 </span><span class="lineNoCov">          0 :         gui_entry_set_pos(active_entry, active_entry-&gt;text_len);</span></a>
+<a name="574"><span class="lineNum">     574 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     575 </span>            : 
+<span class="lineNum">     576 </span><span class="lineNoCov">          0 : static void key_backward_character(void)</span>
+<a name="577"><span class="lineNum">     577 </span>            : {</a>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :         gui_entry_move_pos(active_entry, -1);</span>
+<a name="579"><span class="lineNum">     579 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     580 </span>            : 
+<a name="581"><span class="lineNum">     581 </span><span class="lineNoCov">          0 : static void key_forward_character(void)</span></a>
+<span class="lineNum">     582 </span>            : {
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 :         gui_entry_move_pos(active_entry, 1);</span>
+<a name="584"><span class="lineNum">     584 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="585"><span class="lineNum">     585 </span>            : </a>
+<span class="lineNum">     586 </span><span class="lineNoCov">          0 : static void key_backward_word(void)</span>
+<span class="lineNum">     587 </span>            : {
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :         gui_entry_move_words(active_entry, -1, FALSE);</span>
+<a name="589"><span class="lineNum">     589 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 : static void key_forward_word(void)</span>
+<span class="lineNum">     592 </span>            : {
+<a name="593"><span class="lineNum">     593 </span><span class="lineNoCov">          0 :         gui_entry_move_words(active_entry, 1, FALSE);</span></a>
+<a name="594"><span class="lineNum">     594 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 : static void key_backward_to_space(void)</span>
+<a name="597"><span class="lineNum">     597 </span>            : {</a>
+<span class="lineNum">     598 </span><span class="lineNoCov">          0 :         gui_entry_move_words(active_entry, -1, TRUE);</span>
+<a name="599"><span class="lineNum">     599 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     600 </span>            : 
+<a name="601"><span class="lineNum">     601 </span><span class="lineNoCov">          0 : static void key_forward_to_space(void)</span></a>
+<span class="lineNum">     602 </span>            : {
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :         gui_entry_move_words(active_entry, 1, TRUE);</span>
+<a name="604"><span class="lineNum">     604 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="605"><span class="lineNum">     605 </span>            : </a>
+<span class="lineNum">     606 </span><span class="lineNoCov">          0 : static void key_erase_line(void)</span>
+<span class="lineNum">     607 </span>            : {
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :         gui_entry_set_pos(active_entry, active_entry-&gt;text_len);</span>
+<a name="609"><span class="lineNum">     609 </span><span class="lineNoCov">          0 :         gui_entry_erase(active_entry, active_entry-&gt;text_len, CUTBUFFER_UPDATE_REPLACE);</span></a>
+<a name="610"><span class="lineNum">     610 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     611 </span>            : 
+<span class="lineNum">     612 </span><span class="lineNoCov">          0 : static void key_erase_to_beg_of_line(void)</span>
+<a name="613"><span class="lineNum">     613 </span>            : {</a>
+<span class="lineNum">     614 </span>            :         int pos;
+<span class="lineNum">     615 </span>            : 
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :         pos = gui_entry_get_pos(active_entry);</span>
+<a name="617"><span class="lineNum">     617 </span><span class="lineNoCov">          0 :         gui_entry_erase(active_entry, pos, CUTBUFFER_UPDATE_PREPEND);</span></a>
+<a name="618"><span class="lineNum">     618 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     619 </span>            : 
+<span class="lineNum">     620 </span><span class="lineNoCov">          0 : static void key_erase_to_end_of_line(void)</span>
+<a name="621"><span class="lineNum">     621 </span>            : {</a>
+<span class="lineNum">     622 </span>            :         int pos;
+<span class="lineNum">     623 </span>            : 
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 :         pos = gui_entry_get_pos(active_entry);</span>
+<a name="625"><span class="lineNum">     625 </span><span class="lineNoCov">          0 :         gui_entry_set_pos(active_entry, active_entry-&gt;text_len);</span></a>
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :         gui_entry_erase(active_entry, active_entry-&gt;text_len - pos, CUTBUFFER_UPDATE_APPEND);</span>
+<a name="627"><span class="lineNum">     627 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     628 </span>            : 
+<a name="629"><span class="lineNum">     629 </span><span class="lineNoCov">          0 : static void key_yank_from_cutbuffer(void)</span></a>
+<span class="lineNum">     630 </span>            : {
+<span class="lineNum">     631 </span>            :         char *cutbuffer;
+<span class="lineNum">     632 </span>            : 
+<a name="633"><span class="lineNum">     633 </span><span class="lineNoCov">          0 :         cutbuffer = gui_entry_get_cutbuffer(active_entry);</span></a>
+<span class="lineNum">     634 </span><span class="lineNoCov">          0 :         if (cutbuffer != NULL) {</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :                 gui_entry_insert_text(active_entry, cutbuffer);</span>
+<span class="lineNum">     636 </span><span class="lineNoCov">          0 :                 active_entry-&gt;yank_preceded = TRUE;</span>
+<a name="637"><span class="lineNum">     637 </span><span class="lineNoCov">          0 :                 g_free(cutbuffer);</span></a>
+<span class="lineNum">     638 </span>            :         }
+<a name="639"><span class="lineNum">     639 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     640 </span>            : 
+<a name="641"><span class="lineNum">     641 </span><span class="lineNoCov">          0 : static void key_yank_next_cutbuffer(void)</span></a>
+<span class="lineNum">     642 </span>            : {
+<span class="lineNum">     643 </span>            :         GUI_ENTRY_CUTBUFFER_REC *rec;
+<span class="lineNum">     644 </span><span class="lineNoCov">          0 :         guint length = 0;</span>
+<a name="645"><span class="lineNum">     645 </span>            :         char *cutbuffer;</a>
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 :         if (!previous_yank_preceded)</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="649"><span class="lineNum">     649 </span>            : </a>
+<span class="lineNum">     650 </span><span class="lineNoCov">          0 :         if (active_entry-&gt;kill_ring == NULL)</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     652 </span>            : 
+<a name="653"><span class="lineNum">     653 </span><span class="lineNoCov">          0 :         rec = active_entry-&gt;kill_ring-&gt;data;</span></a>
+<span class="lineNum">     654 </span><span class="lineNoCov">          0 :         if (rec != NULL) length = rec-&gt;cutbuffer_len;</span>
+<span class="lineNum">     655 </span>            : 
+<span class="lineNum">     656 </span><span class="lineNoCov">          0 :         cutbuffer = gui_entry_get_next_cutbuffer(active_entry);</span>
+<a name="657"><span class="lineNum">     657 </span><span class="lineNoCov">          0 :         if (cutbuffer != NULL) {</span></a>
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :                 gui_entry_erase(active_entry, length, CUTBUFFER_UPDATE_NOOP);</span>
+<span class="lineNum">     659 </span><span class="lineNoCov">          0 :                 gui_entry_insert_text(active_entry, cutbuffer);</span>
+<span class="lineNum">     660 </span><span class="lineNoCov">          0 :                 active_entry-&gt;yank_preceded = TRUE;</span>
+<a name="661"><span class="lineNum">     661 </span><span class="lineNoCov">          0 :                 g_free(cutbuffer);</span></a>
+<span class="lineNum">     662 </span>            :         }
+<a name="663"><span class="lineNum">     663 </span>            : }</a>
+<span class="lineNum">     664 </span>            : 
+<a name="665"><span class="lineNum">     665 </span><span class="lineNoCov">          0 : static void key_transpose_characters(void)</span></a>
+<span class="lineNum">     666 </span>            : {
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :         gui_entry_transpose_chars(active_entry);</span>
+<a name="668"><span class="lineNum">     668 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="669"><span class="lineNum">     669 </span>            : </a>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 : static void key_transpose_words(void)</span>
+<span class="lineNum">     671 </span>            : {
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :         gui_entry_transpose_words(active_entry);</span>
+<a name="673"><span class="lineNum">     673 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 : static void key_capitalize_word(void)</span>
+<span class="lineNum">     676 </span>            : {
+<a name="677"><span class="lineNum">     677 </span><span class="lineNoCov">          0 :         gui_entry_capitalize_word(active_entry);</span></a>
+<a name="678"><span class="lineNum">     678 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     679 </span>            : 
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 : static void key_downcase_word(void)</span>
+<a name="681"><span class="lineNum">     681 </span>            : {</a>
+<a name="682"><span class="lineNum">     682 </span><span class="lineNoCov">          0 :         gui_entry_downcase_word(active_entry);</span></a>
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 : static void key_upcase_word(void)</span>
+<a name="685"><span class="lineNum">     685 </span>            : {</a>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :         gui_entry_upcase_word(active_entry);</span>
+<a name="687"><span class="lineNum">     687 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     688 </span>            : 
+<a name="689"><span class="lineNum">     689 </span><span class="lineNoCov">          0 : static void key_delete_character(void)</span></a>
+<span class="lineNum">     690 </span>            : {
+<span class="lineNum">     691 </span><span class="lineNoCov">          0 :         if (gui_entry_get_pos(active_entry) &lt; active_entry-&gt;text_len) {</span>
+<span class="lineNum">     692 </span><span class="lineNoCov">          0 :                 gui_entry_erase_cell(active_entry);</span>
+<a name="693"><span class="lineNum">     693 </span>            :         }</a>
+<a name="694"><span class="lineNum">     694 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span><span class="lineNoCov">          0 : static void key_backspace(void)</span>
+<a name="697"><span class="lineNum">     697 </span>            : {</a>
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :         gui_entry_erase(active_entry, 1, CUTBUFFER_UPDATE_NOOP);</span>
+<a name="699"><span class="lineNum">     699 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     700 </span>            : 
+<a name="701"><span class="lineNum">     701 </span><span class="lineNoCov">          0 : static void key_delete_previous_word(void)</span></a>
+<span class="lineNum">     702 </span>            : {
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :         gui_entry_erase_word(active_entry, FALSE, CUTBUFFER_UPDATE_PREPEND);</span>
+<a name="704"><span class="lineNum">     704 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="705"><span class="lineNum">     705 </span>            : </a>
+<span class="lineNum">     706 </span><span class="lineNoCov">          0 : static void key_delete_next_word(void)</span>
+<span class="lineNum">     707 </span>            : {
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :         gui_entry_erase_next_word(active_entry, FALSE, CUTBUFFER_UPDATE_APPEND);</span>
+<a name="709"><span class="lineNum">     709 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 : static void key_delete_to_previous_space(void)</span>
+<span class="lineNum">     712 </span>            : {
+<a name="713"><span class="lineNum">     713 </span><span class="lineNoCov">          0 :         gui_entry_erase_word(active_entry, TRUE, CUTBUFFER_UPDATE_PREPEND);</span></a>
+<a name="714"><span class="lineNum">     714 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     715 </span>            : 
+<span class="lineNum">     716 </span><span class="lineNoCov">          0 : static void key_delete_to_next_space(void)</span>
+<a name="717"><span class="lineNum">     717 </span>            : {</a>
+<span class="lineNum">     718 </span><span class="lineNoCov">          0 :         gui_entry_erase_next_word(active_entry, TRUE, CUTBUFFER_UPDATE_APPEND);</span>
+<a name="719"><span class="lineNum">     719 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     720 </span>            : 
+<a name="721"><span class="lineNum">     721 </span><span class="lineNoCov">          0 : static void key_append_next_kill(void)</span></a>
+<span class="lineNum">     722 </span>            : {
+<span class="lineNum">     723 </span><span class="lineNoCov">          0 :         active_entry-&gt;append_next_kill = TRUE;</span>
+<a name="724"><span class="lineNum">     724 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="725"><span class="lineNum">     725 </span>            : </a>
+<span class="lineNum">     726 </span><span class="lineNoCov">          0 : static gboolean paste_timeout(gpointer data)</span>
+<span class="lineNum">     727 </span>            : {
+<span class="lineNum">     728 </span>            :         int split_lines;
+<a name="729"><span class="lineNum">     729 </span><span class="lineNoCov">          0 :         paste_was_bracketed_mode = paste_bracketed_mode;</span></a>
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span>            :         /* number of lines after splitting extra-long messages */
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 :         split_lines = paste_buffer-&gt;len / LINE_SPLIT_LIMIT;</span>
+<a name="733"><span class="lineNum">     733 </span>            : </a>
+<span class="lineNum">     734 </span>            :         /* Take into account the fact that a line may be split every LINE_SPLIT_LIMIT characters */
+<span class="lineNum">     735 </span><span class="lineNoCov">          0 :         if (paste_line_count == 0 &amp;&amp; split_lines &lt;= paste_verify_line_count) {</span>
+<span class="lineNum">     736 </span>            :                 int i;
+<a name="737"><span class="lineNum">     737 </span>            : </a>
+<span class="lineNum">     738 </span><span class="lineNoCov">          0 :                 for (i = 0; i &lt; paste_buffer-&gt;len; i++) {</span>
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :                         unichar key = g_array_index(paste_buffer, unichar, i);</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">          0 :                         signal_emit(&quot;gui key pressed&quot;, 1, GINT_TO_POINTER(key));</span>
+<a name="741"><span class="lineNum">     741 </span>            :                 }</a>
+<span class="lineNum">     742 </span><span class="lineNoCov">          0 :                 g_array_set_size(paste_buffer, 0);</span>
+<span class="lineNum">     743 </span><span class="lineNoCov">          0 :         } else if (paste_verify_line_count &gt; 0 &amp;&amp;</span>
+<span class="lineNum">     744 </span><span class="lineNoCov">          0 :                                 (paste_line_count &gt;= paste_verify_line_count ||</span>
+<a name="745"><span class="lineNum">     745 </span><span class="lineNoCov">          0 :                                 split_lines &gt; paste_verify_line_count) &amp;&amp;</span></a>
+<span class="lineNum">     746 </span><span class="lineNoCov">          0 :                                 active_win-&gt;active != NULL)</span>
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 :                 insert_paste_prompt();</span>
+<span class="lineNum">     748 </span>            :         else
+<a name="749"><span class="lineNum">     749 </span><span class="lineNoCov">          0 :                 paste_flush(TRUE);</span></a>
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 :         paste_timeout_id = -1;</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">          0 :         return FALSE;</span>
+<a name="752"><span class="lineNum">     752 </span>            : }</a>
+<a name="753"><span class="lineNum">     753 </span>            : </a>
+<span class="lineNum">     754 </span><span class="lineNoCov">          0 : static void paste_bracketed_end(int i, gboolean rest)</span>
+<span class="lineNum">     755 </span>            : {
+<span class="lineNum">     756 </span>            :         unichar last_char;
+<a name="757"><span class="lineNum">     757 </span>            : </a>
+<span class="lineNum">     758 </span>            :         /* if there's stuff after the end bracket, save it for later */
+<span class="lineNum">     759 </span><span class="lineNoCov">          0 :         if (rest) {</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :                 unichar *start = ((unichar *) paste_buffer-&gt;data) + i + G_N_ELEMENTS(bp_end);</span>
+<a name="761"><span class="lineNum">     761 </span><span class="lineNoCov">          0 :                 int len = paste_buffer-&gt;len - i - G_N_ELEMENTS(bp_end);</span></a>
+<span class="lineNum">     762 </span>            : 
+<span class="lineNum">     763 </span><span class="lineNoCov">          0 :                 g_array_set_size(paste_buffer_rest, 0);</span>
+<span class="lineNum">     764 </span><span class="lineNoCov">          0 :                 g_array_append_vals(paste_buffer_rest, start, len);</span>
+<a name="765"><span class="lineNum">     765 </span>            :         }</a>
+<span class="lineNum">     766 </span>            : 
+<span class="lineNum">     767 </span>            :         /* remove the rest, including the trailing sequence chars */
+<span class="lineNum">     768 </span><span class="lineNoCov">          0 :         g_array_set_size(paste_buffer, i);</span>
+<a name="769"><span class="lineNum">     769 </span>            : </a>
+<span class="lineNum">     770 </span><span class="lineNoCov">          0 :         last_char = g_array_index(paste_buffer, unichar, i - 1);</span>
+<span class="lineNum">     771 </span>            : 
+<span class="lineNum">     772 </span><span class="lineNoCov">          0 :         if (paste_line_count &gt; 0 &amp;&amp; last_char != '\n' &amp;&amp; last_char != '\r') {</span>
+<a name="773"><span class="lineNum">     773 </span>            :                 /* there are newlines, but there's also stuff after the newline</a>
+<span class="lineNum">     774 </span>            :                  * adjust line count to reflect this */
+<span class="lineNum">     775 </span><span class="lineNoCov">          0 :                 paste_line_count++;</span>
+<span class="lineNum">     776 </span>            :         }
+<a name="777"><span class="lineNum">     777 </span>            : </a>
+<span class="lineNum">     778 </span>            :         /* decide what to do with the buffer */
+<span class="lineNum">     779 </span><span class="lineNoCov">          0 :         paste_timeout(NULL);</span>
+<span class="lineNum">     780 </span>            : 
+<a name="781"><span class="lineNum">     781 </span><span class="lineNoCov">          0 :         paste_bracketed_mode = FALSE;</span></a>
+<a name="782"><span class="lineNum">     782 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     783 </span>            : 
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 : static void paste_bracketed_middle()</span>
+<a name="785"><span class="lineNum">     785 </span>            : {</a>
+<span class="lineNum">     786 </span>            :         int i;
+<span class="lineNum">     787 </span><span class="lineNoCov">          0 :         int marklen = G_N_ELEMENTS(bp_end);</span>
+<span class="lineNum">     788 </span><span class="lineNoCov">          0 :         int len = paste_buffer-&gt;len - marklen;</span>
+<a name="789"><span class="lineNum">     789 </span><span class="lineNoCov">          0 :         unichar *ptr = (unichar *) paste_buffer-&gt;data;</span></a>
+<span class="lineNum">     790 </span>            : 
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 :         if (len &lt; 0) {</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">          0 :                 return;</span>
+<a name="793"><span class="lineNum">     793 </span>            :         }</a>
+<span class="lineNum">     794 </span>            : 
+<span class="lineNum">     795 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt;= len; i++, ptr++) {</span>
+<span class="lineNum">     796 </span><span class="lineNoCov">          0 :                 if (ptr[0] == bp_end[0] &amp;&amp; memcmp(ptr, bp_end, sizeof(bp_end)) == 0) {</span>
+<a name="797"><span class="lineNum">     797 </span>            : </a>
+<span class="lineNum">     798 </span>            :                         /* if there are at least 6 bytes after the end,
+<span class="lineNum">     799 </span>            :                          * check for another start marker right afterwards */
+<span class="lineNum">     800 </span><span class="lineNoCov">          0 :                         if (i &lt;= (len - marklen) &amp;&amp;</span>
+<a name="801"><span class="lineNum">     801 </span><span class="lineNoCov">          0 :                             memcmp(ptr + marklen, bp_start, sizeof(bp_start)) == 0) {</span></a>
+<span class="lineNum">     802 </span>            : 
+<span class="lineNum">     803 </span>            :                                 /* remove both markers*/
+<span class="lineNum">     804 </span><span class="lineNoCov">          0 :                                 g_array_remove_range(paste_buffer, i, marklen * 2);</span>
+<a name="805"><span class="lineNum">     805 </span><span class="lineNoCov">          0 :                                 len -= marklen * 2;</span></a>
+<span class="lineNum">     806 </span>            : 
+<span class="lineNum">     807 </span>            :                                 /* go one step back */
+<span class="lineNum">     808 </span><span class="lineNoCov">          0 :                                 i--;</span>
+<a name="809"><span class="lineNum">     809 </span><span class="lineNoCov">          0 :                                 ptr--;</span></a>
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 :                                 continue;</span>
+<span class="lineNum">     811 </span>            :                         }
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :                         paste_bracketed_end(i, i != len);</span>
+<a name="813"><span class="lineNum">     813 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<span class="lineNum">     814 </span>            :                 }
+<span class="lineNum">     815 </span>            :         }
+<a name="816"><span class="lineNum">     816 </span>            : }</a>
+<a name="817"><span class="lineNum">     817 </span>            : </a>
+<span class="lineNum">     818 </span><span class="lineCov">          8 : static void sig_input(void)</span>
+<span class="lineNum">     819 </span>            : {
+<span class="lineNum">     820 </span><span class="lineCov">          8 :         if (!active_entry) {</span>
+<a name="821"><span class="lineNum">     821 </span>            :                 /* no active entry yet - wait until we have it */</a>
+<span class="lineNum">     822 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">     823 </span>            :         }
+<span class="lineNum">     824 </span>            : 
+<a name="825"><span class="lineNum">     825 </span><span class="lineCov">          8 :         if (paste_prompt) {</span></a>
+<span class="lineNum">     826 </span><span class="lineNoCov">          0 :                 GArray *buffer = g_array_new(FALSE, FALSE, sizeof(unichar));</span>
+<span class="lineNum">     827 </span><span class="lineNoCov">          0 :                 int line_count = 0;</span>
+<span class="lineNum">     828 </span>            :                 unichar key;
+<a name="829"><span class="lineNum">     829 </span><span class="lineNoCov">          0 :                 term_gets(buffer, &amp;line_count);</span></a>
+<span class="lineNum">     830 </span><span class="lineNoCov">          0 :                 key = g_array_index(buffer, unichar, 0);</span>
+<span class="lineNum">     831 </span>            :                 /* Either Ctrl-k or Ctrl-c is pressed */
+<span class="lineNum">     832 </span><span class="lineNoCov">          0 :                 if (key == 11 || key == 3)</span>
+<a name="833"><span class="lineNum">     833 </span><span class="lineNoCov">          0 :                         paste_flush(key == 11);</span></a>
+<span class="lineNum">     834 </span><span class="lineNoCov">          0 :                 g_array_free(buffer, TRUE);</span>
+<span class="lineNum">     835 </span>            :         } else {
+<span class="lineNum">     836 </span><span class="lineCov">          8 :                 term_gets(paste_buffer, &amp;paste_line_count);</span>
+<a name="837"><span class="lineNum">     837 </span>            : </a>
+<span class="lineNum">     838 </span>            :                 /* use the bracketed paste mode to detect when the user pastes
+<span class="lineNum">     839 </span>            :                  * some text into the entry */
+<span class="lineNum">     840 </span><span class="lineCov">          8 :                 if (paste_bracketed_mode) {</span>
+<a name="841"><span class="lineNum">     841 </span><span class="lineNoCov">          0 :                         paste_bracketed_middle();</span></a>
+<span class="lineNum">     842 </span>            : 
+<span class="lineNum">     843 </span><span class="lineCov">          8 :                 } else if (!paste_use_bracketed_mode &amp;&amp; paste_detect_time &gt; 0 &amp;&amp; paste_buffer-&gt;len &gt;= 3) {</span>
+<span class="lineNum">     844 </span><span class="lineNoCov">          0 :                         if (paste_timeout_id != -1)</span>
+<a name="845"><span class="lineNum">     845 </span><span class="lineNoCov">          0 :                                 g_source_remove(paste_timeout_id);</span></a>
+<span class="lineNum">     846 </span><span class="lineNoCov">          0 :                         paste_timeout_id = g_timeout_add(paste_detect_time, paste_timeout, NULL);</span>
+<span class="lineNum">     847 </span><span class="lineCov">          8 :                 } else if (!paste_bracketed_mode) {</span>
+<span class="lineNum">     848 </span>            :                         int i;
+<a name="849"><span class="lineNum">     849 </span>            : </a>
+<span class="lineNum">     850 </span><span class="lineCov">         16 :                         for (i = 0; i &lt; paste_buffer-&gt;len; i++) {</span>
+<span class="lineNum">     851 </span><span class="lineCov">          8 :                                 unichar key = g_array_index(paste_buffer, unichar, i);</span>
+<span class="lineNum">     852 </span><span class="lineCov">          8 :                                 signal_emit(&quot;gui key pressed&quot;, 1, GINT_TO_POINTER(key));</span>
+<a name="853"><span class="lineNum">     853 </span>            : </a>
+<span class="lineNum">     854 </span><span class="lineCov">          8 :                                 if (paste_bracketed_mode) {</span>
+<span class="lineNum">     855 </span>            :                                         /* just enabled by the signal, remove what was processed so far */
+<span class="lineNum">     856 </span><span class="lineNoCov">          0 :                                         g_array_remove_range(paste_buffer, 0, i + 1);</span>
+<a name="857"><span class="lineNum">     857 </span>            : </a>
+<span class="lineNum">     858 </span>            :                                         /* handle single-line / small pastes here */
+<span class="lineNum">     859 </span><span class="lineNoCov">          0 :                                         paste_bracketed_middle();</span>
+<span class="lineNum">     860 </span><span class="lineNoCov">          0 :                                         return;</span>
+<a name="861"><span class="lineNum">     861 </span>            :                                 }</a>
+<span class="lineNum">     862 </span>            :                         }
+<span class="lineNum">     863 </span><span class="lineCov">          8 :                         g_array_set_size(paste_buffer, 0);</span>
+<span class="lineNum">     864 </span><span class="lineCov">          8 :                         paste_line_count = 0;</span>
+<a name="865"><span class="lineNum">     865 </span>            :                 }</a>
+<span class="lineNum">     866 </span>            :         }
+<a name="867"><span class="lineNum">     867 </span>            : }</a>
+<span class="lineNum">     868 </span>            : 
+<a name="869"><span class="lineNum">     869 </span><span class="lineNoCov">          0 : static void key_paste_start(void)</span></a>
+<span class="lineNum">     870 </span>            : {
+<span class="lineNum">     871 </span><span class="lineNoCov">          0 :         paste_bracketed_mode = TRUE;</span>
+<a name="872"><span class="lineNum">     872 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="873"><span class="lineNum">     873 </span>            : </a>
+<span class="lineNum">     874 </span><span class="lineNoCov">          0 : time_t get_idle_time(void)</span>
+<span class="lineNum">     875 </span>            : {
+<span class="lineNum">     876 </span><span class="lineNoCov">          0 :         return last_keypress.tv_sec;</span>
+<a name="877"><span class="lineNum">     877 </span>            : }</a>
+<span class="lineNum">     878 </span>            : 
+<span class="lineNum">     879 </span><span class="lineNoCov">          0 : static void key_scroll_backward(void)</span>
+<span class="lineNum">     880 </span>            : {
+<a name="881"><span class="lineNum">     881 </span><span class="lineNoCov">          0 :         window_prev_page();</span></a>
+<a name="882"><span class="lineNum">     882 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     883 </span>            : 
+<span class="lineNum">     884 </span><span class="lineNoCov">          0 : static void key_scroll_forward(void)</span>
+<a name="885"><span class="lineNum">     885 </span>            : {</a>
+<span class="lineNum">     886 </span><span class="lineNoCov">          0 :         window_next_page();</span>
+<a name="887"><span class="lineNum">     887 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     888 </span>            : 
+<a name="889"><span class="lineNum">     889 </span><span class="lineNoCov">          0 : static void key_scroll_start(void)</span></a>
+<span class="lineNum">     890 </span>            : {
+<span class="lineNum">     891 </span><span class="lineNoCov">          0 :         signal_emit(&quot;command scrollback home&quot;, 3, NULL, active_win-&gt;active_server, active_win-&gt;active);</span>
+<a name="892"><span class="lineNum">     892 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="893"><span class="lineNum">     893 </span>            : </a>
+<span class="lineNum">     894 </span><span class="lineNoCov">          0 : static void key_scroll_end(void)</span>
+<span class="lineNum">     895 </span>            : {
+<span class="lineNum">     896 </span><span class="lineNoCov">          0 :         signal_emit(&quot;command scrollback end&quot;, 3, NULL, active_win-&gt;active_server, active_win-&gt;active);</span>
+<a name="897"><span class="lineNum">     897 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     898 </span>            : 
+<span class="lineNum">     899 </span><span class="lineNoCov">          0 : static void key_change_window(const char *data)</span>
+<span class="lineNum">     900 </span>            : {
+<a name="901"><span class="lineNum">     901 </span><span class="lineNoCov">          0 :         signal_emit(&quot;command window goto&quot;, 3, data, active_win-&gt;active_server, active_win-&gt;active);</span></a>
+<a name="902"><span class="lineNum">     902 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     903 </span>            : 
+<span class="lineNum">     904 </span><span class="lineNoCov">          0 : static void key_completion(int erase, int backward)</span>
+<a name="905"><span class="lineNum">     905 </span>            : {</a>
+<span class="lineNum">     906 </span>            :         char *text, *line;
+<span class="lineNum">     907 </span>            :         int pos;
+<span class="lineNum">     908 </span>            : 
+<a name="909"><span class="lineNum">     909 </span><span class="lineNoCov">          0 :         text = gui_entry_get_text_and_pos(active_entry, &amp;pos);</span></a>
+<span class="lineNum">     910 </span><span class="lineNoCov">          0 :         line = word_complete(active_win, text, &amp;pos, erase, backward);</span>
+<span class="lineNum">     911 </span><span class="lineNoCov">          0 :         g_free(text);</span>
+<span class="lineNum">     912 </span>            : 
+<a name="913"><span class="lineNum">     913 </span><span class="lineNoCov">          0 :         if (line != NULL) {</span></a>
+<span class="lineNum">     914 </span><span class="lineNoCov">          0 :                 gui_entry_set_text_and_pos_bytes(active_entry, line, pos);</span>
+<span class="lineNum">     915 </span><span class="lineNoCov">          0 :                 g_free(line);</span>
+<span class="lineNum">     916 </span>            :         }
+<a name="917"><span class="lineNum">     917 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     918 </span>            : 
+<span class="lineNum">     919 </span><span class="lineNoCov">          0 : static void key_word_completion_backward(void)</span>
+<span class="lineNum">     920 </span>            : {
+<a name="921"><span class="lineNum">     921 </span><span class="lineNoCov">          0 :         key_completion(FALSE, TRUE);</span></a>
+<a name="922"><span class="lineNum">     922 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     923 </span>            : 
+<span class="lineNum">     924 </span><span class="lineNoCov">          0 : static void key_word_completion(void)</span>
+<a name="925"><span class="lineNum">     925 </span>            : {</a>
+<span class="lineNum">     926 </span><span class="lineNoCov">          0 :         key_completion(FALSE, FALSE);</span>
+<a name="927"><span class="lineNum">     927 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     928 </span>            : 
+<a name="929"><span class="lineNum">     929 </span><span class="lineNoCov">          0 : static void key_erase_completion(void)</span></a>
+<span class="lineNum">     930 </span>            : {
+<span class="lineNum">     931 </span><span class="lineNoCov">          0 :         key_completion(TRUE, FALSE);</span>
+<a name="932"><span class="lineNum">     932 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="933"><span class="lineNum">     933 </span>            : </a>
+<span class="lineNum">     934 </span><span class="lineCov">          2 : static void key_check_replaces(void)</span>
+<span class="lineNum">     935 </span>            : {
+<span class="lineNum">     936 </span>            :         char *text, *line;
+<a name="937"><span class="lineNum">     937 </span>            :         int pos;</a>
+<span class="lineNum">     938 </span>            : 
+<span class="lineNum">     939 </span><span class="lineCov">          2 :         text = gui_entry_get_text_and_pos(active_entry, &amp;pos);</span>
+<span class="lineNum">     940 </span><span class="lineCov">          2 :         line = auto_word_complete(text, &amp;pos);</span>
+<a name="941"><span class="lineNum">     941 </span><span class="lineCov">          2 :         g_free(text);</span></a>
+<span class="lineNum">     942 </span>            : 
+<span class="lineNum">     943 </span><span class="lineCov">          2 :         if (line != NULL) {</span>
+<span class="lineNum">     944 </span><span class="lineNoCov">          0 :                 gui_entry_set_text_and_pos_bytes(active_entry, line, pos);</span>
+<a name="945"><span class="lineNum">     945 </span><span class="lineNoCov">          0 :                 g_free(line);</span></a>
+<span class="lineNum">     946 </span>            :         }
+<a name="947"><span class="lineNum">     947 </span><span class="lineCov">          2 : }</span></a>
+<span class="lineNum">     948 </span>            : 
+<a name="949"><span class="lineNum">     949 </span><span class="lineNoCov">          0 : static void key_previous_window(void)</span></a>
+<span class="lineNum">     950 </span>            : {
+<span class="lineNum">     951 </span><span class="lineNoCov">          0 :         signal_emit(&quot;command window previous&quot;, 3, &quot;&quot;, active_win-&gt;active_server, active_win-&gt;active);</span>
+<a name="952"><span class="lineNum">     952 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="953"><span class="lineNum">     953 </span>            : </a>
+<span class="lineNum">     954 </span><span class="lineNoCov">          0 : static void key_next_window(void)</span>
+<span class="lineNum">     955 </span>            : {
+<span class="lineNum">     956 </span><span class="lineNoCov">          0 :         signal_emit(&quot;command window next&quot;, 3, &quot;&quot;, active_win-&gt;active_server, active_win-&gt;active);</span>
+<a name="957"><span class="lineNum">     957 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     958 </span>            : 
+<span class="lineNum">     959 </span><span class="lineNoCov">          0 : static void key_left_window(void)</span>
+<span class="lineNum">     960 </span>            : {
+<a name="961"><span class="lineNum">     961 </span><span class="lineNoCov">          0 :         signal_emit(&quot;command window left&quot;, 3, &quot;&quot;, active_win-&gt;active_server, active_win-&gt;active);</span></a>
+<a name="962"><span class="lineNum">     962 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     963 </span>            : 
+<span class="lineNum">     964 </span><span class="lineNoCov">          0 : static void key_right_window(void)</span>
+<a name="965"><span class="lineNum">     965 </span>            : {</a>
+<span class="lineNum">     966 </span><span class="lineNoCov">          0 :         signal_emit(&quot;command window right&quot;, 3, &quot;&quot;, active_win-&gt;active_server, active_win-&gt;active);</span>
+<a name="967"><span class="lineNum">     967 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     968 </span>            : 
+<a name="969"><span class="lineNum">     969 </span><span class="lineNoCov">          0 : static void key_upper_window(void)</span></a>
+<span class="lineNum">     970 </span>            : {
+<span class="lineNum">     971 </span><span class="lineNoCov">          0 :         signal_emit(&quot;command window up&quot;, 3, &quot;&quot;, active_win-&gt;active_server, active_win-&gt;active);</span>
+<a name="972"><span class="lineNum">     972 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="973"><span class="lineNum">     973 </span>            : </a>
+<span class="lineNum">     974 </span><span class="lineNoCov">          0 : static void key_lower_window(void)</span>
+<span class="lineNum">     975 </span>            : {
+<span class="lineNum">     976 </span><span class="lineNoCov">          0 :         signal_emit(&quot;command window down&quot;, 3, &quot;&quot;, active_win-&gt;active_server, active_win-&gt;active);</span>
+<a name="977"><span class="lineNum">     977 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     978 </span>            : 
+<span class="lineNum">     979 </span><span class="lineNoCov">          0 : static void key_active_window(void)</span>
+<span class="lineNum">     980 </span>            : {
+<a name="981"><span class="lineNum">     981 </span><span class="lineNoCov">          0 :         signal_emit(&quot;command window goto&quot;, 3, &quot;active&quot;, active_win-&gt;active_server, active_win-&gt;active);</span></a>
+<a name="982"><span class="lineNum">     982 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">     983 </span>            : 
+<span class="lineNum">     984 </span><span class="lineNoCov">          0 : static SERVER_REC *get_prev_server(SERVER_REC *current)</span>
+<a name="985"><span class="lineNum">     985 </span>            : {</a>
+<span class="lineNum">     986 </span>            :         int pos;
+<span class="lineNum">     987 </span>            : 
+<span class="lineNum">     988 </span><span class="lineNoCov">          0 :         if (current == NULL) {</span>
+<a name="989"><span class="lineNum">     989 </span><span class="lineNoCov">          0 :                 return servers != NULL ? g_slist_last(servers)-&gt;data :</span></a>
+<span class="lineNum">     990 </span><span class="lineNoCov">          0 :                         lookup_servers != NULL ?</span>
+<span class="lineNum">     991 </span><span class="lineNoCov">          0 :                         g_slist_last(lookup_servers)-&gt;data : NULL;</span>
+<span class="lineNum">     992 </span>            :         }
+<a name="993"><span class="lineNum">     993 </span>            : </a>
+<span class="lineNum">     994 </span>            :         /* connect2 -&gt; connect1 -&gt; server2 -&gt; server1 -&gt; connect2 -&gt; .. */
+<span class="lineNum">     995 </span>            : 
+<span class="lineNum">     996 </span><span class="lineNoCov">          0 :         pos = g_slist_index(servers, current);</span>
+<a name="997"><span class="lineNum">     997 </span><span class="lineNoCov">          0 :         if (pos != -1) {</span></a>
+<span class="lineNum">     998 </span><span class="lineNoCov">          0 :                 if (pos &gt; 0)</span>
+<span class="lineNum">     999 </span><span class="lineNoCov">          0 :                         return g_slist_nth(servers, pos-1)-&gt;data;</span>
+<span class="lineNum">    1000 </span><span class="lineNoCov">          0 :                 if (lookup_servers != NULL)</span>
+<a name="1001"><span class="lineNum">    1001 </span><span class="lineNoCov">          0 :                         return g_slist_last(lookup_servers)-&gt;data;</span></a>
+<span class="lineNum">    1002 </span><span class="lineNoCov">          0 :                 return g_slist_last(servers)-&gt;data;</span>
+<span class="lineNum">    1003 </span>            :         }
+<span class="lineNum">    1004 </span>            : 
+<a name="1005"><span class="lineNum">    1005 </span><span class="lineNoCov">          0 :         pos = g_slist_index(lookup_servers, current);</span></a>
+<span class="lineNum">    1006 </span><span class="lineNoCov">          0 :         g_assert(pos &gt;= 0);</span>
+<span class="lineNum">    1007 </span>            : 
+<span class="lineNum">    1008 </span><span class="lineNoCov">          0 :         if (pos &gt; 0)</span>
+<a name="1009"><span class="lineNum">    1009 </span><span class="lineNoCov">          0 :                 return g_slist_nth(lookup_servers, pos-1)-&gt;data;</span></a>
+<span class="lineNum">    1010 </span><span class="lineNoCov">          0 :         if (servers != NULL)</span>
+<span class="lineNum">    1011 </span><span class="lineNoCov">          0 :                 return g_slist_last(servers)-&gt;data;</span>
+<span class="lineNum">    1012 </span><span class="lineNoCov">          0 :         return g_slist_last(lookup_servers)-&gt;data;</span>
+<a name="1013"><span class="lineNum">    1013 </span>            : }</a>
+<span class="lineNum">    1014 </span>            : 
+<span class="lineNum">    1015 </span><span class="lineNoCov">          0 : static SERVER_REC *get_next_server(SERVER_REC *current)</span>
+<span class="lineNum">    1016 </span>            : {
+<a name="1017"><span class="lineNum">    1017 </span>            :         GSList *pos;</a>
+<span class="lineNum">    1018 </span>            : 
+<span class="lineNum">    1019 </span><span class="lineNoCov">          0 :         if (current == NULL) {</span>
+<span class="lineNum">    1020 </span><span class="lineNoCov">          0 :                 return servers != NULL ? servers-&gt;data :</span>
+<a name="1021"><span class="lineNum">    1021 </span><span class="lineNoCov">          0 :                         lookup_servers != NULL ? lookup_servers-&gt;data : NULL;</span></a>
+<span class="lineNum">    1022 </span>            :         }
+<span class="lineNum">    1023 </span>            : 
+<span class="lineNum">    1024 </span>            :         /* server1 -&gt; server2 -&gt; connect1 -&gt; connect2 -&gt; server1 -&gt; .. */
+<a name="1025"><span class="lineNum">    1025 </span>            : </a>
+<span class="lineNum">    1026 </span><span class="lineNoCov">          0 :         pos = g_slist_find(servers, current);</span>
+<span class="lineNum">    1027 </span><span class="lineNoCov">          0 :         if (pos != NULL) {</span>
+<span class="lineNum">    1028 </span><span class="lineNoCov">          0 :                 if (pos-&gt;next != NULL)</span>
+<a name="1029"><span class="lineNum">    1029 </span><span class="lineNoCov">          0 :                         return pos-&gt;next-&gt;data;</span></a>
+<span class="lineNum">    1030 </span><span class="lineNoCov">          0 :                 if (lookup_servers != NULL)</span>
+<span class="lineNum">    1031 </span><span class="lineNoCov">          0 :                         return lookup_servers-&gt;data;</span>
+<span class="lineNum">    1032 </span><span class="lineNoCov">          0 :                 return servers-&gt;data;</span>
+<a name="1033"><span class="lineNum">    1033 </span>            :         }</a>
+<span class="lineNum">    1034 </span>            : 
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 :         pos = g_slist_find(lookup_servers, current);</span>
+<span class="lineNum">    1036 </span><span class="lineNoCov">          0 :         g_assert(pos != NULL);</span>
+<a name="1037"><span class="lineNum">    1037 </span>            : </a>
+<span class="lineNum">    1038 </span><span class="lineNoCov">          0 :         if (pos-&gt;next != NULL)</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">          0 :                 return pos-&gt;next-&gt;data;</span>
+<span class="lineNum">    1040 </span><span class="lineNoCov">          0 :         if (servers != NULL)</span>
+<a name="1041"><span class="lineNum">    1041 </span><span class="lineNoCov">          0 :                 return servers-&gt;data;</span></a>
+<span class="lineNum">    1042 </span><span class="lineNoCov">          0 :         return lookup_servers-&gt;data;</span>
+<a name="1043"><span class="lineNum">    1043 </span>            : }</a>
+<span class="lineNum">    1044 </span>            : 
+<a name="1045"><span class="lineNum">    1045 </span><span class="lineNoCov">          0 : static void key_previous_window_item(void)</span></a>
+<span class="lineNum">    1046 </span>            : {
+<span class="lineNum">    1047 </span>            :         SERVER_REC *server;
+<span class="lineNum">    1048 </span>            : 
+<a name="1049"><span class="lineNum">    1049 </span><span class="lineNoCov">          0 :         if (active_win-&gt;items != NULL) {</span></a>
+<span class="lineNum">    1050 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;command window item prev&quot;, 3, &quot;&quot;,</span>
+<span class="lineNum">    1051 </span><span class="lineNoCov">          0 :                             active_win-&gt;active_server, active_win-&gt;active);</span>
+<span class="lineNum">    1052 </span><span class="lineNoCov">          0 :         } else if (servers != NULL || lookup_servers != NULL) {</span>
+<a name="1053"><span class="lineNum">    1053 </span>            :                 /* change server */</a>
+<span class="lineNum">    1054 </span><span class="lineNoCov">          0 :                 server = active_win-&gt;active_server;</span>
+<span class="lineNum">    1055 </span><span class="lineNoCov">          0 :                 if (server == NULL)</span>
+<span class="lineNum">    1056 </span><span class="lineNoCov">          0 :                         server = active_win-&gt;connect_server;</span>
+<a name="1057"><span class="lineNum">    1057 </span><span class="lineNoCov">          0 :                 server = get_prev_server(server);</span></a>
+<span class="lineNum">    1058 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;command window server&quot;, 3, server-&gt;tag,</span>
+<span class="lineNum">    1059 </span><span class="lineNoCov">          0 :                             active_win-&gt;active_server, active_win-&gt;active);</span>
+<span class="lineNum">    1060 </span>            :         }
+<a name="1061"><span class="lineNum">    1061 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">    1062 </span>            : 
+<span class="lineNum">    1063 </span><span class="lineNoCov">          0 : static void key_next_window_item(void)</span>
+<span class="lineNum">    1064 </span>            : {
+<a name="1065"><span class="lineNum">    1065 </span>            :         SERVER_REC *server;</a>
+<span class="lineNum">    1066 </span>            : 
+<span class="lineNum">    1067 </span><span class="lineNoCov">          0 :         if (active_win-&gt;items != NULL) {</span>
+<span class="lineNum">    1068 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;command window item next&quot;, 3, &quot;&quot;,</span>
+<a name="1069"><span class="lineNum">    1069 </span><span class="lineNoCov">          0 :                             active_win-&gt;active_server, active_win-&gt;active);</span></a>
+<span class="lineNum">    1070 </span><span class="lineNoCov">          0 :         } else if (servers != NULL || lookup_servers != NULL) {</span>
+<span class="lineNum">    1071 </span>            :                 /* change server */
+<span class="lineNum">    1072 </span><span class="lineNoCov">          0 :                 server = active_win-&gt;active_server;</span>
+<a name="1073"><span class="lineNum">    1073 </span><span class="lineNoCov">          0 :                 if (server == NULL)</span></a>
+<span class="lineNum">    1074 </span><span class="lineNoCov">          0 :                         server = active_win-&gt;connect_server;</span>
+<span class="lineNum">    1075 </span><span class="lineNoCov">          0 :                 server = get_next_server(server);</span>
+<span class="lineNum">    1076 </span><span class="lineNoCov">          0 :                 signal_emit(&quot;command window server&quot;, 3, server-&gt;tag,</span>
+<a name="1077"><span class="lineNum">    1077 </span><span class="lineNoCov">          0 :                             active_win-&gt;active_server, active_win-&gt;active);</span></a>
+<span class="lineNum">    1078 </span>            :         }
+<a name="1079"><span class="lineNum">    1079 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">    1080 </span>            : 
+<a name="1081"><span class="lineNum">    1081 </span><span class="lineNoCov">          0 : static void key_escape(void)</span></a>
+<span class="lineNum">    1082 </span>            : {
+<span class="lineNum">    1083 </span><span class="lineNoCov">          0 :         escape_next_key = TRUE;</span>
+<a name="1084"><span class="lineNum">    1084 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="1085"><span class="lineNum">    1085 </span>            : </a>
+<span class="lineNum">    1086 </span><span class="lineNoCov">          0 : static void key_insert_text(const char *data)</span>
+<span class="lineNum">    1087 </span>            : {
+<span class="lineNum">    1088 </span>            :         char *str;
+<a name="1089"><span class="lineNum">    1089 </span>            : </a>
+<span class="lineNum">    1090 </span><span class="lineNoCov">          0 :         str = parse_special_string(data, active_win-&gt;active_server,</span>
+<span class="lineNum">    1091 </span><span class="lineNoCov">          0 :                                    active_win-&gt;active, &quot;&quot;, NULL, 0);</span>
+<span class="lineNum">    1092 </span><span class="lineNoCov">          0 :         gui_entry_insert_text(active_entry, str);</span>
+<a name="1093"><span class="lineNum">    1093 </span><span class="lineNoCov">          0 :         g_free(str);</span></a>
+<a name="1094"><span class="lineNum">    1094 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">    1095 </span>            : 
+<span class="lineNum">    1096 </span><span class="lineNoCov">          0 : static void key_sig_stop(void)</span>
+<a name="1097"><span class="lineNum">    1097 </span>            : {</a>
+<span class="lineNum">    1098 </span><span class="lineNoCov">          0 :         term_stop();</span>
+<a name="1099"><span class="lineNum">    1099 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">    1100 </span>            : 
+<a name="1101"><span class="lineNum">    1101 </span><span class="lineNoCov">          0 : static void sig_window_auto_changed(void)</span></a>
+<span class="lineNum">    1102 </span>            : {
+<span class="lineNum">    1103 </span>            :         char *text;
+<span class="lineNum">    1104 </span>            : 
+<a name="1105"><span class="lineNum">    1105 </span><span class="lineNoCov">          0 :         if (active_entry == NULL)</span></a>
+<span class="lineNum">    1106 </span><span class="lineNoCov">          0 :                 return;</span>
+<span class="lineNum">    1107 </span>            : 
+<span class="lineNum">    1108 </span><span class="lineNoCov">          0 :         text = gui_entry_get_text(active_entry);</span>
+<a name="1109"><span class="lineNum">    1109 </span><span class="lineNoCov">          0 :         command_history_next(active_win, text);</span></a>
+<span class="lineNum">    1110 </span><span class="lineNoCov">          0 :         gui_entry_set_text(active_entry, &quot;&quot;);</span>
+<span class="lineNum">    1111 </span><span class="lineNoCov">          0 :         g_free(text);</span>
+<a name="1112"><span class="lineNum">    1112 </span>            : }</a>
+<a name="1113"><span class="lineNum">    1113 </span>            : </a>
+<span class="lineNum">    1114 </span><span class="lineCov">          1 : static void sig_gui_entry_redirect(SIGNAL_FUNC func, const char *entry,</span>
+<span class="lineNum">    1115 </span>            :                                    void *flags, void *data)
+<span class="lineNum">    1116 </span>            : {
+<a name="1117"><span class="lineNum">    1117 </span><span class="lineCov">          1 :         redir = g_new0(ENTRY_REDIRECT_REC, 1);</span></a>
+<span class="lineNum">    1118 </span><span class="lineCov">          1 :         redir-&gt;func = func;</span>
+<span class="lineNum">    1119 </span><span class="lineCov">          1 :         redir-&gt;flags = GPOINTER_TO_INT(flags);</span>
+<span class="lineNum">    1120 </span><span class="lineCov">          1 :         redir-&gt;data = data;</span>
+<a name="1121"><span class="lineNum">    1121 </span>            : </a>
+<span class="lineNum">    1122 </span><span class="lineCov">          1 :         if (redir-&gt;flags &amp; ENTRY_REDIRECT_FLAG_HIDDEN)</span>
+<span class="lineNum">    1123 </span><span class="lineNoCov">          0 :                 gui_entry_set_hidden(active_entry, TRUE);</span>
+<span class="lineNum">    1124 </span><span class="lineCov">          1 :         gui_entry_set_prompt(active_entry, entry);</span>
+<a name="1125"><span class="lineNum">    1125 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">    1126 </span>            : 
+<span class="lineNum">    1127 </span><span class="lineCov">          1 : static void setup_changed(void)</span>
+<span class="lineNum">    1128 </span>            : {
+<a name="1129"><span class="lineNum">    1129 </span><span class="lineCov">          1 :         paste_detect_time = settings_get_time(&quot;paste_detect_time&quot;);</span></a>
+<span class="lineNum">    1130 </span>            : 
+<span class="lineNum">    1131 </span><span class="lineCov">          1 :         paste_verify_line_count = settings_get_int(&quot;paste_verify_line_count&quot;);</span>
+<span class="lineNum">    1132 </span><span class="lineCov">          1 :         paste_join_multiline = settings_get_bool(&quot;paste_join_multiline&quot;);</span>
+<a name="1133"><span class="lineNum">    1133 </span><span class="lineCov">          1 :         paste_use_bracketed_mode = settings_get_bool(&quot;paste_use_bracketed_mode&quot;);</span></a>
+<span class="lineNum">    1134 </span>            : 
+<span class="lineNum">    1135 </span><span class="lineCov">          1 :         term_set_appkey_mode(settings_get_bool(&quot;term_appkey_mode&quot;));</span>
+<span class="lineNum">    1136 </span>            :         /* Enable the bracketed paste mode on demand */
+<a name="1137"><span class="lineNum">    1137 </span><span class="lineCov">          1 :         term_set_bracketed_paste_mode(paste_use_bracketed_mode);</span></a>
+<a name="1138"><span class="lineNum">    1138 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">    1139 </span>            : 
+<span class="lineNum">    1140 </span><span class="lineCov">          1 : void gui_readline_init(void)</span>
+<a name="1141"><span class="lineNum">    1141 </span>            : {</a>
+<span class="lineNum">    1142 </span>            :         static char changekeys[] = &quot;1234567890qwertyuio&quot;;
+<span class="lineNum">    1143 </span>            :         char *key, data[MAX_INT_STRLEN];
+<span class="lineNum">    1144 </span>            :         int n;
+<a name="1145"><span class="lineNum">    1145 </span>            : </a>
+<span class="lineNum">    1146 </span><span class="lineCov">          1 :         escape_next_key = FALSE;</span>
+<span class="lineNum">    1147 </span><span class="lineCov">          1 :         redir = NULL;</span>
+<span class="lineNum">    1148 </span><span class="lineCov">          1 :         paste_entry = NULL;</span>
+<a name="1149"><span class="lineNum">    1149 </span><span class="lineCov">          1 :         paste_entry_pos = 0;</span></a>
+<span class="lineNum">    1150 </span><span class="lineCov">          1 :         paste_buffer = g_array_new(FALSE, FALSE, sizeof(unichar));</span>
+<span class="lineNum">    1151 </span><span class="lineCov">          1 :         paste_buffer_rest = g_array_new(FALSE, FALSE, sizeof(unichar));</span>
+<span class="lineNum">    1152 </span><span class="lineCov">          1 :         paste_old_prompt = NULL;</span>
+<a name="1153"><span class="lineNum">    1153 </span><span class="lineCov">          1 :         paste_timeout_id = -1;</span></a>
+<span class="lineNum">    1154 </span><span class="lineCov">          1 :         paste_bracketed_mode = FALSE;</span>
+<span class="lineNum">    1155 </span><span class="lineCov">          1 :         g_get_current_time(&amp;last_keypress);</span>
+<span class="lineNum">    1156 </span><span class="lineCov">          1 :         input_listen_init(STDIN_FILENO);</span>
+<a name="1157"><span class="lineNum">    1157 </span>            : </a>
+<span class="lineNum">    1158 </span><span class="lineCov">          1 :         settings_add_bool(&quot;lookandfeel&quot;, &quot;term_appkey_mode&quot;, TRUE);</span>
+<span class="lineNum">    1159 </span><span class="lineCov">          1 :         settings_add_str(&quot;history&quot;, &quot;scroll_page_count&quot;, &quot;/2&quot;);</span>
+<span class="lineNum">    1160 </span><span class="lineCov">          1 :         settings_add_time(&quot;misc&quot;, &quot;paste_detect_time&quot;, &quot;5msecs&quot;);</span>
+<a name="1161"><span class="lineNum">    1161 </span><span class="lineCov">          1 :         settings_add_bool(&quot;misc&quot;, &quot;paste_use_bracketed_mode&quot;, FALSE);</span></a>
+<span class="lineNum">    1162 </span>            :         /* NOTE: function keys can generate at least 5 characters long
+<span class="lineNum">    1163 </span>            :            keycodes. this must be larger to allow them to work. */
+<span class="lineNum">    1164 </span><span class="lineCov">          1 :         settings_add_int(&quot;misc&quot;, &quot;paste_verify_line_count&quot;, 5);</span>
+<a name="1165"><span class="lineNum">    1165 </span><span class="lineCov">          1 :         settings_add_bool(&quot;misc&quot;, &quot;paste_join_multiline&quot;, TRUE);</span></a>
+<span class="lineNum">    1166 </span><span class="lineCov">          1 :         setup_changed();</span>
+<span class="lineNum">    1167 </span>            : 
+<span class="lineNum">    1168 </span><span class="lineCov">          1 :         keyboard = keyboard_create(NULL);</span>
+<a name="1169"><span class="lineNum">    1169 </span><span class="lineCov">          1 :         key_configure_freeze();</span></a>
+<span class="lineNum">    1170 </span>            : 
+<span class="lineNum">    1171 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot; &quot;, &quot;space&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1172 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;^M&quot;, &quot;return&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1173"><span class="lineNum">    1173 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;^J&quot;, &quot;return&quot;, (SIGNAL_FUNC) key_combo);</span></a>
+<span class="lineNum">    1174 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;^H&quot;, &quot;backspace&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1175 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;^?&quot;, &quot;backspace&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1176 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;^I&quot;, &quot;tab&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1177"><span class="lineNum">    1177 </span>            : </a>
+<span class="lineNum">    1178 </span>            :         /* meta */
+<span class="lineNum">    1179 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;^[&quot;, &quot;meta&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1180 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta-[&quot;, &quot;meta2&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1181"><span class="lineNum">    1181 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta-O&quot;, &quot;meta2&quot;, (SIGNAL_FUNC) key_combo);</span></a>
+<span class="lineNum">    1182 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta-[O&quot;, &quot;meta2&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1183 </span>            : 
+<span class="lineNum">    1184 </span>            :         /* arrow keys */
+<a name="1185"><span class="lineNum">    1185 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-A&quot;, &quot;up&quot;, (SIGNAL_FUNC) key_combo);</span></a>
+<span class="lineNum">    1186 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-B&quot;, &quot;down&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1187 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-C&quot;, &quot;right&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1188 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-D&quot;, &quot;left&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1189"><span class="lineNum">    1189 </span>            : </a>
+<span class="lineNum">    1190 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1~&quot;, &quot;home&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1191 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-7~&quot;, &quot;home&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1192 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-H&quot;, &quot;home&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1193"><span class="lineNum">    1193 </span>            : </a>
+<span class="lineNum">    1194 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-4~&quot;, &quot;end&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1195 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-8~&quot;, &quot;end&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1196 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-F&quot;, &quot;end&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1197"><span class="lineNum">    1197 </span>            : </a>
+<span class="lineNum">    1198 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-5~&quot;, &quot;prior&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1199 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-I&quot;, &quot;prior&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1200 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-6~&quot;, &quot;next&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1201"><span class="lineNum">    1201 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-G&quot;, &quot;next&quot;, (SIGNAL_FUNC) key_combo);</span></a>
+<span class="lineNum">    1202 </span>            : 
+<span class="lineNum">    1203 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-2~&quot;, &quot;insert&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1204 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-3~&quot;, &quot;delete&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1205"><span class="lineNum">    1205 </span>            : </a>
+<span class="lineNum">    1206 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-d&quot;, &quot;cleft&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1207 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-c&quot;, &quot;cright&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1208 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-5D&quot;, &quot;cleft&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1209"><span class="lineNum">    1209 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-5C&quot;, &quot;cright&quot;, (SIGNAL_FUNC) key_combo);</span></a>
+<span class="lineNum">    1210 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;5D&quot;, &quot;cleft&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1211 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;5C&quot;, &quot;cright&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1212 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;5A&quot;, &quot;cup&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1213"><span class="lineNum">    1213 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;5B&quot;, &quot;cdown&quot;, (SIGNAL_FUNC) key_combo);</span></a>
+<span class="lineNum">    1214 </span>            : 
+<span class="lineNum">    1215 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;3A&quot;, &quot;mup&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1216 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;3B&quot;, &quot;mdown&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1217"><span class="lineNum">    1217 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;3D&quot;, &quot;mleft&quot;, (SIGNAL_FUNC) key_combo);</span></a>
+<span class="lineNum">    1218 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;3C&quot;, &quot;mright&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1219 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta-up&quot;, &quot;mup&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1220 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta-down&quot;, &quot;mdown&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1221"><span class="lineNum">    1221 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta-left&quot;, &quot;mleft&quot;, (SIGNAL_FUNC) key_combo);</span></a>
+<span class="lineNum">    1222 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta-right&quot;, &quot;mright&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1223 </span>            : 
+<span class="lineNum">    1224 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;5~&quot;, &quot;chome&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1225"><span class="lineNum">    1225 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-7;5~&quot;, &quot;chome&quot;, (SIGNAL_FUNC) key_combo);</span></a>
+<span class="lineNum">    1226 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-5H&quot;, &quot;chome&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1227 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;5H&quot;, &quot;chome&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1228 </span>            : 
+<a name="1229"><span class="lineNum">    1229 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-4;5~&quot;, &quot;cend&quot;, (SIGNAL_FUNC) key_combo);</span></a>
+<span class="lineNum">    1230 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-8;5~&quot;, &quot;cend&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1231 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-5F&quot;, &quot;cend&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1232 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta2-1;5F&quot;, &quot;cend&quot;, (SIGNAL_FUNC) key_combo);</span>
+<a name="1233"><span class="lineNum">    1233 </span>            : </a>
+<span class="lineNum">    1234 </span><span class="lineCov">          1 :         key_bind(&quot;key&quot;, NULL, &quot;meta-O-M&quot;, &quot;return&quot;, (SIGNAL_FUNC) key_combo);</span>
+<span class="lineNum">    1235 </span>            : 
+<span class="lineNum">    1236 </span><span class="lineCov">          1 :         key_bind(&quot;paste_start&quot;, &quot;Bracketed paste start&quot;, &quot;meta2-200~&quot;, &quot;paste_start&quot;, (SIGNAL_FUNC) key_paste_start);</span>
+<a name="1237"><span class="lineNum">    1237 </span>            : </a>
+<span class="lineNum">    1238 </span>            :         /* cursor movement */
+<span class="lineNum">    1239 </span><span class="lineCov">          1 :         key_bind(&quot;backward_character&quot;, &quot;Move the cursor a character backward&quot;, &quot;left&quot;, NULL, (SIGNAL_FUNC) key_backward_character);</span>
+<span class="lineNum">    1240 </span><span class="lineCov">          1 :         key_bind(&quot;forward_character&quot;, &quot;Move the cursor a character forward&quot;, &quot;right&quot;, NULL, (SIGNAL_FUNC) key_forward_character);</span>
+<a name="1241"><span class="lineNum">    1241 </span><span class="lineCov">          1 :         key_bind(&quot;backward_word&quot;, &quot;Move the cursor a word backward&quot;, &quot;cleft&quot;, NULL, (SIGNAL_FUNC) key_backward_word);</span></a>
+<span class="lineNum">    1242 </span><span class="lineCov">          1 :         key_bind(&quot;backward_word&quot;, NULL, &quot;meta-b&quot;, NULL, (SIGNAL_FUNC) key_backward_word);</span>
+<span class="lineNum">    1243 </span><span class="lineCov">          1 :         key_bind(&quot;forward_word&quot;, &quot;Move the cursor a word forward&quot;, &quot;cright&quot;, NULL, (SIGNAL_FUNC) key_forward_word);</span>
+<span class="lineNum">    1244 </span><span class="lineCov">          1 :         key_bind(&quot;forward_word&quot;, NULL, &quot;meta-f&quot;, NULL, (SIGNAL_FUNC) key_forward_word);</span>
+<a name="1245"><span class="lineNum">    1245 </span><span class="lineCov">          1 :         key_bind(&quot;backward_to_space&quot;, &quot;Move the cursor backward to a space&quot;, NULL, NULL, (SIGNAL_FUNC) key_backward_to_space);</span></a>
+<span class="lineNum">    1246 </span><span class="lineCov">          1 :         key_bind(&quot;forward_to_space&quot;, &quot;Move the cursor forward to a space&quot;, NULL, NULL, (SIGNAL_FUNC) key_forward_to_space);</span>
+<span class="lineNum">    1247 </span><span class="lineCov">          1 :         key_bind(&quot;beginning_of_line&quot;, &quot;Move the cursor to the beginning of the line&quot;, &quot;home&quot;, NULL, (SIGNAL_FUNC) key_beginning_of_line);</span>
+<span class="lineNum">    1248 </span><span class="lineCov">          1 :         key_bind(&quot;beginning_of_line&quot;, NULL, &quot;^A&quot;, NULL, (SIGNAL_FUNC) key_beginning_of_line);</span>
+<a name="1249"><span class="lineNum">    1249 </span><span class="lineCov">          1 :         key_bind(&quot;end_of_line&quot;, &quot;Move the cursor to the end of the line&quot;, &quot;end&quot;, NULL, (SIGNAL_FUNC) key_end_of_line);</span></a>
+<span class="lineNum">    1250 </span><span class="lineCov">          1 :         key_bind(&quot;end_of_line&quot;, NULL, &quot;^E&quot;, NULL, (SIGNAL_FUNC) key_end_of_line);</span>
+<span class="lineNum">    1251 </span>            : 
+<span class="lineNum">    1252 </span>            :         /* history */
+<a name="1253"><span class="lineNum">    1253 </span><span class="lineCov">          1 :         key_bind(&quot;backward_history&quot;, &quot;Go back one line in the history&quot;, &quot;up&quot;, NULL, (SIGNAL_FUNC) key_backward_history);</span></a>
+<span class="lineNum">    1254 </span><span class="lineCov">          1 :         key_bind(&quot;forward_history&quot;, &quot;Go forward one line in the history&quot;, &quot;down&quot;, NULL, (SIGNAL_FUNC) key_forward_history);</span>
+<span class="lineNum">    1255 </span><span class="lineCov">          1 :         key_bind(&quot;backward_global_history&quot;, &quot;Go back one line in the global history&quot;, &quot;cup&quot;, NULL, (SIGNAL_FUNC) key_backward_global_history);</span>
+<span class="lineNum">    1256 </span><span class="lineCov">          1 :         key_bind(&quot;forward_global_history&quot;, &quot;Go forward one line in the global history&quot;, &quot;cdown&quot;, NULL, (SIGNAL_FUNC) key_forward_global_history);</span>
+<a name="1257"><span class="lineNum">    1257 </span><span class="lineCov">          1 :         key_bind(&quot;erase_history_entry&quot;, &quot;Erase the currently active entry from the history&quot;, NULL, NULL, (SIGNAL_FUNC) key_erase_history_entry);</span></a>
+<span class="lineNum">    1258 </span>            : 
+<span class="lineNum">    1259 </span>            :         /* line editing */
+<span class="lineNum">    1260 </span><span class="lineCov">          1 :         key_bind(&quot;backspace&quot;, &quot;Delete the previous character&quot;, &quot;backspace&quot;, NULL, (SIGNAL_FUNC) key_backspace);</span>
+<a name="1261"><span class="lineNum">    1261 </span><span class="lineCov">          1 :         key_bind(&quot;delete_character&quot;, &quot;Delete the current character&quot;, &quot;delete&quot;, NULL, (SIGNAL_FUNC) key_delete_character);</span></a>
+<span class="lineNum">    1262 </span><span class="lineCov">          1 :         key_bind(&quot;delete_character&quot;, NULL, &quot;^D&quot;, NULL, (SIGNAL_FUNC) key_delete_character);</span>
+<span class="lineNum">    1263 </span><span class="lineCov">          1 :         key_bind(&quot;delete_next_word&quot;, &quot;Delete the word after the cursor&quot;, &quot;meta-d&quot;, NULL, (SIGNAL_FUNC) key_delete_next_word);</span>
+<span class="lineNum">    1264 </span><span class="lineCov">          1 :         key_bind(&quot;delete_previous_word&quot;, &quot;Delete the word before the cursor&quot;, &quot;meta-backspace&quot;, NULL, (SIGNAL_FUNC) key_delete_previous_word);</span>
+<a name="1265"><span class="lineNum">    1265 </span><span class="lineCov">          1 :         key_bind(&quot;delete_to_previous_space&quot;, &quot;Delete up to the previous space&quot;, &quot;^W&quot;, NULL, (SIGNAL_FUNC) key_delete_to_previous_space);</span></a>
+<span class="lineNum">    1266 </span><span class="lineCov">          1 :         key_bind(&quot;delete_to_next_space&quot;, &quot;Delete up to the next space&quot;, &quot;&quot;, NULL, (SIGNAL_FUNC) key_delete_to_next_space);</span>
+<span class="lineNum">    1267 </span><span class="lineCov">          1 :         key_bind(&quot;erase_line&quot;, &quot;Erase the whole input line&quot;, &quot;^U&quot;, NULL, (SIGNAL_FUNC) key_erase_line);</span>
+<span class="lineNum">    1268 </span><span class="lineCov">          1 :         key_bind(&quot;erase_to_beg_of_line&quot;, &quot;Erase everything before the cursor&quot;, NULL, NULL, (SIGNAL_FUNC) key_erase_to_beg_of_line);</span>
+<a name="1269"><span class="lineNum">    1269 </span><span class="lineCov">          1 :         key_bind(&quot;erase_to_end_of_line&quot;, &quot;Erase everything after the cursor&quot;, &quot;^K&quot;, NULL, (SIGNAL_FUNC) key_erase_to_end_of_line);</span></a>
+<span class="lineNum">    1270 </span><span class="lineCov">          1 :         key_bind(&quot;yank_from_cutbuffer&quot;, &quot;\&quot;Undelete\&quot;, paste the last deleted text&quot;, &quot;^Y&quot;, NULL, (SIGNAL_FUNC) key_yank_from_cutbuffer);</span>
+<span class="lineNum">    1271 </span><span class="lineCov">          1 :         key_bind(&quot;yank_next_cutbuffer&quot;, &quot;Revert to the previous last deleted text&quot;, NULL, NULL, (SIGNAL_FUNC) key_yank_next_cutbuffer);</span>
+<span class="lineNum">    1272 </span><span class="lineCov">          1 :         key_bind(&quot;append_next_kill&quot;, &quot;Append next deletion&quot;, NULL, NULL, (SIGNAL_FUNC) key_append_next_kill);</span>
+<a name="1273"><span class="lineNum">    1273 </span><span class="lineCov">          1 :         key_bind(&quot;transpose_characters&quot;, &quot;Swap current and previous character&quot;, &quot;^T&quot;, NULL, (SIGNAL_FUNC) key_transpose_characters);</span></a>
+<span class="lineNum">    1274 </span><span class="lineCov">          1 :         key_bind(&quot;transpose_words&quot;, &quot;Swap current and previous word&quot;, NULL, NULL, (SIGNAL_FUNC) key_transpose_words);</span>
+<span class="lineNum">    1275 </span><span class="lineCov">          1 :         key_bind(&quot;capitalize_word&quot;, &quot;Capitalize the current word&quot;, NULL, NULL, (SIGNAL_FUNC) key_capitalize_word);</span>
+<span class="lineNum">    1276 </span><span class="lineCov">          1 :         key_bind(&quot;downcase_word&quot;, &quot;Downcase the current word&quot;, NULL, NULL, (SIGNAL_FUNC) key_downcase_word);</span>
+<a name="1277"><span class="lineNum">    1277 </span><span class="lineCov">          1 :         key_bind(&quot;upcase_word&quot;, &quot;Upcase the current word&quot;, NULL, NULL, (SIGNAL_FUNC) key_upcase_word);</span></a>
+<span class="lineNum">    1278 </span>            : 
+<span class="lineNum">    1279 </span>            :         /* line transmitting */
+<span class="lineNum">    1280 </span><span class="lineCov">          1 :         key_bind(&quot;send_line&quot;, &quot;Execute the input line&quot;, &quot;return&quot;, NULL, (SIGNAL_FUNC) key_send_line);</span>
+<a name="1281"><span class="lineNum">    1281 </span><span class="lineCov">          1 :         key_bind(&quot;word_completion_backward&quot;, &quot;&quot;, NULL, NULL, (SIGNAL_FUNC) key_word_completion_backward);</span></a>
+<span class="lineNum">    1282 </span><span class="lineCov">          1 :         key_bind(&quot;word_completion&quot;, &quot;Complete the current word&quot;, &quot;tab&quot;, NULL, (SIGNAL_FUNC) key_word_completion);</span>
+<span class="lineNum">    1283 </span><span class="lineCov">          1 :         key_bind(&quot;erase_completion&quot;, &quot;Remove the completion added by word_completion&quot;, &quot;meta-k&quot;, NULL, (SIGNAL_FUNC) key_erase_completion);</span>
+<span class="lineNum">    1284 </span><span class="lineCov">          1 :         key_bind(&quot;check_replaces&quot;, &quot;Check word replaces&quot;, NULL, NULL, (SIGNAL_FUNC) key_check_replaces);</span>
+<a name="1285"><span class="lineNum">    1285 </span>            : </a>
+<span class="lineNum">    1286 </span>            :         /* window managing */
+<span class="lineNum">    1287 </span><span class="lineCov">          1 :         key_bind(&quot;previous_window&quot;, &quot;Go to the previous window&quot;, &quot;^P&quot;, NULL, (SIGNAL_FUNC) key_previous_window);</span>
+<span class="lineNum">    1288 </span><span class="lineCov">          1 :         key_bind(&quot;next_window&quot;, &quot;Go to the next window&quot;, &quot;^N&quot;, NULL, (SIGNAL_FUNC) key_next_window);</span>
+<a name="1289"><span class="lineNum">    1289 </span><span class="lineCov">          1 :         key_bind(&quot;upper_window&quot;, &quot;Go to the split window above&quot;, &quot;mup&quot;, NULL, (SIGNAL_FUNC) key_upper_window);</span></a>
+<span class="lineNum">    1290 </span><span class="lineCov">          1 :         key_bind(&quot;lower_window&quot;, &quot;Go to the split window below&quot;, &quot;mdown&quot;, NULL, (SIGNAL_FUNC) key_lower_window);</span>
+<span class="lineNum">    1291 </span><span class="lineCov">          1 :         key_bind(&quot;left_window&quot;, &quot;Go to the previous window in the current split window&quot;, &quot;mleft&quot;, NULL, (SIGNAL_FUNC) key_left_window);</span>
+<span class="lineNum">    1292 </span><span class="lineCov">          1 :         key_bind(&quot;right_window&quot;, &quot;Go to the next window in the current split window&quot;, &quot;mright&quot;, NULL, (SIGNAL_FUNC) key_right_window);</span>
+<a name="1293"><span class="lineNum">    1293 </span><span class="lineCov">          1 :         key_bind(&quot;active_window&quot;, &quot;Go to next window with the highest activity&quot;, &quot;meta-a&quot;, NULL, (SIGNAL_FUNC) key_active_window);</span></a>
+<span class="lineNum">    1294 </span><span class="lineCov">          1 :         key_bind(&quot;next_window_item&quot;, &quot;Go to the next channel/query. In empty windows change to the next server&quot;, &quot;^X&quot;, NULL, (SIGNAL_FUNC) key_next_window_item);</span>
+<span class="lineNum">    1295 </span><span class="lineCov">          1 :         key_bind(&quot;previous_window_item&quot;, &quot;Go to the previous channel/query. In empty windows change to the previous server&quot;, NULL, NULL, (SIGNAL_FUNC) key_previous_window_item);</span>
+<span class="lineNum">    1296 </span>            : 
+<a name="1297"><span class="lineNum">    1297 </span><span class="lineCov">          1 :         key_bind(&quot;refresh_screen&quot;, &quot;Redraw screen&quot;, &quot;^L&quot;, NULL, (SIGNAL_FUNC) irssi_redraw);</span></a>
+<span class="lineNum">    1298 </span><span class="lineCov">          1 :         key_bind(&quot;scroll_backward&quot;, &quot;Scroll to previous page&quot;, &quot;prior&quot;, NULL, (SIGNAL_FUNC) key_scroll_backward);</span>
+<span class="lineNum">    1299 </span><span class="lineCov">          1 :         key_bind(&quot;scroll_backward&quot;, NULL, &quot;meta-p&quot;, NULL, (SIGNAL_FUNC) key_scroll_backward);</span>
+<span class="lineNum">    1300 </span><span class="lineCov">          1 :         key_bind(&quot;scroll_forward&quot;, &quot;Scroll to next page&quot;, &quot;next&quot;, NULL, (SIGNAL_FUNC) key_scroll_forward);</span>
+<a name="1301"><span class="lineNum">    1301 </span><span class="lineCov">          1 :         key_bind(&quot;scroll_forward&quot;, NULL, &quot;meta-n&quot;, NULL, (SIGNAL_FUNC) key_scroll_forward);</span></a>
+<span class="lineNum">    1302 </span><span class="lineCov">          1 :         key_bind(&quot;scroll_start&quot;, &quot;Scroll to the beginning of the window&quot;, &quot;chome&quot;, NULL, (SIGNAL_FUNC) key_scroll_start);</span>
+<span class="lineNum">    1303 </span><span class="lineCov">          1 :         key_bind(&quot;scroll_end&quot;, &quot;Scroll to the end of the window&quot;, &quot;cend&quot;, NULL, (SIGNAL_FUNC) key_scroll_end);</span>
+<span class="lineNum">    1304 </span>            : 
+<a name="1305"><span class="lineNum">    1305 </span>            :         /* inserting special input characters to line.. */</a>
+<span class="lineNum">    1306 </span><span class="lineCov">          1 :         key_bind(&quot;escape_char&quot;, &quot;Insert the next character exactly as-is to input line&quot;, NULL, NULL, (SIGNAL_FUNC) key_escape);</span>
+<span class="lineNum">    1307 </span><span class="lineCov">          1 :         key_bind(&quot;insert_text&quot;, &quot;Append text to line&quot;, NULL, NULL, (SIGNAL_FUNC) key_insert_text);</span>
+<span class="lineNum">    1308 </span>            : 
+<a name="1309"><span class="lineNum">    1309 </span>            :         /* autoreplaces */</a>
+<span class="lineNum">    1310 </span><span class="lineCov">          1 :         key_bind(&quot;multi&quot;, NULL, &quot;return&quot;, &quot;check_replaces;send_line&quot;, NULL);</span>
+<span class="lineNum">    1311 </span><span class="lineCov">          1 :         key_bind(&quot;multi&quot;, NULL, &quot;space&quot;, &quot;check_replaces;insert_text  &quot;, NULL);</span>
+<span class="lineNum">    1312 </span>            : 
+<a name="1313"><span class="lineNum">    1313 </span>            :         /* moving between windows */</a>
+<span class="lineNum">    1314 </span><span class="lineCov">         20 :         for (n = 0; changekeys[n] != '\0'; n++) {</span>
+<span class="lineNum">    1315 </span><span class="lineCov">         19 :                 key = g_strdup_printf(&quot;meta-%c&quot;, changekeys[n]);</span>
+<span class="lineNum">    1316 </span><span class="lineCov">         19 :                 ltoa(data, n+1);</span>
+<a name="1317"><span class="lineNum">    1317 </span><span class="lineCov">         19 :                 key_bind(&quot;change_window&quot;, &quot;Change window&quot;, key, data, (SIGNAL_FUNC) key_change_window);</span></a>
+<span class="lineNum">    1318 </span><span class="lineCov">         19 :                 g_free(key);</span>
+<span class="lineNum">    1319 </span>            :         }
+<span class="lineNum">    1320 </span>            : 
+<a name="1321"><span class="lineNum">    1321 </span>            :         /* misc */</a>
+<span class="lineNum">    1322 </span><span class="lineCov">          1 :         key_bind(&quot;stop_irc&quot;, &quot;Send SIGSTOP to client&quot;, &quot;^Z&quot;, NULL, (SIGNAL_FUNC) key_sig_stop);</span>
+<span class="lineNum">    1323 </span>            : 
+<span class="lineNum">    1324 </span><span class="lineCov">          1 :         key_configure_thaw();</span>
+<a name="1325"><span class="lineNum">    1325 </span>            : </a>
+<span class="lineNum">    1326 </span><span class="lineCov">          1 :         signal_add(&quot;window changed automatic&quot;, (SIGNAL_FUNC) sig_window_auto_changed);</span>
+<span class="lineNum">    1327 </span><span class="lineCov">          1 :         signal_add(&quot;gui entry redirect&quot;, (SIGNAL_FUNC) sig_gui_entry_redirect);</span>
+<span class="lineNum">    1328 </span><span class="lineCov">          1 :         signal_add(&quot;gui key pressed&quot;, (SIGNAL_FUNC) sig_gui_key_pressed);</span>
+<a name="1329"><span class="lineNum">    1329 </span><span class="lineCov">          1 :         signal_add(&quot;setup changed&quot;, (SIGNAL_FUNC) setup_changed);</span></a>
+<a name="1330"><span class="lineNum">    1330 </span><span class="lineCov">          1 : }</span></a>
+<span class="lineNum">    1331 </span>            : 
+<span class="lineNum">    1332 </span><span class="lineCov">          1 : void gui_readline_deinit(void)</span>
+<a name="1333"><span class="lineNum">    1333 </span>            : {</a>
+<span class="lineNum">    1334 </span><span class="lineCov">          1 :         input_listen_deinit();</span>
+<span class="lineNum">    1335 </span>            : 
+<span class="lineNum">    1336 </span><span class="lineCov">          1 :         key_configure_freeze();</span>
+<a name="1337"><span class="lineNum">    1337 </span>            : </a>
+<span class="lineNum">    1338 </span><span class="lineCov">          1 :         key_unbind(&quot;paste_start&quot;, (SIGNAL_FUNC) key_paste_start);</span>
+<span class="lineNum">    1339 </span>            : 
+<span class="lineNum">    1340 </span><span class="lineCov">          1 :         key_unbind(&quot;backward_character&quot;, (SIGNAL_FUNC) key_backward_character);</span>
+<a name="1341"><span class="lineNum">    1341 </span><span class="lineCov">          1 :         key_unbind(&quot;forward_character&quot;, (SIGNAL_FUNC) key_forward_character);</span></a>
+<span class="lineNum">    1342 </span><span class="lineCov">          1 :         key_unbind(&quot;backward_word&quot;, (SIGNAL_FUNC) key_backward_word);</span>
+<span class="lineNum">    1343 </span><span class="lineCov">          1 :         key_unbind(&quot;forward_word&quot;, (SIGNAL_FUNC) key_forward_word);</span>
+<span class="lineNum">    1344 </span><span class="lineCov">          1 :         key_unbind(&quot;backward_to_space&quot;, (SIGNAL_FUNC) key_backward_to_space);</span>
+<a name="1345"><span class="lineNum">    1345 </span><span class="lineCov">          1 :         key_unbind(&quot;forward_to_space&quot;, (SIGNAL_FUNC) key_forward_to_space);</span></a>
+<span class="lineNum">    1346 </span><span class="lineCov">          1 :         key_unbind(&quot;beginning_of_line&quot;, (SIGNAL_FUNC) key_beginning_of_line);</span>
+<span class="lineNum">    1347 </span><span class="lineCov">          1 :         key_unbind(&quot;end_of_line&quot;, (SIGNAL_FUNC) key_end_of_line);</span>
+<span class="lineNum">    1348 </span>            : 
+<a name="1349"><span class="lineNum">    1349 </span><span class="lineCov">          1 :         key_unbind(&quot;backward_history&quot;, (SIGNAL_FUNC) key_backward_history);</span></a>
+<span class="lineNum">    1350 </span><span class="lineCov">          1 :         key_unbind(&quot;forward_history&quot;, (SIGNAL_FUNC) key_forward_history);</span>
+<span class="lineNum">    1351 </span><span class="lineCov">          1 :         key_unbind(&quot;backward_global_history&quot;, (SIGNAL_FUNC) key_backward_global_history);</span>
+<span class="lineNum">    1352 </span><span class="lineCov">          1 :         key_unbind(&quot;forward_global_history&quot;, (SIGNAL_FUNC) key_forward_global_history);</span>
+<a name="1353"><span class="lineNum">    1353 </span><span class="lineCov">          1 :         key_unbind(&quot;erase_history_entry&quot;, (SIGNAL_FUNC) key_erase_history_entry);</span></a>
+<span class="lineNum">    1354 </span>            : 
+<span class="lineNum">    1355 </span><span class="lineCov">          1 :         key_unbind(&quot;backspace&quot;, (SIGNAL_FUNC) key_backspace);</span>
+<span class="lineNum">    1356 </span><span class="lineCov">          1 :         key_unbind(&quot;delete_character&quot;, (SIGNAL_FUNC) key_delete_character);</span>
+<a name="1357"><span class="lineNum">    1357 </span><span class="lineCov">          1 :         key_unbind(&quot;delete_next_word&quot;, (SIGNAL_FUNC) key_delete_next_word);</span></a>
+<span class="lineNum">    1358 </span><span class="lineCov">          1 :         key_unbind(&quot;delete_previous_word&quot;, (SIGNAL_FUNC) key_delete_previous_word);</span>
+<span class="lineNum">    1359 </span><span class="lineCov">          1 :         key_unbind(&quot;delete_to_next_space&quot;, (SIGNAL_FUNC) key_delete_to_next_space);</span>
+<span class="lineNum">    1360 </span><span class="lineCov">          1 :         key_unbind(&quot;delete_to_previous_space&quot;, (SIGNAL_FUNC) key_delete_to_previous_space);</span>
+<a name="1361"><span class="lineNum">    1361 </span><span class="lineCov">          1 :         key_unbind(&quot;erase_line&quot;, (SIGNAL_FUNC) key_erase_line);</span></a>
+<span class="lineNum">    1362 </span><span class="lineCov">          1 :         key_unbind(&quot;erase_to_beg_of_line&quot;, (SIGNAL_FUNC) key_erase_to_beg_of_line);</span>
+<span class="lineNum">    1363 </span><span class="lineCov">          1 :         key_unbind(&quot;erase_to_end_of_line&quot;, (SIGNAL_FUNC) key_erase_to_end_of_line);</span>
+<span class="lineNum">    1364 </span><span class="lineCov">          1 :         key_unbind(&quot;yank_from_cutbuffer&quot;, (SIGNAL_FUNC) key_yank_from_cutbuffer);</span>
+<a name="1365"><span class="lineNum">    1365 </span><span class="lineCov">          1 :         key_unbind(&quot;yank_next_cutbuffer&quot;, (SIGNAL_FUNC) key_yank_next_cutbuffer);</span></a>
+<span class="lineNum">    1366 </span><span class="lineCov">          1 :         key_unbind(&quot;append_next_kill&quot;, (SIGNAL_FUNC) key_append_next_kill);</span>
+<span class="lineNum">    1367 </span><span class="lineCov">          1 :         key_unbind(&quot;transpose_characters&quot;, (SIGNAL_FUNC) key_transpose_characters);</span>
+<span class="lineNum">    1368 </span><span class="lineCov">          1 :         key_unbind(&quot;transpose_words&quot;, (SIGNAL_FUNC) key_transpose_words);</span>
+<a name="1369"><span class="lineNum">    1369 </span>            : </a>
+<span class="lineNum">    1370 </span><span class="lineCov">          1 :         key_unbind(&quot;capitalize_word&quot;, (SIGNAL_FUNC) key_capitalize_word);</span>
+<span class="lineNum">    1371 </span><span class="lineCov">          1 :         key_unbind(&quot;downcase_word&quot;, (SIGNAL_FUNC) key_downcase_word);</span>
+<span class="lineNum">    1372 </span><span class="lineCov">          1 :         key_unbind(&quot;upcase_word&quot;, (SIGNAL_FUNC) key_upcase_word);</span>
+<a name="1373"><span class="lineNum">    1373 </span>            : </a>
+<span class="lineNum">    1374 </span><span class="lineCov">          1 :         key_unbind(&quot;send_line&quot;, (SIGNAL_FUNC) key_send_line);</span>
+<span class="lineNum">    1375 </span><span class="lineCov">          1 :         key_unbind(&quot;word_completion_backward&quot;, (SIGNAL_FUNC) key_word_completion_backward);</span>
+<span class="lineNum">    1376 </span><span class="lineCov">          1 :         key_unbind(&quot;word_completion&quot;, (SIGNAL_FUNC) key_word_completion);</span>
+<a name="1377"><span class="lineNum">    1377 </span><span class="lineCov">          1 :         key_unbind(&quot;erase_completion&quot;, (SIGNAL_FUNC) key_erase_completion);</span></a>
+<span class="lineNum">    1378 </span><span class="lineCov">          1 :         key_unbind(&quot;check_replaces&quot;, (SIGNAL_FUNC) key_check_replaces);</span>
+<span class="lineNum">    1379 </span>            : 
+<span class="lineNum">    1380 </span><span class="lineCov">          1 :         key_unbind(&quot;previous_window&quot;, (SIGNAL_FUNC) key_previous_window);</span>
+<a name="1381"><span class="lineNum">    1381 </span><span class="lineCov">          1 :         key_unbind(&quot;next_window&quot;, (SIGNAL_FUNC) key_next_window);</span></a>
+<span class="lineNum">    1382 </span><span class="lineCov">          1 :         key_unbind(&quot;upper_window&quot;, (SIGNAL_FUNC) key_upper_window);</span>
+<span class="lineNum">    1383 </span><span class="lineCov">          1 :         key_unbind(&quot;lower_window&quot;, (SIGNAL_FUNC) key_lower_window);</span>
+<span class="lineNum">    1384 </span><span class="lineCov">          1 :         key_unbind(&quot;left_window&quot;, (SIGNAL_FUNC) key_left_window);</span>
+<a name="1385"><span class="lineNum">    1385 </span><span class="lineCov">          1 :         key_unbind(&quot;right_window&quot;, (SIGNAL_FUNC) key_right_window);</span></a>
+<span class="lineNum">    1386 </span><span class="lineCov">          1 :         key_unbind(&quot;active_window&quot;, (SIGNAL_FUNC) key_active_window);</span>
+<span class="lineNum">    1387 </span><span class="lineCov">          1 :         key_unbind(&quot;next_window_item&quot;, (SIGNAL_FUNC) key_next_window_item);</span>
+<span class="lineNum">    1388 </span><span class="lineCov">          1 :         key_unbind(&quot;previous_window_item&quot;, (SIGNAL_FUNC) key_previous_window_item);</span>
+<a name="1389"><span class="lineNum">    1389 </span>            : </a>
+<span class="lineNum">    1390 </span><span class="lineCov">          1 :         key_unbind(&quot;refresh_screen&quot;, (SIGNAL_FUNC) irssi_redraw);</span>
+<span class="lineNum">    1391 </span><span class="lineCov">          1 :         key_unbind(&quot;scroll_backward&quot;, (SIGNAL_FUNC) key_scroll_backward);</span>
+<span class="lineNum">    1392 </span><span class="lineCov">          1 :         key_unbind(&quot;scroll_forward&quot;, (SIGNAL_FUNC) key_scroll_forward);</span>
+<a name="1393"><span class="lineNum">    1393 </span><span class="lineCov">          1 :         key_unbind(&quot;scroll_start&quot;, (SIGNAL_FUNC) key_scroll_start);</span></a>
+<span class="lineNum">    1394 </span><span class="lineCov">          1 :         key_unbind(&quot;scroll_end&quot;, (SIGNAL_FUNC) key_scroll_end);</span>
+<span class="lineNum">    1395 </span>            : 
+<span class="lineNum">    1396 </span><span class="lineCov">          1 :         key_unbind(&quot;escape_char&quot;, (SIGNAL_FUNC) key_escape);</span>
+<a name="1397"><span class="lineNum">    1397 </span><span class="lineCov">          1 :         key_unbind(&quot;insert_text&quot;, (SIGNAL_FUNC) key_insert_text);</span></a>
+<span class="lineNum">    1398 </span><span class="lineCov">          1 :         key_unbind(&quot;change_window&quot;, (SIGNAL_FUNC) key_change_window);</span>
+<span class="lineNum">    1399 </span><span class="lineCov">          1 :         key_unbind(&quot;stop_irc&quot;, (SIGNAL_FUNC) key_sig_stop);</span>
+<span class="lineNum">    1400 </span><span class="lineCov">          1 :         keyboard_destroy(keyboard);</span>
+<a name="1401"><span class="lineNum">    1401 </span><span class="lineCov">          1 :         g_array_free(paste_buffer, TRUE);</span></a>
+<span class="lineNum">    1402 </span><span class="lineCov">          1 :         g_array_free(paste_buffer_rest, TRUE);</span>
+<span class="lineNum">    1403 </span>            : 
+<span class="lineNum">    1404 </span><span class="lineCov">          1 :         key_configure_thaw();</span>
+<a name="1405"><span class="lineNum">    1405 </span>            : </a>
+<span class="lineNum">    1406 </span><span class="lineCov">          1 :         signal_remove(&quot;window changed automatic&quot;, (SIGNAL_FUNC) sig_window_auto_changed);</span>
+<span class="lineNum">    1407 </span><span class="lineCov">          1 :         signal_remove(&quot;gui entry redirect&quot;, (SIGNAL_FUNC) sig_gui_entry_redirect);</span>
+<span class="lineNum">    1408 </span><span class="lineCov">          1 :         signal_remove(&quot;gui key pressed&quot;, (SIGNAL_FUNC) sig_gui_key_pressed);</span>
+<a name="1409"><span class="lineNum">    1409 </span><span class="lineCov">          1 :         signal_remove(&quot;setup changed&quot;, (SIGNAL_FUNC) setup_changed);</span></a>
+<span class="lineNum">    1410 </span><span class="lineCov">          1 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
